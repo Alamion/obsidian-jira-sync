@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-to-jira-plugin",
-	"name": "Obsidian to Jira",
-	"version": "1.0.2",
+	"id": "jira-issue-managing",
+	"name": "Jira Issue managing",
+	"version": "1.0.3",
 	"minAppVersion": "1.7.7",
-	"description": "Update and creating of Jira issues from Obsidian directly",
+	"description": "Update and creating of Jira issues directly",
 	"author": "Amplia",
 	"isDesktopOnly": false
 }
