@@ -79,7 +79,7 @@ export default class MyPlugin extends Plugin {
 								await requestUrl({
 									url: this.settings.jiraUrl + "/rest/api/2/issue/" + issueKey,
 									method: "put",
-									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: "http://cm.amplia.es" },
+									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
 									contentType: "application/json",
 									body: JSON.stringify({
 										fields: {
