@@ -10,7 +10,7 @@ import {
 	SuggestModal,
 } from "obsidian";
 // Remember to rename these classes and interfaces!
-interface MyPluginSettings {
+interface JiraSettings {
 	username: string;
 	password: string;
 	jiraUrl: string;
@@ -25,8 +25,8 @@ interface type {
 }
 let ALL_PROJECTS: any[] = [];
 let ALL_TYPES: any[] = [];
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class JiraMain extends Plugin {
+	settings: JiraSettings;
 	async onload() {
 		await this.loadSettings();
 		// Start the local proxy server
@@ -267,7 +267,7 @@ export default class MyPlugin extends Plugin {
 					}
 					const file = await this.app.vault.getFileByPath(route)
 					if (file) {
-						await this.app.vault.delete(file)
+						await this.app.fileManager.trashFile(file)
 					}
 					await this.app.vault.create(route, '')
 					await this.app.workspace.openLinkText(route, "")
