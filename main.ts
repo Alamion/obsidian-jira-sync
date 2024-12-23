@@ -9,7 +9,6 @@ import {
 	requestUrl,
 	SuggestModal,
 } from "obsidian";
-// Remember to rename these classes and interfaces!
 interface JiraSettings {
 	username: string;
 	password: string;
@@ -61,39 +60,37 @@ export default class JiraMain extends Plugin {
 							},
 						});
 
-						localStorage.setItem("cookie", response.json.session.value);
+						localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
 						const file = this.app.workspace.getActiveFile();
 						let issueKey = ''
 						let issueSummary = ''
 						let priority = ''
 						if (file) {
-							this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+							await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
 								issueKey = frontmatter['key']
 								issueSummary = frontmatter['summary']
 								if (frontmatter['priority']) {
 									priority = frontmatter['priority'].charAt(0).toUpperCase() + frontmatter['priority'].slice(1).toLowerCase();
 								}
-							}).then(async () => {
-								const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-								const issueDescription = view?.getViewData().replace(/---.*?---/gs, "").trim()
-								await requestUrl({
-									url: this.settings.jiraUrl + "/rest/api/2/issue/" + issueKey,
-									method: "put",
-									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
-									contentType: "application/json",
-									body: JSON.stringify({
-										fields: {
-											description: markdownToJira(issueDescription || ''),
-											summary: issueSummary,
-											priority: {
-												name: priority
-											}
+							})
+							const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+							const issueDescription = view?.getViewData().replace(/---.*?---/gs, "").trim()
+							await requestUrl({
+								url: this.settings.jiraUrl + "/rest/api/2/issue/" + issueKey,
+								method: "put",
+								headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+								contentType: "application/json",
+								body: JSON.stringify({
+									fields: {
+										description: markdownToJira(issueDescription || ''),
+										summary: issueSummary,
+										priority: {
+											name: priority
 										}
-									})
-								});
+									}
+								})
+							});
 
-							}
-							)
 						}
 
 						new Notice("Issue updated successfully");
@@ -133,97 +130,94 @@ export default class JiraMain extends Plugin {
 							},
 						});
 
-						localStorage.setItem("cookie", response.json.session.value);
+						localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
 						const file = this.app.workspace.getActiveFile();
 						let issueSummary = ''
 						if (file) {
-							this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+							await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
 								issueSummary = frontmatter['summary']
-							}).then(async () => {
-								if (issueSummary) {
-									const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-									const projects = await requestUrl({
-										url: this.settings.jiraUrl + "/rest/api/2/project",
+							})
+							if (issueSummary) {
+								const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+								const projects = await requestUrl({
+									url: this.settings.jiraUrl + "/rest/api/2/project",
+									method: "get",
+									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+								});
+								ALL_PROJECTS = projects.json.map((project: { key: any; name: any; }) => {
+									return {
+										id: project.key,
+										name: project.name
+									}
+								})
+								await new ProjectModal(this.app, async (project) => {
+									const types = await requestUrl({
+										url: this.settings.jiraUrl + "/rest/api/2/issue/createmeta/" + project + '/issuetypes',
 										method: "get",
-										headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+										headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
 									});
-									ALL_PROJECTS = projects.json.map((project: { key: any; name: any; }) => {
+									ALL_TYPES = types.json.values.map((type: { name: any; }) => {
 										return {
-											id: project.key,
-											name: project.name
+											name: type.name
 										}
+
 									})
-									await new ProjectModal(this.app, async (project) => {
-										const types = await requestUrl({
-											url: this.settings.jiraUrl + "/rest/api/2/issue/createmeta/" + project + '/issuetypes',
-											method: "get",
-											headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
-										});
-										ALL_TYPES = types.json.values.map((type: { name: any; }) => {
-											return {
-												name: type.name
-											}
-
-										})
-										await new TypeModal(this.app, (type) => {
-											try {
-												const file = this.app.workspace.getActiveFile();
-												let issueSummary = ''
-												let priority = ''
-												if (file) {
-													this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-														issueSummary = frontmatter['summary']
-														if (frontmatter['priority']) {
-															priority = frontmatter['priority'].charAt(0).toUpperCase() + frontmatter['priority'].slice(1).toLowerCase();
-														}
-													}).then(async () => {
-														try {
-															const issueDescription = view?.getViewData().replace(/---.*?---/gs, "").trim()
-															const response = await requestUrl({
-																url: this.settings.jiraUrl + "/rest/api/2/issue/",
-																method: "post",
-																headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
-																contentType: "application/json",
-																body: JSON.stringify({
-																	fields: {
-																		description: markdownToJira(issueDescription || ''),
-																		summary: issueSummary,
-																		project: {
-																			key: project
-																		},
-																		issuetype: {
-																			name: type
-																		}, priority: {
-																			name: priority
-																		}
-																	}
-
-																})
-															});
-															this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-																frontmatter['key'] = response.json.key
-															})
-															new Notice("Issue create successfully");
-														} catch (err) {
-															new Notice("Error creating issue");
-														}
+									await new TypeModal(this.app, async (type) => {
+										try {
+											const file = this.app.workspace.getActiveFile();
+											let issueSummary = ''
+											let priority = ''
+											if (file) {
+												await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+													issueSummary = frontmatter['summary']
+													if (frontmatter['priority']) {
+														priority = frontmatter['priority'].charAt(0).toUpperCase() + frontmatter['priority'].slice(1).toLowerCase();
 													}
-													)
-												} else {
+												})
+												try {
+													const issueDescription = view?.getViewData().replace(/---.*?---/gs, "").trim()
+													const response = await requestUrl({
+														url: this.settings.jiraUrl + "/rest/api/2/issue/",
+														method: "post",
+														headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+														contentType: "application/json",
+														body: JSON.stringify({
+															fields: {
+																description: markdownToJira(issueDescription || ''),
+																summary: issueSummary,
+																project: {
+																	key: project
+																},
+																issuetype: {
+																	name: type
+																}, priority: {
+																	name: priority
+																}
+															}
 
+														})
+													});
+													this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+														frontmatter['key'] = response.json.key
+													})
+													new Notice("Issue create successfully");
+												} catch (err) {
+													new Notice("Error creating issue");
 												}
 
-											} catch (err) {
-												new Notice("Error creating issue");
-											}
-										}).open();
-									}).open();
-								} else {
-									new Notice("Please set a summary in the frontMatter for the task");
-								}
 
+											} else {
+
+											}
+
+										} catch (err) {
+											new Notice("Error creating issue");
+										}
+									}).open();
+								}).open();
+							} else {
+								new Notice("Please set a summary in the frontMatter for the task");
 							}
-							)
 						}
 
 					} else {
@@ -255,10 +249,10 @@ export default class JiraMain extends Plugin {
 							Origin: this.settings.jiraUrl
 						},
 					});
-					localStorage.setItem("cookie", response.json.session.value);
+					localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
 					const responseIssue = await requestUrl({
 						url: this.settings.jiraUrl + "/rest/api/2/issue/" + issue,
-						headers: { Cookie: "JSESSIONID=" + localStorage.getItem("cookie") },
+						headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie") },
 					});
 					const folder = await this.app.vault.getFolderByPath('jira-issues')
 					const route = 'jira-issues/' + responseIssue.json.fields.summary + '.md'
@@ -413,9 +407,9 @@ class TypeModal extends SuggestModal<type> {
 	}
 }
 class JiraSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: JiraMain;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: JiraMain) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -451,10 +445,10 @@ class JiraSettingTab extends PluginSettingTab {
 			}
 			);
 		new Setting(containerEl)
-			.setName("Jira url")
+			.setName("Jira URL")
 			.addText((text) =>
 				text
-					.setPlaceholder("Url")
+					.setPlaceholder("URL")
 					.setValue(this.plugin.settings.jiraUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.jiraUrl = value;
