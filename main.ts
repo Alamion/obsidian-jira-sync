@@ -60,7 +60,7 @@ export default class JiraMain extends Plugin {
 							},
 						});
 
-						localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
+						localStorage.setItem("jira-issue-managing-session-cookie-" + this.app.appId, response.json.session.value);
 						const file = this.app.workspace.getActiveFile();
 						let issueKey = ''
 						let issueSummary = ''
@@ -78,7 +78,7 @@ export default class JiraMain extends Plugin {
 							await requestUrl({
 								url: this.settings.jiraUrl + "/rest/api/2/issue/" + issueKey,
 								method: "put",
-								headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+								headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie-" + this.app.appId), contentType: "application/json", Origin: this.settings.jiraUrl },
 								contentType: "application/json",
 								body: JSON.stringify({
 									fields: {
@@ -129,8 +129,8 @@ export default class JiraMain extends Plugin {
 								Origin: this.settings.jiraUrl
 							},
 						});
-
-						localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
+						console.log(this.app)
+						localStorage.setItem("jira-issue-managing-session-cookie-" + this.app.appId, response.json.session.value);
 						const file = this.app.workspace.getActiveFile();
 						let issueSummary = ''
 						if (file) {
@@ -142,7 +142,7 @@ export default class JiraMain extends Plugin {
 								const projects = await requestUrl({
 									url: this.settings.jiraUrl + "/rest/api/2/project",
 									method: "get",
-									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+									headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie-" + this.app.appId), contentType: "application/json", Origin: this.settings.jiraUrl },
 								});
 								ALL_PROJECTS = projects.json.map((project: { key: any; name: any; }) => {
 									return {
@@ -154,7 +154,7 @@ export default class JiraMain extends Plugin {
 									const types = await requestUrl({
 										url: this.settings.jiraUrl + "/rest/api/2/issue/createmeta/" + project + '/issuetypes',
 										method: "get",
-										headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+										headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie-" + this.app.appId), contentType: "application/json", Origin: this.settings.jiraUrl },
 									});
 									ALL_TYPES = types.json.values.map((type: { name: any; }) => {
 										return {
@@ -179,7 +179,7 @@ export default class JiraMain extends Plugin {
 													const response = await requestUrl({
 														url: this.settings.jiraUrl + "/rest/api/2/issue/",
 														method: "post",
-														headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie"), contentType: "application/json", Origin: this.settings.jiraUrl },
+														headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie-" + this.app.appId), contentType: "application/json", Origin: this.settings.jiraUrl },
 														contentType: "application/json",
 														body: JSON.stringify({
 															fields: {
@@ -233,6 +233,7 @@ export default class JiraMain extends Plugin {
 
 	}
 	openIssue() {
+		console.log(this.app)
 		new selectIssueModal(this.app, async (issue) => {
 			try {
 				if (this.settings.username && this.settings.password && this.settings.jiraUrl) {
@@ -249,10 +250,10 @@ export default class JiraMain extends Plugin {
 							Origin: this.settings.jiraUrl
 						},
 					});
-					localStorage.setItem("jira-issue-managing-session-cookie", response.json.session.value);
+					localStorage.setItem("jira-issue-managing-session-cookie-" + this.app.appId, response.json.session.value);
 					const responseIssue = await requestUrl({
 						url: this.settings.jiraUrl + "/rest/api/2/issue/" + issue,
-						headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie") },
+						headers: { Cookie: "JSESSIONID=" + localStorage.getItem("jira-issue-managing-session-cookie-" + this.app.appId) },
 					});
 					const folder = await this.app.vault.getFolderByPath('jira-issues')
 					const route = 'jira-issues/' + responseIssue.json.fields.summary + '.md'
@@ -420,7 +421,7 @@ class JiraSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("Jira Username")
+			.setName("Jira username")
 			.addText((text) =>
 				text
 					.setPlaceholder("Username")
@@ -431,7 +432,7 @@ class JiraSettingTab extends PluginSettingTab {
 					})
 			);
 		new Setting(containerEl)
-			.setName("Jira Password")
+			.setName("Jira password")
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
