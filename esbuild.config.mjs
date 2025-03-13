@@ -11,11 +11,13 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+console.log("Esbuild context initialized:", prod);
+
 const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["main.ts"],
+	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",
@@ -34,7 +36,7 @@ const context = await esbuild.context({
 		...builtins],
 	format: "cjs",
 	target: "es2018",
-	logLevel: "info",
+	logLevel: prod ? "info" : "debug",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
