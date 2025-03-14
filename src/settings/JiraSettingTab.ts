@@ -202,6 +202,10 @@ export class JiraSettingTab extends PluginSettingTab {
 				}
 			});
 
+			// Store the string representations directly in a separate property
+			this.plugin.settings.fieldMappingsStrings = mappings;
+
+			// Also convert to functions for runtime use
 			const transformedMappings: Record<string, FieldMapping> = {};
 			for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
 				const toJiraFn = safeStringToFunction(toJira);
@@ -217,7 +221,7 @@ export class JiraSettingTab extends PluginSettingTab {
 				}
 			}
 
-			// Save as stringified JSON
+			// Save the functional mappings
 			this.plugin.settings.fieldMappings = transformedMappings;
 			await this.plugin.saveSettings();
 		};
@@ -240,33 +244,77 @@ export class JiraSettingTab extends PluginSettingTab {
 			cls: "reset-field-mappings-btn"
 		})
 		setIcon(resetBtn, "refresh-cw")
-
 		resetBtn.addEventListener("click", () => {
-			this.plugin.settings.fieldMappings = fieldMappings;
+			this.plugin.settings.fieldMappings = {};
+			this.plugin.settings.fieldMappingsStrings = {};
 			loadExistingMappings();
+			this.plugin.saveSettings();
+		});
+
+		const reloadBtn = buttonView.createEl("button", {
+			text: "",
+			cls: "reset-field-mappings-btn"
 		})
+		setIcon(reloadBtn, "list-restart")
+		reloadBtn.addEventListener("click", () => {
+			this.plugin.settings.fieldMappings = fieldMappings;
+
+			// Also reset the string representations with default values
+			const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
+			for (const [fieldName, mapping] of Object.entries(fieldMappings)) {
+				defaultMappingsStrings[fieldName] = {
+					toJira: functionToArrowString(mapping.toJira),
+					fromJira: functionToArrowString(mapping.fromJira)
+				};
+			}
+			this.plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
+
+			loadExistingMappings();
+			this.plugin.saveSettings();
+		});
 
 		// Load existing mappings if available
 		const loadExistingMappings = () => {
-			if (this.plugin.settings.fieldMappings) {
-				try {
-					fieldsList.innerHTML = "";
-					const existingMappings = this.plugin.settings.fieldMappings;
-					for (const [fieldName, mapping] of Object.entries(existingMappings)) {
-						if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
-							addFieldMapping(
-								fieldName,
-								functionToArrowString(mapping.toJira),
-								functionToArrowString(mapping.fromJira)
-							);
-						}
+			// Clear existing field list
+			fieldsList.innerHTML = "";
+
+			// If we have string representations stored, use those
+			if (this.plugin.settings.fieldMappingsStrings &&
+				Object.keys(this.plugin.settings.fieldMappingsStrings).length > 0) {
+
+				const savedMappings = this.plugin.settings.fieldMappingsStrings;
+				for (const [fieldName, mapping] of Object.entries(savedMappings)) {
+					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
+						addFieldMapping(
+							fieldName,
+							mapping.toJira,
+							mapping.fromJira
+						);
 					}
-				} catch (e) {
-					console.error("Failed to parse existing field mappings", e);
 				}
 			}
-		}
-		loadExistingMappings()
+			// Otherwise, try to use the function mappings and convert them to strings
+			else if (this.plugin.settings.fieldMappings &&
+				Object.keys(this.plugin.settings.fieldMappings).length > 0) {
+
+				const existingMappings = this.plugin.settings.fieldMappings;
+				for (const [fieldName, mapping] of Object.entries(existingMappings)) {
+					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
+						addFieldMapping(
+							fieldName,
+							functionToArrowString(mapping.toJira),
+							functionToArrowString(mapping.fromJira)
+						);
+					}
+				}
+
+				// Create the string representations for future use
+				saveFieldMappings();
+			}
+		};
+
+		// Make sure to call this function after it's defined
+		loadExistingMappings();
 
 		// Add example mappings section
 		const examplesSection = mappingSection.createDiv({ cls: "mapping-examples" });

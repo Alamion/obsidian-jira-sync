@@ -1,9 +1,7 @@
 import { Notice } from "obsidian";
 import JiraPlugin from "../main";
 import {authenticate, fetchIssueTransitions} from "../api";
-import {updateIssueFromFile, updateStatusFromFile} from "../file_operations/createUpdateIssue";
-import {IssueSearchModal} from "../modals";
-import {fetchAndOpenIssue} from "./getIssue";
+import {updateStatusFromFile} from "../file_operations/createUpdateIssue";
 import {IssueStatusModal} from "../modals/IssueStatusModal";
 import {getCurrentFileMainInfo} from "../file_operations/common_prepareData";
 import {JiraTransitionType} from "../interfaces";
@@ -35,8 +33,8 @@ export async function updateIssueStatus(plugin: JiraPlugin): Promise<void> {
 			new Notice("No active file");
 			return;
 		}
-		const issueKey = await getCurrentFileMainInfo(plugin);
-		const issueTransitions = await fetchIssueTransitions(plugin, issueKey);
+		const {issueKey} = await getCurrentFileMainInfo(plugin);
+		const issueTransitions = await fetchIssueTransitions(plugin, issueKey as string);
 		// Update the issue with all data from the file
 		new IssueStatusModal(plugin.app, issueTransitions, async (transition: JiraTransitionType) => {
 			try {

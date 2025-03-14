@@ -1,5 +1,5 @@
 import {JiraSettings} from "../interfaces";
-import {fieldMappings} from "../tools/mappingObsidianJiraFields";
+// import {fieldMappings} from "../tools/mappingObsidianJiraFields";
 
 /**
  * Default plugin settings
@@ -11,5 +11,7 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 	issuesFolder: "jira-issues",
 	sessionCookieName: "JSESSIONID",
 	templatePath: "",
-	fieldMappings: fieldMappings,
+	fieldMappings: {},
+	fieldMappingsStrings: {}
 };
+

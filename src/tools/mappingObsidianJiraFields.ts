@@ -1,6 +1,6 @@
 import { JiraIssue } from "../interfaces";
 import {jiraToMarkdown, markdownToJira} from "../markdown_html";
-import {TFile} from "obsidian";
+import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
 
@@ -112,10 +112,16 @@ export function localToJiraFields(
 		if (key in customFieldMappings) {
 			const mapping = customFieldMappings[key];
 
-			// Skip fields that shouldn't be sent to Jira
-			if (mapping.toJira(value) === null) continue;
+			try {
+				// Skip fields that shouldn't be sent to Jira
+				if (mapping.toJira(value) === null) continue;
 
-			jiraFields[key] = mapping.toJira(value);
+				jiraFields[key] = mapping.toJira(value);
+			} catch (e) {
+				console.error(`Error mapping for ${key}: ${e}`);
+				new Notice(`Error mapping for ${key}: ${e}`);
+
+			}
 		}
 		// Handle custom fields
 		else {
@@ -178,7 +184,13 @@ export function updateLocalRecordsFromJira(
 		if (key in frontmatter || key === 'key' || key === 'summary') {
 			let value = issue.fields[key];
 			if (key in customFieldMappings) {
-				value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
+				try{
+					value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
+				} catch (e) {
+					console.error(`Error mapping for ${key}: ${e}`);
+					new Notice(`Error mapping for ${key}: ${e}`);
+					continue;
+				}
 			}
 			if (value !== null && value !== undefined) {
 				frontmatter[key] = value;
@@ -192,7 +204,13 @@ export function updateLocalRecordsFromJira(
 		if (key in sections) {
 			let value = issue.fields[key];
 			if (key in customFieldMappings) {
-				value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
+				try {
+					value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
+				} catch (e) {
+					console.error(`Error mapping for ${key}: ${e}`);
+					new Notice(`Error mapping for ${key}: ${e}`);
+					continue;
+				}
 			}
 			if (value !== null && value !== undefined) {
 				sections[key] = value;
