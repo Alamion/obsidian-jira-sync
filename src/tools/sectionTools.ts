@@ -1,3 +1,5 @@
+import {debugLog} from "./debugLogging";
+
 /**
  * Updates or adds a Jira sync section in the file content
  * @param fileContent - The current content of the file
@@ -72,7 +74,7 @@ function updateJiraSyncLine(fileContent: string, lineName: string, lineContent: 
 export function extractAllJiraSyncValuesFromContent(fileContent: string): Record<string, string> {
 	const sections = extractAllJiraSyncValuesFromSections(fileContent);
 	const lines = extractAllJiraSyncValuesFromLines(fileContent);
-	console.debug(`extracted from file: ${JSON.stringify(sections)}`);
+	debugLog(`extracted from file: ${JSON.stringify(sections)}`);
 	return { ...sections, ...lines };
 }
 

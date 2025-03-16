@@ -1,4 +1,4 @@
-import {App, PluginSettingTab, setIcon, Setting} from "obsidian";
+import {App, normalizePath, PluginSettingTab, setIcon, Setting} from "obsidian";
 import JiraPlugin from "../main";
 import {FieldMapping, fieldMappings} from "../tools/mappingObsidianJiraFields";
 import {functionToArrowString, safeStringToFunction} from "../tools/convertFunctionString";
@@ -19,10 +19,10 @@ export class JiraSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "Jira Integration Settings" });
+		containerEl.createEl("h2", { text: "Jira integration settings" });
 
 		new Setting(containerEl)
-			.setName("Jira Username")
+			.setName("Jira username")
 			.setDesc("Your Jira username or email")
 			.addText((text) =>
 				text
@@ -35,7 +35,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Jira Password or API Token")
+			.setName("Jira password or API token")
 			.setDesc("Your Jira password or API token")
 			.addText((text) => {
 				text.inputEl.type = "password";
@@ -62,7 +62,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Issues Folder")
+			.setName("Issues folder")
 			.setDesc("Folder where Jira issues will be stored")
 			.addText((text) =>
 				text
@@ -75,7 +75,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Session Cookie Name")
+			.setName("Session cookie name")
 			.setDesc("The name of the session cookie used by your Jira instance")
 			.addText((text) =>
 				text
@@ -96,16 +96,14 @@ export class JiraSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.templatePath)
 					.onChange(async (value) => {
 						// Normalize path - ensure it has .md extension
-						if (value && !value.toLowerCase().endsWith('.md')) {
-							value = value + '.md';
-						}
+						value = normalizePath(value);
 						this.plugin.settings.templatePath = value;
 						await this.plugin.saveSettings();
 					})
 			);
 
 		// Add Jira-Obsidian Mapping setting
-		containerEl.createEl("h3", { text: "Jira-Obsidian Field Mapping" });
+		containerEl.createEl("h3", { text: "Jira-Obsidian field mapping" });
 
 		// Create Field Mappings UI
 		const mappingSection = containerEl.createDiv({ cls: "jira-field-mappings" });
@@ -276,7 +274,7 @@ export class JiraSettingTab extends PluginSettingTab {
 		// Load existing mappings if available
 		const loadExistingMappings = () => {
 			// Clear existing field list
-			fieldsList.innerHTML = "";
+			fieldsList.empty();
 
 			// If we have string representations stored, use those
 			if (this.plugin.settings.fieldMappingsStrings &&
@@ -318,7 +316,7 @@ export class JiraSettingTab extends PluginSettingTab {
 
 		// Add example mappings section
 		const examplesSection = mappingSection.createDiv({ cls: "mapping-examples" });
-		examplesSection.createEl("h4", { text: "Example Field Mappings" });
+		examplesSection.createEl("h4", { text: "Example field mappings" });
 
 		const examplesList = examplesSection.createEl("ul");
 
