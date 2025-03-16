@@ -7,6 +7,7 @@ import {
 	registerGetIssueCommand,
 	registerCreateIssueCommand, registerGetIssueCommandWithKey, registerUpdateIssueStatusCommand
 } from "./commands";
+import {registerUpdateWorkLogCommand} from "./commands/addWorkLog";
 
 /**
  * Main plugin class
@@ -19,19 +20,33 @@ export default class JiraPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// Add ribbon icon to import issues
-		this.addRibbonIcon(
-			"file-check",
-			"pulls all user issues from Jira",
-			() => {
-				// Use the getIssue command's functionality
-				// @ts-ignore
-				const getIssuesCommand = this.app.commands.commands["jira-plugin:get-all-issues"];
-				if (getIssuesCommand) {
-					getIssuesCommand.callback();
-				}
-			}
-		);
+		// // Add ribbon icon to export  issues
+		// this.addRibbonIcon(
+		// 	"book-up",
+		// 	"Push current Kanban issues statuses to Jira",
+		// 	() => {
+		// 		// Use the getIssue command's functionality
+		// 		// @ts-ignore
+		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:push-all-issues"];
+		// 		if (getIssuesCommand) {
+		// 			getIssuesCommand.callback();
+		// 		}
+		// 	}
+		// );
+		//
+		// // Add ribbon icon to import issues
+		// this.addRibbonIcon(
+		// 	"book-down",
+		// 	"Pull Jira all issues statuses + sync statuses of Kanban",
+		// 	() => {
+		// 		// Use the getIssue command's functionality
+		// 		// @ts-ignore
+		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:pull-all-issues"];
+		// 		if (getIssuesCommand) {
+		// 			getIssuesCommand.callback();
+		// 		}
+		// 	}
+		// );
 
 		// Register all commands
 		registerUpdateIssueCommand(this);
@@ -39,6 +54,8 @@ export default class JiraPlugin extends Plugin {
 		registerGetIssueCommand(this);
 		registerGetIssueCommandWithKey(this);
 		registerCreateIssueCommand(this);
+
+		registerUpdateWorkLogCommand(this);
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));

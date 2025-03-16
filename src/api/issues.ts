@@ -1,6 +1,7 @@
 import JiraPlugin from "../main";
 import {JiraIssue, JiraTransitionType} from "../interfaces";
 import {baseRequest} from "./base";
+import {Notice} from "obsidian";
 
 /**
  * Fetch an issue from Jira by its key
@@ -79,4 +80,31 @@ export async function updateJiraStatus(
 	const body = JSON.stringify({ transition: { id: status } })
 	const additional_url_path = `/issue/${issueKey}/transitions`
 	return await baseRequest(plugin, 'post', additional_url_path, body) as Promise<JiraIssue>;
+}
+
+/**
+ * Add a work log entry to a Jira issue
+ */
+export async function addWorkLog(
+	plugin: JiraPlugin,
+	issueKey: string,
+	timeSpent: string,
+	startedAt: string,
+	comment: string = "",
+	showNotice: boolean = true
+): Promise<any> {
+	const payload = {
+		timeSpent,
+		started: startedAt,
+		comment
+	};
+
+	const additional_url_path = `/issue/${issueKey}/worklog`;
+	const response = await baseRequest(plugin, 'post', additional_url_path, JSON.stringify(payload));
+
+	if (showNotice) {
+		new Notice(`Work log added successfully to ${issueKey}`);
+	}
+
+	return response;
 }
