@@ -43,4 +43,4 @@ Until it's stopped by '# ' or other jira field
 
 ## Learn More
 
-Visit the [GitHub repository](https://github.com/your-username/obsidian-jira-plugin) for detailed docs, stats, and updates.
+Visit the [GitHub repository](https://github.com/your-username/obsidian-jira-plugin/docs) for more detailed docs.

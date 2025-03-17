@@ -1,8 +1,11 @@
 import {App, normalizePath, PluginSettingTab, setIcon, Setting} from "obsidian";
 import JiraPlugin from "../main";
-import {FieldMapping, fieldMappings} from "../tools/mappingObsidianJiraFields";
-import {functionToArrowString, safeStringToFunction} from "../tools/convertFunctionString";
-import {JiraIssue} from "../interfaces";
+import {fieldMappings} from "../tools/mappingObsidianJiraFields";
+import {
+	functionToExpressionString,
+	transform_string_to_functions_mappings
+} from "../tools/convertFunctionString";
+import {debugLog} from "../tools/debugLogging";
 
 /**
  * Settings tab for the plugin
@@ -173,6 +176,7 @@ export class JiraSettingTab extends PluginSettingTab {
 
 		// Function to save all field mappings
 		const saveFieldMappings = async () => {
+			debugLog(`From strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\n\n and funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
 			const mappings: Record<string, { toJira: string; fromJira: string }> = {};
 			const fieldItems = fieldsList.querySelectorAll(".field-mapping-item");
 
@@ -203,24 +207,8 @@ export class JiraSettingTab extends PluginSettingTab {
 			// Store the string representations directly in a separate property
 			this.plugin.settings.fieldMappingsStrings = mappings;
 
-			// Also convert to functions for runtime use
-			const transformedMappings: Record<string, FieldMapping> = {};
-			for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
-				const toJiraFn = safeStringToFunction(toJira);
-				const fromJiraFn = safeStringToFunction(fromJira);
-
-				if (toJiraFn && fromJiraFn) {
-					transformedMappings[fieldName] = {
-						toJira: toJiraFn as (value: any) => any,
-						fromJira: fromJiraFn as (issue: JiraIssue, data_source: Record<string, any>) => any,
-					};
-				} else {
-					console.warn(`Invalid function in field: ${fieldName}`);
-				}
-			}
-
 			// Save the functional mappings
-			this.plugin.settings.fieldMappings = transformedMappings;
+			debugLog(`To strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\n\nand funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
 			await this.plugin.saveSettings();
 		};
 
@@ -261,8 +249,8 @@ export class JiraSettingTab extends PluginSettingTab {
 			const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
 			for (const [fieldName, mapping] of Object.entries(fieldMappings)) {
 				defaultMappingsStrings[fieldName] = {
-					toJira: functionToArrowString(mapping.toJira),
-					fromJira: functionToArrowString(mapping.fromJira)
+					toJira: functionToExpressionString(mapping.toJira),
+					fromJira: functionToExpressionString(mapping.fromJira)
 				};
 			}
 			this.plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
@@ -273,6 +261,7 @@ export class JiraSettingTab extends PluginSettingTab {
 
 		// Load existing mappings if available
 		const loadExistingMappings = () => {
+			debugLog(`Loading mapping settings`)
 			// Clear existing field list
 			fieldsList.empty();
 
@@ -290,6 +279,7 @@ export class JiraSettingTab extends PluginSettingTab {
 						);
 					}
 				}
+				this.plugin.settings.fieldMappings = transform_string_to_functions_mappings(this.plugin.settings.fieldMappingsStrings);
 			}
 			// Otherwise, try to use the function mappings and convert them to strings
 			else if (this.plugin.settings.fieldMappings &&
@@ -300,8 +290,8 @@ export class JiraSettingTab extends PluginSettingTab {
 					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 						addFieldMapping(
 							fieldName,
-							functionToArrowString(mapping.toJira),
-							functionToArrowString(mapping.fromJira)
+							functionToExpressionString(mapping.toJira),
+							functionToExpressionString(mapping.fromJira)
 						);
 					}
 				}
@@ -323,18 +313,18 @@ export class JiraSettingTab extends PluginSettingTab {
 		[
 			{
 				name: "summary",
-				toJira: "(value) => value",
-				fromJira: "(issue) => issue.fields.summary"
+				toJira: "value",
+				fromJira: "issue.fields.summary"
 			},
 			{
-				name: "description",
-				toJira: "(value) => markdownToJira(value)",
-				fromJira: "(issue) => jiraToMarkdown(issue.fields.description)"
+				name: "reporter",
+				toJira: "null",
+				fromJira: "issue.fields.reporter.name"
 			},
 			{
 				name: "project",
-				toJira: "(value) => ({ key: value })",
-				fromJira: "(issue) => issue.fields.project ? issue.fields.project.key : \"\""
+				toJira: "({ key: value })",
+				fromJira: "issue.fields.project ? issue.fields.project.key : \"\""
 			}
 		].forEach(example => {
 			const item = examplesList.createEl("li");

@@ -1,91 +1,103 @@
 import {Notice} from "obsidian";
 
 const forbiddenPatterns = ["document", "window", "eval", "Function", "fetch"]; // Prevent unsafe code execution
-import { jiraToMarkdown, markdownToJira } from "../markdown_html";
+import {FieldMapping} from "./mappingObsidianJiraFields";
+import {JiraIssue} from "../interfaces";
 
 
 function isValidFunctionBody(fnString: string): boolean {
 	return !forbiddenPatterns.some(forbidden => fnString.includes(forbidden));
 }
 
-export function safeStringToFunction(fnString: string): Function | null {
+export function safeStringToFunction(exprString: string): Function | null {
 	try {
-		// Extract function body from an arrow function string
-		const functionBodyMatch = fnString.match(/\((.*?)\)\s*=>\s*(.*)/);
-		if (!functionBodyMatch) return null;
+		// Check if the input is a full arrow function or just an expression
+		const arrowFnMatch = exprString.match(/^\s*\((.*?)\)\s*=>\s*(.*)$/s);
 
-		const params = functionBodyMatch[1].trim();
-		const body = functionBodyMatch[2].trim();
+		// If it's an arrow function, extract just the body
+		const body = arrowFnMatch ? arrowFnMatch[2].trim() : exprString.trim();
 
 		// Ensure function body does not contain unsafe references
 		if (!isValidFunctionBody(body)) {
-			console.warn(`Unsafe function detected: ${fnString}`);
-			new Notice(`Unsafe function detected: ${fnString}`);
+			console.warn(`Unsafe expression detected: ${exprString}`);
+			new Notice(`Unsafe expression detected: ${exprString}`);
 			return null;
 		}
 
 		// Create a function that has access to our utility functions
-		return function(...args: any[]) {
+		return function(issue: any) {
 			// Create a context with our utility functions
 			const context = {
-				jiraToMarkdown,
-				markdownToJira
+				// jiraToMarkdown,
+				// markdownToJira
 			};
 
 			// Create a new function with the utility functions in scope
 			const fn = new Function(
-				...params.split(',').map(p => p.trim()),
+				'issue',
 				`
-                const jiraToMarkdown = this.jiraToMarkdown;
-                const markdownToJira = this.markdownToJira;
+                // const jiraToMarkdown = this.jiraToMarkdown;
+                // const markdownToJira = this.markdownToJira;
                 return ${body};
                 `
 			);
 
 			// Execute the function with our context
-			return fn.apply(context, args);
+			return fn.apply(context, [issue]);
 		};
 	} catch (error) {
-		console.error("Failed to parse function string:", error);
+		console.error("Failed to parse expression:", error);
 		return null;
 	}
 }
 
-export function functionToArrowString(fn: Function): string {
+export function functionToExpressionString(fn: Function): string {
 	try {
 		const fnStr = fn.toString().trim();
 
-		// Handle arrow functions (both single-line and multi-line)
+		// Handle arrow functions
 		const arrowMatch = fnStr.match(/^\s*\(?([^)]*)\)?\s*=>\s*(.+)$/s);
 		if (arrowMatch) {
-			const params = arrowMatch[1].trim();
-			const body = arrowMatch[2].trim();
-			return `(${params}) => ${body}`;
-		} else {
-			console.error("Failed to parse arrow function:", fnStr);
+			return arrowMatch[2].trim();
 		}
 
-		// Handle regular named and anonymous functions
+		// Handle regular functions
 		const functionMatch = fnStr.match(/^(?:function\s+[\w$]*\s*)?\(([^)]*)\)\s*\{([\s\S]*)\}$/);
 		if (functionMatch) {
-			const params = functionMatch[1].trim();
 			let body = functionMatch[2].trim();
 
 			// If body contains just a return statement, simplify it
 			const returnMatch = body.match(/^\s*return\s+([\s\S]*?)\s*;\s*$/);
 			if (returnMatch) {
-				body = returnMatch[1];
+				return returnMatch[1].trim();
 			}
-
-			return `(${params}) => ${body}`;
-		} else {
-			console.error("Failed to parse function:", fnStr);
 		}
 
-		// Return original string if no patterns match
-		return fnStr;
+		// If we can't parse it properly, return empty string
+		console.error("Failed to extract expression from function:", fnStr);
+		return "";
 	} catch (error) {
-		console.error("Error converting function to string:", error);
+		console.error("Error converting function to expression string:", error);
 		return "";
 	}
+}
+
+export const transform_string_to_functions_mappings = (
+	mappings: Record<string, { toJira: string; fromJira: string }>) => {
+	// Also convert to functions for runtime use
+	const transformedMappings: Record<string, FieldMapping> = {};
+	for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
+		const toJiraFn = safeStringToFunction(toJira);
+		const fromJiraFn = safeStringToFunction(fromJira);
+
+		if (toJiraFn && fromJiraFn) {
+			transformedMappings[fieldName] = {
+				toJira: toJiraFn as (value: any) => any,
+				fromJira: fromJiraFn as (issue: JiraIssue, data_source: Record<string, any>) => any,
+			};
+		} else {
+			console.warn(`Invalid function in field: ${fieldName}`);
+		}
+	}
+	return transformedMappings
 }

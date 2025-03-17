@@ -4,6 +4,7 @@ import JiraPlugin from "../main";
 import {getCurrentFileMainInfo} from "../file_operations/common_prepareData";
 import {WorkLogModal} from "../modals/issueWorkLogModal";
 import {addWorkLog, authenticate} from "../api";
+import {debugLog} from "../tools/debugLogging";
 
 /**
  * Register the update work log command
@@ -43,7 +44,15 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, file: TFile): Prom
 		await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
 			if (frontmatter["jira_selected_week_data"]) {
 				try {
-					workLogData = JSON.parse(frontmatter["jira_selected_week_data"]);
+					let jira_selected_week_data = frontmatter["jira_selected_week_data"];
+
+					if (typeof jira_selected_week_data === 'string') {
+						workLogData = JSON.parse(jira_selected_week_data);
+					} else if (typeof jira_selected_week_data === 'object') {
+						workLogData = jira_selected_week_data;
+					} else {
+						throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_selected_week_data}`);
+					}
 					foundData = true;
 				} catch (error) {
 					console.error("Failed to parse jira_selected_week_data:", error);
@@ -105,7 +114,7 @@ async function processWorkLogBatch(plugin: JiraPlugin, workLogs: any[]): Promise
 				continue;
 			}
 			const parsed_duration = parseDuration(duration);
-			console.log(`Duration: ${duration}, Parsed duration: ${parsed_duration}`);
+			debugLog(`Duration: ${duration}, Parsed duration: ${parsed_duration}`);
 			if (parsed_duration === '') {
 				addFailure(results, "Duration must be at least 1 minute", issueKey);
 				continue;

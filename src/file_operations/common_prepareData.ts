@@ -2,6 +2,7 @@ import JiraPlugin from "../main";
 import {Notice, TFile} from "obsidian";
 import {extractAllJiraSyncValuesFromContent} from "../tools/sectionTools";
 import {fieldMappings, localToJiraFields} from "../tools/mappingObsidianJiraFields";
+import {debugLog} from "../tools/debugLogging";
 
 /**
  * Prepares Jira fields from the content and frontmatter of a file
@@ -25,6 +26,7 @@ export async function prepareJiraFieldsFromFile(
 
 	// Get frontmatter and prepare fields
 	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+		debugLog(`Received frontmatter info: ${JSON.stringify(frontmatter)}`)
 		// Get issue key if exists
 		issueKey = frontmatter["key"];
 
@@ -43,6 +45,9 @@ export async function getCurrentFileMainInfo(plugin: JiraPlugin): Promise<{issue
 		new Notice("No active file");
 		return {};
 	}
-	const {issueKey} = await prepareJiraFieldsFromFile(plugin, file);
+	let issueKey: string | undefined
+	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+		issueKey = frontmatter["key"];
+	});
 	return {issueKey, filePath: file.path};
 }

@@ -8,6 +8,7 @@ import {
 	registerCreateIssueCommand, registerGetIssueCommandWithKey, registerUpdateIssueStatusCommand
 } from "./commands";
 import {registerUpdateWorkLogCommand} from "./commands/addWorkLog";
+import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
 
 /**
  * Main plugin class
@@ -66,6 +67,7 @@ export default class JiraPlugin extends Plugin {
 	 */
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings.fieldMappings = transform_string_to_functions_mappings(this.settings.fieldMappingsStrings);
 	}
 
 	/**

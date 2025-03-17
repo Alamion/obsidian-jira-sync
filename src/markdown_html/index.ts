@@ -3,8 +3,14 @@
  * @param str The Jira markup string
  * @returns The Markdown string
  */
-export function jiraToMarkdown(str: string): string {
-	if (!str) return '';
+export function jiraToMarkdown(str: any): string {
+	if (str === null || str === undefined) return '';
+	else if (typeof str === "number") {
+		str = str.toString()
+	}
+	else if (typeof str === "object") {
+		str = JSON.stringify(str)
+	}
 	return (
 		str
 			// Un-Ordered Lists

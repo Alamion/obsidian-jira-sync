@@ -98,7 +98,7 @@ id: ""
 style: primary
 actions:
   - type: command
-    command: obsidian-jira-sync:update-work-log-jira
+    command: jira-sync:update-work-log-jira
 \`\`\``);
     } else {
         dv.paragraph("No entries found.");

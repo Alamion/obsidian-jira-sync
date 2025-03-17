@@ -3,6 +3,7 @@ import {jiraToMarkdown, markdownToJira} from "../markdown_html";
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
+import {debugLog} from "./debugLogging";
 
 /**
  * Field mapping configurations
@@ -27,8 +28,8 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		fromJira: (issue) => issue.fields.summary,
 	},
 	"description": {
-		toJira: (value) => markdownToJira(value), // markdownToJira is applied separately
-		fromJira: (issue) => jiraToMarkdown(issue.fields.description as string),
+		toJira: (value) => value, // markdownToJira is applied separately
+		fromJira: (issue) => issue.fields.description,
 	},
 	"key": {
 		toJira: () => null, // Not sent to Jira
@@ -155,10 +156,10 @@ export async function updateLocalFromJira(
 	// Update sections from Jira fields if they exist
 	for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
 		// Only update fields that can be in sections and only existing sections
-		if (syncSections[fieldName]) {
-			const markdownValue = jiraToMarkdown(fieldValue);
-			fileContent = updateJiraSyncContent(fileContent, fieldName, markdownValue);
-		}
+		debugLog(`Updating ${fieldName} = ${fieldValue} in content`)
+		const markdownValue = jiraToMarkdown(fieldValue);
+		debugLog(`Converted from jira variant ${fieldValue} to md variant ${markdownValue}`)
+		fileContent = updateJiraSyncContent(fileContent, fieldName, markdownValue);
 	}
 
 	// Save the updated content
@@ -207,7 +208,18 @@ export function updateLocalRecordsFromJira(
 				try {
 					value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
 				} catch (e) {
-					console.error(`Error mapping for ${key}: ${e}`);
+					const result: Record<string, {
+						hasToJira: string,
+						hasFromJira: string
+					}> = {};
+
+					for (const key of Object.keys(customFieldMappings)) {
+						result[key] = {
+							hasToJira: typeof customFieldMappings[key].toJira,
+							hasFromJira: typeof customFieldMappings[key].fromJira
+						};
+					}
+					console.error(`Error mapping for ${key}: ${e}\n${JSON.stringify(result)}`);
 					new Notice(`Error mapping for ${key}: ${e}`);
 					continue;
 				}
