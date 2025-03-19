@@ -67,7 +67,7 @@ export default class JiraPlugin extends Plugin {
 	 */
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.settings.fieldMappings = transform_string_to_functions_mappings(this.settings.fieldMappingsStrings);
+		this.settings.fieldMappings = await transform_string_to_functions_mappings(this.settings.fieldMappingsStrings);
 	}
 
 	/**

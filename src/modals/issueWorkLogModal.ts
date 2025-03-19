@@ -10,6 +10,8 @@ export class WorkLogModal extends Modal {
 	private startDate: string = "";
 	private workDescription: string = "";
 	private displayDate: string = "";
+	private timeSpentSetting: Setting;
+	private dateSetting: Setting;
 
 	constructor(app: App, onSubmit: (timeSpent: string, startDate: string, workDescription: string) => void) {
 		super(app);
@@ -67,7 +69,7 @@ export class WorkLogModal extends Modal {
 		this.contentEl.createEl("h2", { text: "Add Work Log" });
 
 		// Time Spent field
-		new Setting(this.contentEl)
+		this.timeSpentSetting = new Setting(this.contentEl)
 			.setName("Time Spent")
 			.setDesc("Format: 3w 4d 12h 30m (weeks, days, hours, minutes)")
 			.addText((text) =>
@@ -79,29 +81,41 @@ export class WorkLogModal extends Modal {
 					})
 			);
 
+		this.dateSetting = new Setting(this.contentEl)
+			.setName("Start Time")
+			.setDesc("Format: DD/MMM/YY HH:MM AM/PM")
+			.addText((text) =>
+				text
+					.setPlaceholder("e.g., 01/Feb/25 10:00 AM")
+					.setValue(this.displayDate)
+					.onChange((value) => {
+						this.displayDate = value;
+					})
+			);
+
 		// Start Date field with date picker icon
 		// const dateContainer = this.contentEl.createDiv("date-container");
 		// dateContainer.style.display = "flex";
 		// dateContainer.style.alignItems = "center";
 		// dateContainer.style.gap = "10px";
 
-		const dateSetting = new Setting(this.contentEl)
-			.setName("Date Started")
-			.setDesc("Format: DD/MMM/YY HH:MM AM/PM")
-			.addText((text) =>
-				text
-					.setPlaceholder("e.g., 01/Jun/21 09:00 AM")
-					.setValue(this.displayDate)
-					.onChange((value) => {
-						this.displayDate = value;
-
-						// Parse display date and convert to ISO
-						const parsedDate = this.parseDisplayDate(value);
-						if (parsedDate) {
-							this.startDate = parsedDate.toISOString().split('.')[0] + ".000+0000";
-						}
-					})
-			);
+		// const dateSetting = new Setting(this.contentEl)
+		// 	.setName("Date Started")
+		// 	.setDesc("Format: DD/MMM/YY HH:MM AM/PM")
+		// 	.addText((text) =>
+		// 		text
+		// 			.setPlaceholder("e.g., 01/Jun/21 09:00 AM")
+		// 			.setValue(this.displayDate)
+		// 			.onChange((value) => {
+		// 				this.displayDate = value;
+		//
+		// 				// Parse display date and convert to ISO
+		// 				const parsedDate = this.parseDisplayDate(value);
+		// 				if (parsedDate) {
+		// 					this.startDate = parsedDate.toISOString().split('.')[0] + ".000+0000";
+		// 				}
+		// 			})
+		// 	);
 
 		// Add date picker later
 		// const datePickerButton = dateContainer.createEl("button", { cls: "date-picker-button" });
@@ -160,7 +174,6 @@ export class WorkLogModal extends Modal {
 		const textareaComponent = this.contentEl.querySelector(".work-description-container textarea");
 		if (textareaComponent) {
 			(textareaComponent as HTMLTextAreaElement).rows = 5;
-			(textareaComponent as HTMLTextAreaElement).style.width = "100%";
 		}
 
 		// Submit button
@@ -185,11 +198,7 @@ export class WorkLogModal extends Modal {
 	private validateInputs(): boolean {
 		if (!this.timeSpent.trim()) {
 			new Notice("Time spent is required");
-			return false;
-		}
-
-		if (!this.displayDate.trim()) {
-			new Notice("Start date is required");
+			this.timeSpentSetting.setClass('invalid');
 			return false;
 		}
 
@@ -197,12 +206,20 @@ export class WorkLogModal extends Modal {
 		const timeSpentPattern = /^(\d+[wdhm]\s*)+$/;
 		if (!timeSpentPattern.test(this.timeSpent)) {
 			new Notice("Invalid time format. Use combinations of w (weeks), d (days), h (hours), m (minutes)");
+			this.timeSpentSetting.setClass('invalid');
+			return false;
+		}
+
+		if (!this.displayDate.trim()) {
+			new Notice("Start date is required");
+			this.dateSetting.setClass('invalid');
 			return false;
 		}
 
 		// Validate date format by trying to parse it
 		if (!this.parseDisplayDate(this.displayDate)) {
 			new Notice("Invalid date format. Use DD/MMM/YY HH:MM AM/PM");
+			this.dateSetting.setClass('invalid');
 			return false;
 		}
 

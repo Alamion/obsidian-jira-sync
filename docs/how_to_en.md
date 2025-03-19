@@ -14,7 +14,7 @@ The template can consist of several different parts:
 
 It is highly recommended to specify basic values in the template's formatter: `key` - the Jira task ID used for updates, `summary` - the Jira task title, and `status` - the current status of the task in Jira.
 
-The body takes priority and will overwrite formatter values when updating a task in Jira if a field's value is present in both sections.
+The formatter takes priority and will overwrite file content values when updating a task in Jira if a field's value is present in both as formatter saves initial format of value and when putting it in body we parse it to string.
 
 Not all fields are predefined, and some may need adjustments. For example, the template provided in [[docs/template_example.md]] will not correctly retrieve `progressPercent` and `creator` from Jira, even though these fields exist. To fix this, refer to the advanced usage section below.
 

@@ -2,7 +2,7 @@ import JiraPlugin from "../main";
 import {TFile} from "obsidian";
 import {createJiraIssue, updateJiraIssue, updateJiraStatus} from "../api";
 import {prepareJiraFieldsFromFile} from "./common_prepareData";
-import {updateLocalFromJira} from "../tools/mappingObsidianJiraFields";
+import {updateJiraToLocal} from "../tools/mappingObsidianJiraFields";
 import {JiraIssue, JiraTransitionType} from "../interfaces";
 
 /**
@@ -87,6 +87,6 @@ export async function updateStatusFromFile(plugin: JiraPlugin, file: TFile, tran
 	}
 
 	await updateJiraStatus(plugin, issueKey, transition.id);
-	await updateLocalFromJira(plugin, file, {fields: {status: {name: transition.status}}} as JiraIssue);
+	await updateJiraToLocal(plugin, file, {fields: {status: {name: transition.status}}} as JiraIssue);
 	return issueKey;
 }

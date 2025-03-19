@@ -12,6 +12,7 @@ export interface JiraSettings {
 	templatePath: string;
 	fieldMappings: Record<string, FieldMapping>;
 	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string }>;
+	enableFieldValidation: boolean;
 }
 
 

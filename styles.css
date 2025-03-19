@@ -13,25 +13,34 @@
 	margin-bottom: 8px;
 	padding: 8px;
 	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
 	align-items: center;
 }
 
+.work-description-container textarea {
+	width: 100%;
+}
+
+.field-name-container {
+	background-color: var(--background-primary);
+}
+
+
 .field-mapping-label {
-	margin-right: 4px;
 	font-weight: 500;
 }
 
 .field-name-input, .to-jira-input, .from-jira-input {
 	width: 100%;
-	padding: 4px 8px;
-	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
 }
 
+
+.field-mapping-item .invalid,
+.setting-item.invalid input {
+	background-color: rgba(var(--color-red-rgb), 0.2);
+}
+
 .remove-field-btn {
-	padding: 4px 8px;
-	border-radius: 4px;
 	background-color: var(--background-modifier-error);
 	color: var(--text-on-accent);
 	cursor: pointer;

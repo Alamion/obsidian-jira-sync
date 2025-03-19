@@ -1,9 +1,8 @@
-import {App, normalizePath, PluginSettingTab, setIcon, Setting} from "obsidian";
+import {App, normalizePath, Notice, PluginSettingTab, setIcon, Setting} from "obsidian";
 import JiraPlugin from "../main";
 import {fieldMappings} from "../tools/mappingObsidianJiraFields";
 import {
-	functionToExpressionString,
-	transform_string_to_functions_mappings
+	functionToExpressionString, transform_string_to_functions_mappings, validateFunctionString
 } from "../tools/convertFunctionString";
 import {debugLog} from "../tools/debugLogging";
 
@@ -17,6 +16,48 @@ export class JiraSettingTab extends PluginSettingTab {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
+
+	// Function to save all field mappings
+	async saveStringFieldMappings (element: HTMLDivElement) {
+		debugLog(`From strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\nand funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
+		const mappings: Record<string, { toJira: string; fromJira: string }> = {};
+		const fieldItems = element.querySelectorAll(".field-mapping-item");
+
+		fieldItems.forEach(item => {
+			const fieldNameInput = item.querySelector(".field-name-input");
+			const toJiraInput = item.querySelector(".to-jira-input");
+			const fromJiraInput = item.querySelector(".from-jira-input");
+			if (!fieldNameInput || !toJiraInput || !fromJiraInput) {
+				return;
+			}
+
+			// @ts-ignore
+			const fieldName = fieldNameInput.value.trim();
+			// @ts-ignore
+			const toJira = toJiraInput.value.trim();
+			// @ts-ignore
+			const fromJira = fromJiraInput.value.trim();
+
+			// Only save valid mappings with all fields filled
+			if (fieldName) {
+				mappings[fieldName] = {
+					toJira: toJira,
+					fromJira: fromJira
+				};
+			}
+		});
+
+		debugLog(`Mappings: ${JSON.stringify(mappings)}`)
+
+		this.plugin.settings.fieldMappingsStrings = mappings;
+		this.plugin.settings.fieldMappings = await transform_string_to_functions_mappings(mappings,
+			this.plugin.settings.enableFieldValidation);
+
+		// Save the functional mappings
+		debugLog(`To strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\nand funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
+		await this.plugin.saveSettings();
+	};
+
 
 	display(): void {
 		const { containerEl } = this;
@@ -116,11 +157,87 @@ export class JiraSettingTab extends PluginSettingTab {
 			text: "Configure how fields are mapped between Obsidian and Jira. Each field requires both a toJira and fromJira transformation function."
 		});
 
+		new Setting(mappingSection)
+			.setName('Enable Field validation')
+			.setDesc('Check fields before saving as functions')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableFieldValidation)
+				.onChange(async (value) => {
+					this.plugin.settings.enableFieldValidation = value;
+					await this.plugin.saveSettings();
+					const fieldItems = fieldsList.querySelectorAll(".field-mapping-item");
+
+					fieldItems.forEach(async item => {
+						const fieldNameInput = item.querySelector(".field-name-input");
+						const toJiraInput = item.querySelector(".to-jira-input");
+						const fromJiraInput = item.querySelector(".from-jira-input");
+						if (fieldNameInput) await fieldValidation(fieldNameInput as HTMLInputElement, value, 'string');
+						if (fieldNameInput) await fieldValidation(toJiraInput as HTMLInputElement, value, 'function', ['value']);
+						if (fieldNameInput) await fieldValidation(fromJiraInput as HTMLInputElement, value, 'function', ['issue', 'data_source']);
+					});
+				}));
+
+		// Add change listeners to update settings
+		const pointInvalidField = (validation: { isValid: boolean; errorMessage?: string }, element: HTMLInputElement | HTMLTextAreaElement, console_output: boolean) => {
+			if (!validation.isValid) {
+				element.classList.add("invalid");
+				if (console_output) {
+					console.warn(`${validation.errorMessage}`);
+					new Notice(`${validation.errorMessage}`);
+				}
+			} else {
+				element.classList.remove("invalid");
+			}
+		}
+
+		async function fieldValidation(input: HTMLInputElement | HTMLTextAreaElement, requireValidating: boolean = true, type: string = 'string', validateParams: Array<string> = []) {
+			const validatorFunction = async (event?: Event)=> {
+				const console_output = !!event;
+				let validation;
+				switch(type) {
+					case 'string':
+						validation = input.value.length === 0? { isValid: false, errorMessage: "Field name cannot be empty" } : { isValid: true };
+						break;
+					case 'function':
+						validation = await validateFunctionString(input.value, validateParams);
+						break;
+					default:
+						validation = { isValid: true };
+						break;
+				}
+				pointInvalidField(validation, input, console_output);
+			}
+			if (!input.hasOwnProperty('_validatorFunction')) {
+				Object.defineProperty(input, '_validatorFunction', {
+					value: validatorFunction,
+					writable: true,
+					configurable: true
+				});
+			} else {
+				// @ts-ignore
+				input.removeEventListener("change", input._validatorFunction);
+				// @ts-ignore
+				input._validatorFunction = validatorFunction;
+			}
+
+			if (requireValidating) {
+				// @ts-ignore
+				input.addEventListener("change", input._validatorFunction);
+				await validatorFunction(); // Run initial validation
+			} else {
+				// @ts-ignore
+				input.removeEventListener("change", input._validatorFunction);
+				pointInvalidField({ isValid: true}, input, false); // Clear any validation errors
+			}
+		}
+
+
+
 		// Create a list container for field mappings
 		const fieldsList = mappingSection.createDiv({ cls: "field-mappings-list" });
 
 		// Function to add a new field mapping UI
-		const addFieldMapping = (fieldName = "", toJira = "", fromJira = "") => {
+		const addFieldMapping = async (fieldName = "", toJira = "", fromJira = "") => {
 			const fieldContainer = fieldsList.createDiv({ cls: "field-mapping-item" });
 
 			// Field name input
@@ -135,22 +252,22 @@ export class JiraSettingTab extends PluginSettingTab {
 			// toJira function input
 			const toJiraContainer = fieldContainer.createDiv({ cls: "to-jira-container" });
 			toJiraContainer.createEl("span", { text: "toJira:", cls: "field-mapping-label" });
-			const toJiraInput = toJiraContainer.createEl("input", {
-				type: "text",
+			const toJiraInput = toJiraContainer.createEl("textarea", {
 				value: toJira,
-				placeholder: "(value) => value",
+				placeholder: "(value) => null",
 				cls: "to-jira-input"
 			});
+			toJiraInput.rows = 1;
 
 			// fromJira function input
 			const fromJiraContainer = fieldContainer.createDiv({ cls: "from-jira-container" });
 			fromJiraContainer.createEl("span", { text: "fromJira:", cls: "field-mapping-label" });
-			const fromJiraInput = fromJiraContainer.createEl("input", {
-				type: "text",
+			const fromJiraInput = fromJiraContainer.createEl("textarea", {
 				value: fromJira,
-				placeholder: "(issue) => issue.fields.fieldName",
+				placeholder: "(issue, data_source) => null",
 				cls: "from-jira-input"
 			});
+			fromJiraInput.rows = 1;
 
 			// Add remove button
 			const removeBtn = fieldContainer.createEl("button", {
@@ -161,55 +278,14 @@ export class JiraSettingTab extends PluginSettingTab {
 			// Handle field removal
 			removeBtn.addEventListener("click", () => {
 				fieldContainer.remove();
-				saveFieldMappings();
+				// saveFieldMappings();
 			});
 
-			// Add change listeners to update settings
-			[fieldNameInput, toJiraInput, fromJiraInput].forEach(input => {
-				input.addEventListener("change", () => {
-					saveFieldMappings();
-				});
-			});
+			await fieldValidation(fieldNameInput, this.plugin.settings.enableFieldValidation, 'string');
+			await fieldValidation(toJiraInput, this.plugin.settings.enableFieldValidation, 'function', ['value']);
+			await fieldValidation(fromJiraInput, this.plugin.settings.enableFieldValidation, 'function', ['issue', 'data_source']);
 
 			return { fieldNameInput, toJiraInput, fromJiraInput, container: fieldContainer };
-		};
-
-		// Function to save all field mappings
-		const saveFieldMappings = async () => {
-			debugLog(`From strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\n\n and funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
-			const mappings: Record<string, { toJira: string; fromJira: string }> = {};
-			const fieldItems = fieldsList.querySelectorAll(".field-mapping-item");
-
-			fieldItems.forEach(item => {
-				const fieldNameInput = item.querySelector(".field-name-input");
-				const toJiraInput = item.querySelector(".to-jira-input");
-				const fromJiraInput = item.querySelector(".from-jira-input");
-				if (!fieldNameInput || !toJiraInput || !fromJiraInput) {
-					return;
-				}
-
-				// @ts-ignore
-				const fieldName = fieldNameInput.value.trim();
-				// @ts-ignore
-				const toJira = toJiraInput.value.trim();
-				// @ts-ignore
-				const fromJira = fromJiraInput.value.trim();
-
-				// Only save valid mappings with all fields filled
-				if (fieldName && toJira && fromJira) {
-					mappings[fieldName] = {
-						toJira: toJira,
-						fromJira: fromJira
-					};
-				}
-			});
-
-			// Store the string representations directly in a separate property
-			this.plugin.settings.fieldMappingsStrings = mappings;
-
-			// Save the functional mappings
-			debugLog(`To strings ${JSON.stringify(this.plugin.settings.fieldMappingsStrings)}\n\nand funcs ${JSON.stringify(this.plugin.settings.fieldMappings)}`)
-			await this.plugin.saveSettings();
 		};
 
 		const buttonView = mappingSection.createDiv({ cls: "button-view" });
@@ -221,8 +297,8 @@ export class JiraSettingTab extends PluginSettingTab {
 		});
 		setIcon(addFieldBtn, "circle-plus")
 
-		addFieldBtn.addEventListener("click", () => {
-			addFieldMapping();
+		addFieldBtn.addEventListener("click", async () => {
+			await addFieldMapping();
 		});
 
 		const resetBtn = buttonView.createEl("button", {
@@ -230,11 +306,11 @@ export class JiraSettingTab extends PluginSettingTab {
 			cls: "reset-field-mappings-btn"
 		})
 		setIcon(resetBtn, "refresh-cw")
-		resetBtn.addEventListener("click", () => {
+		resetBtn.addEventListener("click", async () => {
 			this.plugin.settings.fieldMappings = {};
 			this.plugin.settings.fieldMappingsStrings = {};
-			loadExistingMappings();
-			this.plugin.saveSettings();
+			await loadExistingMappings();
+			await this.plugin.saveSettings();
 		});
 
 		const reloadBtn = buttonView.createEl("button", {
@@ -242,7 +318,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			cls: "reset-field-mappings-btn"
 		})
 		setIcon(reloadBtn, "list-restart")
-		reloadBtn.addEventListener("click", () => {
+		reloadBtn.addEventListener("click", async () => {
 			this.plugin.settings.fieldMappings = fieldMappings;
 
 			// Also reset the string representations with default values
@@ -255,12 +331,12 @@ export class JiraSettingTab extends PluginSettingTab {
 			}
 			this.plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
 
-			loadExistingMappings();
-			this.plugin.saveSettings();
+			await loadExistingMappings();
+			await this.plugin.saveSettings();
 		});
 
 		// Load existing mappings if available
-		const loadExistingMappings = () => {
+		const loadExistingMappings = async () => {
 			debugLog(`Loading mapping settings`)
 			// Clear existing field list
 			fieldsList.empty();
@@ -272,14 +348,15 @@ export class JiraSettingTab extends PluginSettingTab {
 				const savedMappings = this.plugin.settings.fieldMappingsStrings;
 				for (const [fieldName, mapping] of Object.entries(savedMappings)) {
 					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
-						addFieldMapping(
+						await addFieldMapping(
 							fieldName,
 							mapping.toJira,
 							mapping.fromJira
 						);
 					}
 				}
-				this.plugin.settings.fieldMappings = transform_string_to_functions_mappings(this.plugin.settings.fieldMappingsStrings);
+				this.plugin.settings.fieldMappings = await transform_string_to_functions_mappings(
+					this.plugin.settings.fieldMappingsStrings, this.plugin.settings.enableFieldValidation);
 			}
 			// Otherwise, try to use the function mappings and convert them to strings
 			else if (this.plugin.settings.fieldMappings &&
@@ -288,7 +365,7 @@ export class JiraSettingTab extends PluginSettingTab {
 				const existingMappings = this.plugin.settings.fieldMappings;
 				for (const [fieldName, mapping] of Object.entries(existingMappings)) {
 					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
-						addFieldMapping(
+						await addFieldMapping(
 							fieldName,
 							functionToExpressionString(mapping.toJira),
 							functionToExpressionString(mapping.fromJira)
@@ -297,7 +374,7 @@ export class JiraSettingTab extends PluginSettingTab {
 				}
 
 				// Create the string representations for future use
-				saveFieldMappings();
+				await this.saveStringFieldMappings(fieldsList);
 			}
 		};
 
@@ -340,8 +417,8 @@ export class JiraSettingTab extends PluginSettingTab {
 			item.createSpan({ text: `fromJira: ${example.fromJira}` });
 
 
-			useBtn.addEventListener("click", () => {
-				addFieldMapping(example.name, example.toJira, example.fromJira);
+			useBtn.addEventListener("click", async () => {
+				await addFieldMapping(example.name, example.toJira, example.fromJira);
 			});
 		});
 
@@ -349,5 +426,13 @@ export class JiraSettingTab extends PluginSettingTab {
 		const securityNote = containerEl.createEl("div", { cls: "setting-item-description" });
 		securityNote.createEl("strong", { text: "⚠️ Security Note: " });
 		securityNote.createSpan({ text: "Field mapping uses JavaScript function strings. Validate any shared mappings to prevent security issues." });
+	}
+
+	hide() {
+		const fieldsList = this.containerEl.querySelector(".field-mappings-list");
+		if (fieldsList) {
+			this.saveStringFieldMappings(fieldsList as HTMLDivElement);
+		}
+		super.hide();
 	}
 }

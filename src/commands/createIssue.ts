@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import JiraPlugin from "../main";
 import { IssueTypeModal, ProjectModal } from "../modals";
 import { authenticate, fetchIssueTypes, fetchProjects } from "../api";

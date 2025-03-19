@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 	sessionCookieName: "JSESSIONID",
 	templatePath: "",
 	fieldMappings: {},
-	fieldMappingsStrings: {}
+	fieldMappingsStrings: {},
+	enableFieldValidation: true
 };
 

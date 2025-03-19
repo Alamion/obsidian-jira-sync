@@ -2,7 +2,7 @@ import JiraPlugin from "../main";
 import {JiraIssue} from "../interfaces";
 import {ensureIssuesFolder} from "../tools/filesUtils";
 import {sanitizeFileName} from "../tools/sanitizers";
-import {updateLocalFromJira} from "../tools/mappingObsidianJiraFields";
+import {updateJiraToLocal} from "../tools/mappingObsidianJiraFields";
 import {Notice, TFile} from "obsidian";
 
 /**
@@ -25,7 +25,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 
 		if (existingFile) {
 			// File exists, update it
-			await updateLocalFromJira(plugin, existingFile, issue)
+			await updateJiraToLocal(plugin, existingFile, issue)
 
 			// Open the file
 			await plugin.app.workspace.openLinkText(existingFile.path, "");
@@ -34,7 +34,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 			const newFile = await createNewIssueFile(plugin, filePath);
 
 			// Update it
-			await updateLocalFromJira(plugin, newFile, issue)
+			await updateJiraToLocal(plugin, newFile, issue)
 
 			// Open the file
 			await plugin.app.workspace.openLinkText(newFile.path, "");

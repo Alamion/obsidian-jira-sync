@@ -32,7 +32,7 @@ export async function prepareJiraFieldsFromFile(
 
 		// Convert frontmatter and sections to Jira fields
 		fields = localToJiraFields(
-			{...frontmatter, ...syncSections},
+			{...syncSections, ...frontmatter},
 			{...fieldMappings, ...plugin.settings.fieldMappings});
 	});
 

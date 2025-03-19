@@ -1,9 +1,9 @@
 import { JiraIssue } from "../interfaces";
-import {jiraToMarkdown, markdownToJira} from "../markdown_html";
+import {htmlToMarkdown, jiraToMarkdown} from "./markdown_html";
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
-import {debugLog} from "./debugLogging";
+import YAML from 'yaml'
 
 /**
  * Field mapping configurations
@@ -14,7 +14,7 @@ export interface FieldMapping {
 	// Function to transform a value from Obsidian to Jira format
 	toJira: (value: any) => any;
 	// Function to transform a value from Jira to Obsidian format
-	fromJira: (issue: JiraIssue, data_source: Record<string, any>) => any;
+	fromJira: (issue: JiraIssue, data_source: Record<string, any> | null) => any;
 }
 
 /**
@@ -28,12 +28,16 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		fromJira: (issue) => issue.fields.summary,
 	},
 	"description": {
-		toJira: (value) => value, // markdownToJira is applied separately
-		fromJira: (issue) => issue.fields.description,
+		toJira: () => null, // markdownToJira is applied separately
+		fromJira: (issue) => htmlToMarkdown(issue.fields.description),
 	},
 	"key": {
 		toJira: () => null, // Not sent to Jira
 		fromJira: (issue) => issue.key,
+	},
+	"self": {
+		toJira: () => null,
+		fromJira: (issue) => issue.self,
 	},
 	"project": {
 		toJira: (value) => ({ key: value }),
@@ -65,6 +69,10 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields["lastViewed"],
 	},
+	"link": {
+		toJira: () => null,
+		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `$1/browse/${issue.key}`),
+	},
 	// Add more fields as needed following the same pattern
 
 	// Forbidden
@@ -73,6 +81,10 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		fromJira: () => null,
 	},
 	"aliases": {
+		toJira: () => null,
+		fromJira: () => null,
+	},
+	"deadline": {
 		toJira: () => null,
 		fromJira: () => null,
 	},
@@ -95,6 +107,7 @@ export function isMappableField(fieldName: string, customFieldMappings: Record<s
 /**
  * Convert frontmatter and section fields to Jira fields structure
  * @param data_source The frontmatter + sections object
+ * @param customFieldMappings The custom field mappings
  * @returns Object with Jira API compatible structure
  */
 export function localToJiraFields(
@@ -133,100 +146,131 @@ export function localToJiraFields(
 	return jiraFields;
 }
 
-export async function updateLocalFromJira(
+export async function updateJiraToLocal(
 	plugin: JiraPlugin,
 	file: TFile,
 	issue: JiraIssue
 ): Promise<void> {
-	// Read the current file content
-	let fileContent = await plugin.app.vault.read(file);
+	// Process the file atomically to avoid multiple read/writes
+	await plugin.app.vault.process(file, (fileContent) => {
+		// Extract existing sync sections
+		const syncSections = extractAllJiraSyncValuesFromContent(fileContent);
 
-	// Extract existing sync sections
-	const syncSections = extractAllJiraSyncValuesFromContent(fileContent);
+		// Create a copy of frontmatter for processing
+		let frontmatter = {};
 
-	// Update frontmatter
-	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-		updateLocalRecordsFromJira(frontmatter, syncSections, issue,
-			{...fieldMappings, ...plugin.settings.fieldMappings});
+		// Extract and update frontmatter (we'll need to manually parse and re-add it)
+		const frontmatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---\n/);
+		if (frontmatterMatch) {
+			try {
+				frontmatter = YAML.parse(frontmatterMatch[1]);
+				// Update frontmatter with Jira data
+				applyJiraDataToLocal(frontmatter, issue, {...fieldMappings, ...plugin.settings.fieldMappings});
+			} catch (e) {
+				console.error("Error parsing frontmatter:", e);
+				new Notice("Error parsing frontmatter");
+			}
+		}
+
+		// Update sync sections with Jira data
+		applyJiraDataToLocal(syncSections, issue, {...fieldMappings, ...plugin.settings.fieldMappings});
+
+		// Replace frontmatter in content
+		let updatedContent = fileContent;
+		if (frontmatterMatch) {
+			const updatedFrontmatter = YAML.stringify(frontmatter);
+			updatedContent = fileContent.replace(
+				frontmatterMatch[0],
+				`---\n${updatedFrontmatter}---\n`
+			);
+		}
+
+		// Update content sections from Jira fields
+		for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
+			const markdownValue = jiraToMarkdown(fieldValue);
+			updatedContent = updateJiraSyncContent(updatedContent, fieldName, markdownValue);
+		}
+
+		return updatedContent;
 	});
-
-	// Read the updated content (with new frontmatter)
-	fileContent = await plugin.app.vault.read(file);
-
-	// Update sections from Jira fields if they exist
-	for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
-		// Only update fields that can be in sections and only existing sections
-		debugLog(`Updating ${fieldName} = ${fieldValue} in content`)
-		const markdownValue = jiraToMarkdown(fieldValue);
-		debugLog(`Converted from jira variant ${fieldValue} to md variant ${markdownValue}`)
-		fileContent = updateJiraSyncContent(fileContent, fieldName, markdownValue);
-	}
-
-	// Save the updated content
-	await plugin.app.vault.modify(file, fileContent);
 }
 
 /**
- * Update frontmatter and sections with values from Jira issue
- * @param frontmatter The frontmatter object to update
- * @param sections The sections object to update
- * @param issue The Jira issue
+ * Apply Jira data to local records using field mappings
+ * @param localData - The local data to update (frontmatter or sections)
+ * @param issue - The Jira issue with source data
+ * @param fieldMappings - Custom field mappings for transformations
  */
-export function updateLocalRecordsFromJira(
-	frontmatter: Record<string, any>,
-	sections: Record<string, any>,
+export function applyJiraDataToLocal(
+	localData: Record<string, any>,
 	issue: JiraIssue,
-	customFieldMappings: Record<string, FieldMapping>
+	fieldMappings: Record<string, FieldMapping>
 ): void {
-	// Process known fields with mappings
-	for (const key of Object.keys(frontmatter) as Array<string>) {
-
-		// Apply transformation if field exists in frontmatter or is required
-		if (key in frontmatter || key === 'key' || key === 'summary') {
-			let value = issue.fields[key];
-			if (key in customFieldMappings) {
-				try{
-					value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
-				} catch (e) {
-					console.error(`Error mapping for ${key}: ${e}`);
-					new Notice(`Error mapping for ${key}: ${e}`);
-					continue;
-				}
-			}
-			if (value !== null && value !== undefined) {
-				frontmatter[key] = value;
-			}
-		}
+	// Process existing fields in local data
+	for (const key of Object.keys(localData)) {
+		updateFieldFromJira(key, localData, issue, fieldMappings);
 	}
 
-	for (const key of Object.keys(sections) as Array<string>) {
-
-		// Apply transformation if field exists in frontmatter or is required
-		if (key in sections) {
-			let value = issue.fields[key];
-			if (key in customFieldMappings) {
-				try {
-					value = customFieldMappings[key].fromJira(issue, {...frontmatter, ...sections});
-				} catch (e) {
-					const result: Record<string, {
-						hasToJira: string,
-						hasFromJira: string
-					}> = {};
-
-					for (const key of Object.keys(customFieldMappings)) {
-						result[key] = {
-							hasToJira: typeof customFieldMappings[key].toJira,
-							hasFromJira: typeof customFieldMappings[key].fromJira
-						};
-					}
-					console.error(`Error mapping for ${key}: ${e}\n${JSON.stringify(result)}`);
-					new Notice(`Error mapping for ${key}: ${e}`);
-					continue;
-				}
-			}
-			if (value !== null && value !== undefined) {
-				sections[key] = value;
-			}
+	// Ensure required fields are always processed
+	const requiredFields = ['key', 'summary'];
+	for (const field of requiredFields) {
+		if (!(field in localData)) {
+			updateFieldFromJira(field, localData, issue, fieldMappings);
 		}
 	}
+}
+
+/**
+ * Update a single field from Jira data
+ * @param key - The field key to update
+ * @param targetObject - The object to update (frontmatter or sections)
+ * @param issue - The Jira issue with source data
+ * @param fieldMappings - Custom field mappings for transformations
+ */
+function updateFieldFromJira(
+	key: string,
+	targetObject: Record<string, any>,
+	issue: JiraIssue,
+	fieldMappings: Record<string, FieldMapping>
+): void {
+	try {
+		let value = issue.fields[key];
+
+		// Apply custom mapping if available
+		if (key in fieldMappings) {
+			value = fieldMappings[key].fromJira(issue, targetObject);
+		}
+
+		// Only update if value exists
+		if (value !== null && value !== undefined) {
+			targetObject[key] = value;
+		}
+	} catch (e) {
+		// Log available mappings for debugging
+		logMappingDebugInfo(key, e, fieldMappings);
+	}
+}
+
+/**
+ * Log debug information for mapping errors
+ */
+function logMappingDebugInfo(
+	key: string,
+	error: Error,
+	fieldMappings: Record<string, FieldMapping>
+): void {
+	console.error(`Error mapping for ${key}: ${error}`);
+	new Notice(`Error mapping for ${key}: ${error}`);
+
+	// Create debug info about available mappings
+	const mappingInfo: Record<string, { hasToJira: string, hasFromJira: string }> = {};
+
+	for (const mappingKey of Object.keys(fieldMappings)) {
+		mappingInfo[mappingKey] = {
+			hasToJira: typeof fieldMappings[mappingKey].toJira,
+			hasFromJira: typeof fieldMappings[mappingKey].fromJira
+		};
+	}
+
+	console.debug(`Available mappings: ${JSON.stringify(mappingInfo)}`);
 }

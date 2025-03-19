@@ -1,71 +1,95 @@
+import {Notice} from "obsidian";
+import TurndownService from 'turndown';
+
+
+export function htmlToMarkdown(str: any): string {
+	if (str === null || str === undefined) return '';
+	else if (typeof str === "number") {
+		return str.toString()
+	}
+	else if (typeof str === "object") {
+		return JSON.stringify(str)
+	}
+	const turndownService = new TurndownService();
+	return turndownService.turndown(str);
+}
+
+
 /**
  * Convert Jira markup to Markdown
  * @param str The Jira markup string
  * @returns The Markdown string
  */
 export function jiraToMarkdown(str: any): string {
-	if (str === null || str === undefined) return '';
-	else if (typeof str === "number") {
-		str = str.toString()
+	try {
+		if (str === null || str === undefined) return '';
+		else if (typeof str === "number") {
+			str = str.toString()
+		}
+		else if (typeof str === "object") {
+			str = JSON.stringify(str)
+		}
+		return (
+			str
+				// Un-Ordered Lists
+				.replace(/^[ \t]*(\*+)\s+/gm, (match: string, stars: string) => {
+					return `${Array(stars.length).fill('').join('')}* `;
+				})
+				// Ordered lists
+				.replace(/^[ \t]*(#+)\s+/gm, (match: string, nums: string) => {
+					return `${Array(nums.length).fill('').join('')}1. `;
+				})
+				// Headers 1-6
+				.replace(/^h([0-6])\.(.*)$/gm, (match: string, level: string, content: string) => {
+					return Array(parseInt(level, 10) + 1).join('#') + ' ' + content.trim();
+				})
+				// Bold (process before italic to avoid conflicts)
+				.replace(/\*([^*\n]+)\*/g, '**$1**')
+				// Italic
+				.replace(/_([^_\n]+)_/g, '*$1*')
+				// Monospaced text
+				.replace(/\{\{([^}]+)\}\}/g, '`$1`')
+				// Inserts
+				.replace(/\+([^+]*)\+/g, '<ins>$1</ins>')
+				// Superscript
+				.replace(/\^([^^]*)\^/g, '<sup>$1</sup>')
+				// Subscript
+				.replace(/~([^~]*)~/g, '<sub>$1</sub>')
+				// Strikethrough
+				.replace(/(\s+)-(\S+.*?\S)-(\s+)/g, '$1~~$2~~$3')
+				// Code Block
+				.replace(
+					/\{code(:([a-z]+))?([:|]?(title|borderStyle|borderColor|borderWidth|bgColor|titleBGColor)=.+?)*\}([^]*?)\n?\{code\}/gm,
+					'```$2$5\n```'
+				)
+				// Pre-formatted text
+				.replace(/{noformat}/g, '```')
+				// Un-named Links
+				.replace(/\[([^|]+?)\]/g, '<$1>')
+				// Images
+				.replace(/!(.+)!/g, '![]($1)')
+				// Named Links
+				.replace(/\[(.+?)\|(.+?)\]/g, '[$1]($2)')
+				// Single Paragraph Blockquote
+				.replace(/^bq\.\s+/gm, '> ')
+				// Remove color: unsupported in md
+				.replace(/\{color:[^}]+\}([^]*?)\{color\}/gm, '$1')
+				// panel into table
+				.replace(/\{panel:title=([^}]*)\}\n?([^]*?)\n?\{panel\}/gm, '\n| $1 |\n| --- |\n| $2 |')
+				// table header
+				.replace(/^[ \t]*((?:\|\|.*?)+\|\|)[ \t]*$/gm, (match: string, headers: string) => {
+					const singleBarred = headers.replace(/\|\|/g, '|');
+					return `${singleBarred}\n${singleBarred.replace(/\|[^|]+/g, '| --- ')}`;
+				})
+				// remove leading-space of table headers and rows
+				.replace(/^[ \t]*\|/gm, '|')
+		);
+	} catch (e) {
+		new Notice(`Error converting Jira markup to Markdown\n${e}`);
+		console.error(e);
+		return typeof str === "string" ? str : str.toString();
 	}
-	else if (typeof str === "object") {
-		str = JSON.stringify(str)
-	}
-	return (
-		str
-			// Un-Ordered Lists
-			.replace(/^[ \t]*(\*+)\s+/gm, (match: string, stars: string) => {
-				return `${Array(stars.length).fill('').join('')}* `;
-			})
-			// Ordered lists
-			.replace(/^[ \t]*(#+)\s+/gm, (match: string, nums: string) => {
-				return `${Array(nums.length).fill('').join('')}1. `;
-			})
-			// Headers 1-6
-			.replace(/^h([0-6])\.(.*)$/gm, (match: string, level: string, content: string) => {
-				return Array(parseInt(level, 10) + 1).join('#') + ' ' + content.trim();
-			})
-			// Bold (process before italic to avoid conflicts)
-			.replace(/\*([^*\n]+)\*/g, '**$1**')
-			// Italic
-			.replace(/_([^_\n]+)_/g, '*$1*')
-			// Monospaced text
-			.replace(/\{\{([^}]+)\}\}/g, '`$1`')
-			// Inserts
-			.replace(/\+([^+]*)\+/g, '<ins>$1</ins>')
-			// Superscript
-			.replace(/\^([^^]*)\^/g, '<sup>$1</sup>')
-			// Subscript
-			.replace(/~([^~]*)~/g, '<sub>$1</sub>')
-			// Strikethrough
-			.replace(/(\s+)-(\S+.*?\S)-(\s+)/g, '$1~~$2~~$3')
-			// Code Block
-			.replace(
-				/\{code(:([a-z]+))?([:|]?(title|borderStyle|borderColor|borderWidth|bgColor|titleBGColor)=.+?)*\}([^]*?)\n?\{code\}/gm,
-				'```$2$5\n```'
-			)
-			// Pre-formatted text
-			.replace(/{noformat}/g, '```')
-			// Un-named Links
-			.replace(/\[([^|]+?)\]/g, '<$1>')
-			// Images
-			.replace(/!(.+)!/g, '![]($1)')
-			// Named Links
-			.replace(/\[(.+?)\|(.+?)\]/g, '[$1]($2)')
-			// Single Paragraph Blockquote
-			.replace(/^bq\.\s+/gm, '> ')
-			// Remove color: unsupported in md
-			.replace(/\{color:[^}]+\}([^]*?)\{color\}/gm, '$1')
-			// panel into table
-			.replace(/\{panel:title=([^}]*)\}\n?([^]*?)\n?\{panel\}/gm, '\n| $1 |\n| --- |\n| $2 |')
-			// table header
-			.replace(/^[ \t]*((?:\|\|.*?)+\|\|)[ \t]*$/gm, (match: string, headers: string) => {
-				const singleBarred = headers.replace(/\|\|/g, '|');
-				return `${singleBarred}\n${singleBarred.replace(/\|[^|]+/g, '| --- ')}`;
-			})
-			// remove leading-space of table headers and rows
-			.replace(/^[ \t]*\|/gm, '|')
-	);
+	
 }
 
 /**
