@@ -63,7 +63,7 @@ export class JiraSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "Jira integration settings" });
+		// containerEl.createEl("h2", { text: "Jira integration settings" });
 
 		new Setting(containerEl)
 			.setName("Jira username")
