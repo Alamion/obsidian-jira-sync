@@ -10,13 +10,13 @@ Without a template, such a page will be completely empty except for its title, s
 #### Template
 The template can consist of several different parts:
 1. **formatter** - meta-information at the top of the screen. When specifying keys for it and using any `Get issues from Jira` variant, they will be populated with corresponding fields from the response data.
-2. **body** - the main content of the page. When using indicators like `jira-sync-section-*` or `jira-sync-line-*`, they will be filled with the corresponding fields from the response data. The difference between these two options is as follows: `line` reads and writes values from the current line, separating the indicator and value with a space. `section` reads values from multiple lines after the indicator, stopping only at another indicator or a heading. An example can be found in [[docs/template_example.md]].
+2. **body** - the main content of the page. When using indicators like `jira-sync-section-*` or `jira-sync-line-*`, they will be filled with the corresponding fields from the response data. The difference between these two options is as follows: `line` reads and writes values from the current line, separating the indicator and value with a space. `section` reads values from multiple lines after the indicator, stopping only at another indicator or a heading. An example can be found in [[docs/template_example]].
 
 It is highly recommended to specify basic values in the template's formatter: `key` - the Jira task ID used for updates, `summary` - the Jira task title, and `status` - the current status of the task in Jira.
 
 The formatter takes priority and will overwrite file content values when updating a task in Jira if a field's value is present in both as formatter saves initial format of value and when putting it in body we parse it to string.
 
-Not all fields are predefined, and some may need adjustments. For example, the template provided in [[docs/template_example.md]] will not correctly retrieve `progressPercent` and `creator` from Jira, even though these fields exist. To fix this, refer to the advanced usage section below.
+Not all fields are predefined, and some may need adjustments. For example, the template provided in [[docs/template_example]] will not correctly retrieve `progressPercent` and `creator` from Jira, even though these fields exist. To fix this, refer to the advanced usage section below.
 
 ### Commands
 
@@ -25,7 +25,7 @@ Currently, the plugin provides the following commands:
 - `Get issue from Jira` - allows updating the active file if its formatter contains a `key` (the Jira task ID).
 - `Update issue from Jira` - allows updating the information from the file in Jira using the key specified in the formatter. Some system fields (e.g., `status`) cannot be changed this way and have dedicated commands.
 - `Create issue from Jira` - allows creating a new task in Jira. The formatter must include `summary` (task title) and optionally `project` and `issuetype` (the latter two can be selected from existing options during creation).
-- `Update work log in Jira` - enables tracking time spent on a task. Currently, this is not reflected in the file, but it will be available in future updates. If the formatter contains `jira_selected_week_data` (as described in [[docs/jira_selected_week_data.md]]), instead of manual entry, a batch of data from `jira_selected_week_data` will be sent, updating each listed entity.
+- `Update work log in Jira` - enables tracking time spent on a task. Currently, this is not reflected in the file, but it will be available in future updates. If the formatter contains `jira_selected_week_data` (as described in [[docs/jira_selected_week_data]]), instead of manual entry, a batch of data from `jira_selected_week_data` will be sent, updating each listed entity.
 - `Update issue status in Jira` - allows updating a task's status by selecting one of the available options.
 
 ### Advanced Usage
@@ -42,7 +42,7 @@ It will look something like this:
 ![](images/progressPercentageExample.png)
 
 #### Statistics
-This is a pre-configured file [[docs/statistics.md]]. To work with it, several additional plugins are required:
+This is a pre-configured file [[docs/statistics]]. To work with it, several additional plugins are required:
 - **Timekeep** for tracking time spent on tasks - each task can have a multi-level timer started, stopped, and edited.
 - **Dataview** with JavaScript queries enabled in settings to create a dynamic table of total time spent over the last few weeks.
 - **Meta Bind** for selecting the desired week and submitting work data for the week with a single button.
@@ -53,7 +53,7 @@ With Obsidian themes disabled, the table looks like this:
 
 ![](images/statisticsExample.png)
 
-The data batch format for submission, if you want to create an alternative [[docs/statistics.md]] variant:
+The data batch format for submission, if you want to create an alternative [[docs/statistics]] variant:
 ```json
 {
   "type": "array",
@@ -62,7 +62,7 @@ The data batch format for submission, if you want to create an alternative [[doc
     "properties": {
       "issueKey": {
         "type": "string",
-        "pattern": "^[A-Z]+-\d+$",
+        "pattern": "^[A-Z]+-\\d+$",
         "description": "Task key in the Jira system"
       },
       "startTime": {
@@ -72,7 +72,7 @@ The data batch format for submission, if you want to create an alternative [[doc
       },
       "duration": {
         "type": "string",
-        "description": "Task duration in hours"
+        "description": "Task duration in weeks (w), days (d), hours (h), minutes (m)"
       },
       "comment": {
         "type": "string",
@@ -88,20 +88,15 @@ Example:
 ```json
 [
     {
-        "file": "Develop new Obsidian plugin",
         "issueKey": "JIR-2",
-        "blockPath": "Deployment & Documentation > Publishing on Obsidian Marketplace",
         "startTime": "17-03-2025 17:00",
-        "endTime": "17-03-2025 21:00",
-        "duration": "4h"
+        "duration": "1h 5m"
     },
     {
-        "file": "Develop new Obsidian plugin",
         "issueKey": "JIR-2",
-        "blockPath": "Deployment & Documentation > Writing Documentation",
         "startTime": "18-03-2025 12:00",
-        "endTime": "18-03-2025 21:00",
-        "duration": "9h"
+        "duration": "1w 5d",
+		"comment": "This won't be met in statistics since it's a weekly push, but you can modify [[docs/statistics]], for example, to push once per month."
     }
 ]
 ```
