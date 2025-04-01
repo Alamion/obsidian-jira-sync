@@ -147,7 +147,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			);
 
 		// Add Jira-Obsidian Mapping setting
-		containerEl.createEl("h3", { text: "Jira-Obsidian field mapping" });
+		new Setting(containerEl).setName("Jira-Obsidian field mapping").setHeading();
 
 		// Create Field Mappings UI
 		const mappingSection = containerEl.createDiv({ cls: "jira-field-mappings" });
@@ -172,8 +172,8 @@ export class JiraSettingTab extends PluginSettingTab {
 						const toJiraInput = item.querySelector(".to-jira-input");
 						const fromJiraInput = item.querySelector(".from-jira-input");
 						if (fieldNameInput) await fieldValidation(fieldNameInput as HTMLInputElement, value, 'string');
-						if (fieldNameInput) await fieldValidation(toJiraInput as HTMLInputElement, value, 'function', ['value']);
-						if (fieldNameInput) await fieldValidation(fromJiraInput as HTMLInputElement, value, 'function', ['issue', 'data_source']);
+						if (fieldNameInput) await fieldValidation(toJiraInput as HTMLTextAreaElement, value, 'function', ['value']);
+						if (fieldNameInput) await fieldValidation(fromJiraInput as HTMLTextAreaElement, value, 'function', ['issue', 'data_source']);
 					});
 				}));
 
@@ -251,22 +251,22 @@ export class JiraSettingTab extends PluginSettingTab {
 
 			// toJira function input
 			const toJiraContainer = fieldContainer.createDiv({ cls: "to-jira-container" });
-			toJiraContainer.createEl("span", { text: "toJira:", cls: "field-mapping-label" });
+			toJiraContainer.createEl("span", { text: "to Jira:", cls: "field-mapping-label" });
 			const toJiraInput = toJiraContainer.createEl("textarea", {
-				value: toJira,
-				placeholder: "(value) => null",
 				cls: "to-jira-input"
 			});
+			toJiraInput.placeholder = "(value) => null";
+			toJiraInput.value = toJira;
 			toJiraInput.rows = 1;
 
 			// fromJira function input
 			const fromJiraContainer = fieldContainer.createDiv({ cls: "from-jira-container" });
-			fromJiraContainer.createEl("span", { text: "fromJira:", cls: "field-mapping-label" });
+			fromJiraContainer.createEl("span", { text: "from Jira:", cls: "field-mapping-label" });
 			const fromJiraInput = fromJiraContainer.createEl("textarea", {
-				value: fromJira,
-				placeholder: "(issue, data_source) => null",
 				cls: "from-jira-input"
 			});
+			fromJiraInput.value = fromJira;
+			fromJiraInput.placeholder = "(issue, data_source) => null";
 			fromJiraInput.rows = 1;
 
 			// Add remove button
@@ -344,6 +344,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			// If we have string representations stored, use those
 			if (this.plugin.settings.fieldMappingsStrings &&
 				Object.keys(this.plugin.settings.fieldMappingsStrings).length > 0) {
+				debugLog('Current mapping (string) is: ',this.plugin.settings.fieldMappingsStrings)
 
 				const savedMappings = this.plugin.settings.fieldMappingsStrings;
 				for (const [fieldName, mapping] of Object.entries(savedMappings)) {
@@ -361,6 +362,7 @@ export class JiraSettingTab extends PluginSettingTab {
 			// Otherwise, try to use the function mappings and convert them to strings
 			else if (this.plugin.settings.fieldMappings &&
 				Object.keys(this.plugin.settings.fieldMappings).length > 0) {
+				debugLog('Current mapping is: ',this.plugin.settings.fieldMappings)
 
 				const existingMappings = this.plugin.settings.fieldMappings;
 				for (const [fieldName, mapping] of Object.entries(existingMappings)) {

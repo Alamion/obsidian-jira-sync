@@ -1,46 +1,82 @@
 # Obsidian Jira Plugin
 
-A lightweight plugin for Obsidian that syncs your Jira issues directly into your vault. Manage Jira tasks, update statuses, log work, and more — all within Obsidian.
+Tired of Jira plugins that only give you basic issue links and descriptions? This one's different. It brings **your entire Jira workflow into Obsidian** with customizable templates and deep field mapping—including all those custom fields your team added over the years.
 
-Based on work [obsidian-to-jira](https://github.com/angelperezasenjo/obsidian-to-jira)
+Originally forked from [obsidian-to-jira](https://github.com/angelperezasenjo/obsidian-to-jira), but now packed with features you won't find elsewhere.
 
-## Key Features
+## Why This Plugin Exists
 
-- **Sync Jira Issues**: Import, update, and create Jira issues directly in Obsidian.
-- **Flexible Templates**: Supports custom templates with dynamic fields for most basic and custom fields.
-- **Status & Worklog Updates**: Pull possible statuses and log work directly from notes.
+Other plugins treat Jira issues as read-only reference material. This one lets you:
+- **Build full-featured issue templates** that mirror your Jira workflow
+- **Sync ANY field**—even custom ones from plugins like ScriptRunner or Insight
+- **Create new fields** with dynamic field mapping (e.g. auto-generate browse URLs from `issue.self + issue.key` from API response)
+
+> **Pro Tip**: While TypeScript skills help for advanced mappings, we include ready-made mappings for 90% of basic use cases.
+
+## Killer Features
+
+### 🧩 Your Jira, Your Template
+Create Obsidian notes that look exactly like your team's Jira workflow. Pull in:
+- Standard fields (status, assignee)
+- Custom fields (progress bars, sprint IDs)
+- Plugin fields (ScriptRunner outputs, Insight assets)
+
+```markdown
+---
+key: JIR-1
+status: In Progress   <!-- Built-in field -->
+priority: Medium      <!-- Another built-in field -->
+sprint: Mobile-Q2-24  <!-- Custom field -->
+epic: API-Overhaul    <!-- Another Custom field -->
+link: http://jira.local:8000/browse/JIR-1  <!-- Built-in auto-generated link -->
+---
+
+### Customer Impact  
+`jira-sync-section-customfield_10842`  <!-- From your CRM plugin -->
+```
+
+### 🔄 Two-Way Sync That Doesn't Fight You
+- **Smart conflict resolution** when notes change locally while syncing
+- **Partial updates**—edit just the fields you care about
+- **Worklog batching** push a week's worth of time entries at once
+
+### ⚙️ Field Mapping Kitchen
+We include mappings for:
+- Basic fields (like status, priority)
+- Temporal fields (created, updated)
+- Calculated fields (progress %, time estimates)
+- **Bring your own** for custom integrations
 
 ## Quick Start
 
-1. **Install**: Go to Obsidian Settings > Community plugins > Browse, and search for "Jira Issue Manager" 
-2. **Configure**: Enter your Jira credentials (username, password, URL) in the plugin settings.
-3. **Use**:
-	- **Import Issues**: Update the current note or pull new issue from Jira by its key.
-	- **Update Issues**: Edit issue notes and push changes back to Jira.
-	- **Create Issues**: Write a note with frontmatter (e.g., `summary: "Your issue summary"`) and use the command palette to create it in Jira.
+1. **Install**: Community plugins → Search "Jira Issue Manager"
+2. **Connect**: Settings → Add your Jira URL + credentials
+3. **Go**:
+	- `Get issue from Jira with custom key` from command palette
+	- Edit like any note
+	- When you are ready -> `Update issue in Jira` - changes sync back.
 
-## Template Example
+## Real-World Template
 
-Create dynamic templates with fields like this:
+```markdown
+---
+key: DEV-42
+status: In Progress
+priority: Medium
+progress: 75%
+epic: API-Overhaul  <!-- Custom field -->
+risk: Medium        <!-- Another custom field -->
+updated: 2025-01-01T00:00:00.000+0000
+---
 
-```
-### Description  
 `jira-sync-section-description`
-It's the multiline field.
-It can hold several lines.
-Until it's stopped by '# ' or other jira field
+The auth middleware needs to...
 
-### Users
-`jira-sync-line-assignee` user1
-`jira-sync-line-reporter` user2
-`jira-sync-line-creator` user3
+`jira-sync-section-customfield_30122`
+@alice @bob  <!-- Custom user picker field -->
+
+<!-- Auto-generated link -->
+`jira-sync-line-openLink` [Open in Jira](http://jira/browse/DEV-42)
 ```
 
-## Advanced Features
-
-- **Worklog Tracking**: Use `/docs/statistics.md` file from github (or write your own with similar frontmatter output) to track worklogs and push them for entire weeks.
-- **Field Mapping**: Smart mapping for any field from Jira to your note and vice versa. Decide it to be synced or not and how exactly.
-
-## Learn More
-
-Visit the [GitHub repository](https://github.com/Alamion/obsidian-jira-sync/tree/master/docs) for more detailed docs.
+Docs with examples: [GitHub](https://github.com/Alamion/obsidian-jira-sync/tree/master/docs)

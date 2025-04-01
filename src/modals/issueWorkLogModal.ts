@@ -66,11 +66,10 @@ export class WorkLogModal extends Modal {
 	}
 
 	onOpen() {
-		this.contentEl.createEl("h2", { text: "Add Work Log" });
-
+		new Setting(this.contentEl).setName('Add work log').setHeading();
 		// Time Spent field
 		this.timeSpentSetting = new Setting(this.contentEl)
-			.setName("Time Spent")
+			.setName("Time spent")
 			.setDesc("Format: 3w 4d 12h 30m (weeks, days, hours, minutes)")
 			.addText((text) =>
 				text
@@ -82,7 +81,7 @@ export class WorkLogModal extends Modal {
 			);
 
 		this.dateSetting = new Setting(this.contentEl)
-			.setName("Start Time")
+			.setName("Start time")
 			.setDesc("Format: DD/MMM/YY HH:MM AM/PM")
 			.addText((text) =>
 				text
@@ -159,7 +158,7 @@ export class WorkLogModal extends Modal {
 
 		// Work Description field
 		new Setting(this.contentEl)
-			.setName("Work Description")
+			.setName("Work description")
 			.setDesc("Optional description of the work done")
 			.addTextArea((text) =>
 				text

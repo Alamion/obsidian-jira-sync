@@ -27,9 +27,13 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 			}
 			debugLog(`checking function: ${fnString}`);
 			// @ts-ignore
-			iframeWindow.eval(fnString);
+			let func = iframeWindow.eval(fnString);
+			if (typeof func === 'function') {
+				func(); // Execute the function to catch runtime errors
+			}
 			resolve({ isValid: true });
 		} catch (error) {
+			debugLog('Not valid')
 			resolve({ isValid: false, errorMessage: `Runtime error: ${(error as Error).message}` });
 		} finally {
 			document.body.removeChild(iframe);

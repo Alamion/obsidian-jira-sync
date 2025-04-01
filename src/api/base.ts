@@ -24,9 +24,9 @@ ${body && '\nbody:' + body || ""}`);
 		console.error(error);
 		throw error;
 	}
-	debugLog(response);
 	debugLog({"url": `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
 		"method": method, "body": body});
+	debugLog(response);
 	return response.status === 204 ? null : response.json;
 
 }

@@ -1,10 +1,10 @@
 // commands/updateWorkLog.ts
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
-import {getCurrentFileMainInfo} from "../file_operations/common_prepareData";
 import {WorkLogModal} from "../modals/issueWorkLogModal";
 import {addWorkLog, authenticate} from "../api";
 import {debugLog} from "../tools/debugLogging";
+import {checkCommandCallback} from "../tools/check_command_callback";
 
 /**
  * Register the update work log command
@@ -13,56 +13,44 @@ export function registerUpdateWorkLogCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "update-work-log-jira",
 		name: "Update work log in Jira",
-		callback: async () => {
-			if (!(await authenticate(plugin))) {
-				return;
-			}
-
-			const file = plugin.app.workspace.getActiveFile();
-			if (!file) {
-				new Notice("No active file found");
-				return;
-			}
-
-			// Try batch processing first, then fall back to manual entry
-			const batchProcessed = await processFrontmatterWorkLogs(plugin, file);
-			if (!batchProcessed) {
-				await processManualWorkLog(plugin);
-			}
+		checkCallback: (checking: boolean) => {
+			return checkCommandCallback(plugin, checking, processWorkLog, [], ["jira_selected_week_data","key"]);
 		},
 	});
+}
+
+async function processWorkLog(plugin: JiraPlugin, _: TFile, jira_selected_week_data?: any, issueKey?: string): Promise<void> {
+	const batchProcessed = await processFrontmatterWorkLogs(plugin, jira_selected_week_data);
+	if (!batchProcessed) {
+		await processManualWorkLog(plugin, issueKey);
+	}
 }
 
 /**
  * Process work logs from frontmatter data
  */
-async function processFrontmatterWorkLogs(plugin: JiraPlugin, file: TFile): Promise<boolean> {
+async function processFrontmatterWorkLogs(plugin: JiraPlugin, jira_selected_week_data?: any): Promise<boolean> {
 	try {
 		let workLogData: any[] = [];
 		let foundData = false;
 
-		await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-			if (frontmatter["jira_selected_week_data"]) {
-				try {
-					let jira_selected_week_data = frontmatter["jira_selected_week_data"];
-
-					if (typeof jira_selected_week_data === 'string') {
-						workLogData = JSON.parse(jira_selected_week_data);
-					} else if (typeof jira_selected_week_data === 'object') {
-						workLogData = jira_selected_week_data;
-					} else {
-						throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_selected_week_data}`);
-					}
-					foundData = true;
-				} catch (error) {
-					console.error("Failed to parse jira_selected_week_data:", error);
-				}
+		try {
+			if (typeof jira_selected_week_data === 'string') {
+				workLogData = JSON.parse(jira_selected_week_data);
+				foundData = true;
+			} else if (typeof jira_selected_week_data === 'object') {
+				workLogData = jira_selected_week_data;
+				foundData = true;
+			} else {
+				throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_selected_week_data}`);
 			}
-		});
+		} catch (error) {
+			console.error("Failed to parse jira_selected_week_data:", error);
+		}
+
 		if (!foundData || workLogData.length === 0) {
 			return false;
 		}
-
 		// Process found work logs
 		await processWorkLogBatch(plugin, workLogData);
 		return true;
@@ -76,8 +64,10 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, file: TFile): Prom
 /**
  * Process a single manual work log entry
  */
-async function processManualWorkLog(plugin: JiraPlugin): Promise<void> {
-	const { issueKey } = await getCurrentFileMainInfo(plugin);
+async function processManualWorkLog(plugin: JiraPlugin, issueKey?: string): Promise<void> {
+	if (!(await authenticate(plugin))) {
+		return;
+	}
 
 	if (!issueKey) {
 		new Notice("No issue key found in the current file");

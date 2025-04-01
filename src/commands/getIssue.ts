@@ -1,9 +1,9 @@
-import {Notice} from "obsidian";
+import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {IssueSearchModal} from "../modals";
-import {authenticate, fetchIssue} from "../api";
-import {getCurrentFileMainInfo} from "../file_operations/common_prepareData";
+import {authenticate, fetchIssue, validateSettings} from "../api";
 import {createOrUpdateIssueNote} from "../file_operations/getIssue";
+import {checkCommandCallback} from "../tools/check_command_callback";
 
 /**
  * Register the get issue command
@@ -12,8 +12,13 @@ export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira-key",
 		name: "Get issue from Jira with custom key",
-		callback: async () => {
-			openIssueModal(plugin);
+		checkCallback: (checking: boolean) => {
+			const settings_are_valid = validateSettings(plugin);
+			if (settings_are_valid) {
+				if (!checking) openIssueModal(plugin);
+				return true;
+			}
+			return false;
 		},
 	});
 }
@@ -25,13 +30,8 @@ export function registerGetIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira",
 		name: "Get issue from Jira",
-		callback: async () => {
-			const { issueKey, filePath } = await getCurrentFileMainInfo(plugin);
-			if (filePath && issueKey) {
-				await fetchAndOpenIssue(plugin, issueKey, filePath);
-			} else {
-				new Notice("No active file or issue key found");
-			}
+		checkCallback: (checking: boolean) => {
+			return checkCommandCallback(plugin, checking, fetchAndOpenIssue, ["key"], ["key"]);
 		},
 	});
 }
@@ -42,24 +42,24 @@ export function registerGetIssueCommand(plugin: JiraPlugin): void {
  */
 function openIssueModal(plugin: JiraPlugin): void {
 	new IssueSearchModal(plugin.app, async (issueKey: string) => {
-		await fetchAndOpenIssue(plugin, issueKey);
+		await fetchAndOpenIssue(plugin, null, issueKey);
 	}).open();
 }
 
 /**
  * Fetch an issue from Jira and open it in Obsidian
  * @param plugin The plugin instance
+ * @param file The file containing issue data
  * @param issueKey The issue key to fetch
- * @param filePath The file path to open
  */
-export async function fetchAndOpenIssue(plugin: JiraPlugin, issueKey: string, filePath?: string): Promise<void> {
+export async function fetchAndOpenIssue(plugin: JiraPlugin, file: TFile | null, issueKey: string): Promise<void> {
 	try {
 		if (!(await authenticate(plugin))) {
 			return;
 		}
 
 		const issue = await fetchIssue(plugin, issueKey);
-		await createOrUpdateIssueNote(plugin, issue, filePath);
+		await createOrUpdateIssueNote(plugin, issue, file?.path);
 	} catch (error) {
 		new Notice("Error retrieving issue: " + (error.message || "Unknown error"));
 		console.error(error);

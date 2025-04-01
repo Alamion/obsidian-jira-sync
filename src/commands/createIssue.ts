@@ -1,8 +1,9 @@
 import { Notice, TFile } from "obsidian";
 import JiraPlugin from "../main";
 import { IssueTypeModal, ProjectModal } from "../modals";
-import { authenticate, fetchIssueTypes, fetchProjects } from "../api";
+import {authenticate, fetchIssueTypes, fetchProjects} from "../api";
 import {createIssueFromFile} from "../file_operations/createUpdateIssue";
+import {checkCommandCallback} from "../tools/check_command_callback";
 
 /**
  * Register the create issue command
@@ -11,8 +12,8 @@ export function registerCreateIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "create-issue-jira",
 		name: "Create issue in Jira",
-		callback: async () => {
-			await createIssue(plugin);
+		checkCallback: (checking: boolean) => {
+			return checkCommandCallback(plugin, checking, createIssue, ["summary"]);
 		},
 	});
 }
@@ -20,27 +21,9 @@ export function registerCreateIssueCommand(plugin: JiraPlugin): void {
 /**
  * Create a new issue in Jira from the current note
  */
-export async function createIssue(plugin: JiraPlugin): Promise<void> {
+export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void> {
 	try {
 		if (!(await authenticate(plugin))) {
-			return;
-		}
-
-		const file = plugin.app.workspace.getActiveFile();
-		if (!file) {
-			new Notice("No active file");
-			return;
-		}
-
-		// Check if summary exists in frontmatter
-		let hasSummary = false;
-
-		await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-			hasSummary = !!frontmatter["summary"];
-		});
-
-		if (!hasSummary) {
-			new Notice("Please set a summary in the frontmatter or section for the task");
 			return;
 		}
 

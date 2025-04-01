@@ -1,9 +1,8 @@
 import { JiraIssue } from "../interfaces";
-import {htmlToMarkdown, jiraToMarkdown} from "./markdown_html";
-import {Notice, TFile} from "obsidian";
+import {jiraToMarkdown} from "./markdown_html";
+import {htmlToMarkdown, Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
-import YAML from 'yaml'
 
 /**
  * Field mapping configurations
@@ -29,7 +28,7 @@ export const fieldMappings: Record<string, FieldMapping> = {
 	},
 	"description": {
 		toJira: () => null, // markdownToJira is applied separately
-		fromJira: (issue) => htmlToMarkdown(issue.fields.description),
+		fromJira: (issue) => htmlToMarkdown(issue.fields.description || ""),
 	},
 	"key": {
 		toJira: () => null, // Not sent to Jira
@@ -65,15 +64,34 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		toJira: (value) => ({ name: value }),
 		fromJira: (issue) =>issue.fields.reporter ?issue.fields.reporter.name :"",
 	},
+	"creator": {
+		toJira: () => null,
+		fromJira: (issue) =>issue.fields.creator ?issue.fields.creator.name :"",
+	},
 	"lastViewed": {
 		toJira: () => null,
-		fromJira: (issue) => issue.fields["lastViewed"],
+		fromJira: (issue) => issue.fields.lastViewed,
+	},
+	"updated": {
+		toJira: () => null,
+		fromJira: (issue) => issue.fields.updated,
+	},
+	"created": {
+		toJira: () => null,
+		fromJira: (issue) => issue.fields.created,
 	},
 	"link": {
 		toJira: () => null,
 		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `$1/browse/${issue.key}`),
 	},
-	// Add more fields as needed following the same pattern
+	"openLink": {
+		toJira: () => null,
+		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `[Open in Jira]($1/browse/${issue.key})`),
+	},
+	"progress": {
+		toJira: () => null,
+		fromJira: (issue) => issue.fields.aggregateprogress.percent+'%',
+	},
 
 	// Forbidden
 	"tags": {
@@ -151,41 +169,22 @@ export async function updateJiraToLocal(
 	file: TFile,
 	issue: JiraIssue
 ): Promise<void> {
-	// Process the file atomically to avoid multiple read/writes
+	// First, update the frontmatter using processFrontMatter
+	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+		// Update frontmatter with Jira data
+		applyJiraDataToLocal(frontmatter, issue, {...fieldMappings, ...plugin.settings.fieldMappings});
+	});
+
+	// Then, process the file content to update sync sections
 	await plugin.app.vault.process(file, (fileContent) => {
 		// Extract existing sync sections
 		const syncSections = extractAllJiraSyncValuesFromContent(fileContent);
 
-		// Create a copy of frontmatter for processing
-		let frontmatter = {};
-
-		// Extract and update frontmatter (we'll need to manually parse and re-add it)
-		const frontmatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---\n/);
-		if (frontmatterMatch) {
-			try {
-				frontmatter = YAML.parse(frontmatterMatch[1]);
-				// Update frontmatter with Jira data
-				applyJiraDataToLocal(frontmatter, issue, {...fieldMappings, ...plugin.settings.fieldMappings});
-			} catch (e) {
-				console.error("Error parsing frontmatter:", e);
-				new Notice("Error parsing frontmatter");
-			}
-		}
-
 		// Update sync sections with Jira data
 		applyJiraDataToLocal(syncSections, issue, {...fieldMappings, ...plugin.settings.fieldMappings});
 
-		// Replace frontmatter in content
-		let updatedContent = fileContent;
-		if (frontmatterMatch) {
-			const updatedFrontmatter = YAML.stringify(frontmatter);
-			updatedContent = fileContent.replace(
-				frontmatterMatch[0],
-				`---\n${updatedFrontmatter}---\n`
-			);
-		}
-
 		// Update content sections from Jira fields
+		let updatedContent = fileContent;
 		for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
 			const markdownValue = jiraToMarkdown(fieldValue);
 			updatedContent = updateJiraSyncContent(updatedContent, fieldName, markdownValue);

@@ -1,7 +1,8 @@
-import { Notice } from "obsidian";
+import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
-import { authenticate } from "../api";
+import {authenticate} from "../api";
 import {updateIssueFromFile} from "../file_operations/createUpdateIssue";
+import {checkCommandCallback} from "../tools/check_command_callback";
 
 /**
  * Register the update issue command
@@ -10,8 +11,8 @@ export function registerUpdateIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "update-issue-jira",
 		name: "Update issue in Jira",
-		callback: async () => {
-			await updateIssue(plugin);
+		checkCallback: (checking: boolean) => {
+			return checkCommandCallback(plugin, checking, updateIssue, ["key"]);
 		},
 	});
 }
@@ -19,18 +20,11 @@ export function registerUpdateIssueCommand(plugin: JiraPlugin): void {
 /**
  * Update an existing issue in Jira from the current note
  */
-export async function updateIssue(plugin: JiraPlugin): Promise<void> {
+export async function updateIssue(plugin: JiraPlugin, file: TFile): Promise<void> {
 	try {
 		if (!(await authenticate(plugin))) {
 			return;
 		}
-
-		const file = plugin.app.workspace.getActiveFile();
-		if (!file) {
-			new Notice("No active file");
-			return;
-		}
-
 		try {
 			// Update the issue with all data from the file
 			const issueKey = await updateIssueFromFile(plugin, file);

@@ -1,18 +1,4 @@
 import {Notice} from "obsidian";
-import TurndownService from 'turndown';
-
-
-export function htmlToMarkdown(str: any): string {
-	if (str === null || str === undefined) return '';
-	else if (typeof str === "number") {
-		return str.toString()
-	}
-	else if (typeof str === "object") {
-		return JSON.stringify(str)
-	}
-	const turndownService = new TurndownService();
-	return turndownService.turndown(str);
-}
 
 
 /**
@@ -65,7 +51,7 @@ export function jiraToMarkdown(str: any): string {
 				// Pre-formatted text
 				.replace(/{noformat}/g, '```')
 				// Un-named Links
-				.replace(/\[([^|]+?)\]/g, '<$1>')
+				// .replace(/\[([^|]+?)\]/g, '<$1>')
 				// Images
 				.replace(/!(.+)!/g, '![]($1)')
 				// Named Links

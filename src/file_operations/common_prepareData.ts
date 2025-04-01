@@ -39,15 +39,13 @@ export async function prepareJiraFieldsFromFile(
 	return { fields, issueKey };
 }
 
-export async function getCurrentFileMainInfo(plugin: JiraPlugin): Promise<{issueKey?: string, filePath?: string}> {
+export function getCurrentFileMainInfo(plugin: JiraPlugin):{issueKey?: string, filePath?: string} {
 	const file = plugin.app.workspace.getActiveFile();
 	if (!file) {
 		new Notice("No active file");
 		return {};
 	}
-	let issueKey: string | undefined
-	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-		issueKey = frontmatter["key"];
-	});
+	const frontmatter = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+	let issueKey = frontmatter? frontmatter["key"] as string | undefined : undefined;
 	return {issueKey, filePath: file.path};
 }

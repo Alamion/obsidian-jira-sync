@@ -13,10 +13,10 @@ export class IssueSearchModal extends Modal {
 	}
 
 	onOpen() {
-		this.contentEl.createEl("h2", {text: "Search Issue by Key"});
+		this.contentEl.createEl("h2", {text: "Search issue by key"});
 
 		new Setting(this.contentEl)
-			.setName("Issue Key")
+			.setName("Issue key")
 			.setDesc("Enter the Jira issue key (e.g., PROJECT-123)")
 			.addText((text) =>
 				text
