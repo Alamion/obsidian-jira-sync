@@ -1,10 +1,10 @@
-# Obsidian Jira Plugin
+# Jira syncthing plugin
 
 Tired of Jira plugins that only give you basic issue links and descriptions? This one's different. It brings **your entire Jira workflow into Obsidian** with customizable templates and deep field mapping—including all those custom fields your team added over the years.
 
 Originally forked from [obsidian-to-jira](https://github.com/angelperezasenjo/obsidian-to-jira), but now packed with features you won't find elsewhere.
 
-## Why This Plugin Exists
+## Why this plugin exists
 
 Other plugins treat Jira issues as read-only reference material. This one lets you:
 - **Build full-featured issue templates** that mirror your Jira workflow
@@ -13,9 +13,9 @@ Other plugins treat Jira issues as read-only reference material. This one lets y
 
 > **Pro Tip**: While TypeScript skills help for advanced mappings, we include ready-made mappings for 90% of basic use cases.
 
-## Killer Features
+## Killer features
 
-### 🧩 Your Jira, Your Template
+### 🧩 Your Jira, your template
 Create Obsidian notes that look exactly like your team's Jira workflow. Pull in:
 - Standard fields (status, assignee)
 - Custom fields (progress bars, sprint IDs)
@@ -35,19 +35,19 @@ link: http://jira.local:8000/browse/JIR-1  <!-- Built-in auto-generated link -->
 `jira-sync-section-customfield_10842`  <!-- From your CRM plugin -->
 ```
 
-### 🔄 Two-Way Sync That Doesn't Fight You
+### 🔄 Two-way sync that doesn't fight you
 - **Smart conflict resolution** when notes change locally while syncing
 - **Partial updates**—edit just the fields you care about
 - **Worklog batching** push a week's worth of time entries at once
 
-### ⚙️ Field Mapping Kitchen
+### ⚙️ Field mapping kitchen
 We include mappings for:
 - Basic fields (like status, priority)
 - Temporal fields (created, updated)
 - Calculated fields (progress %, time estimates)
 - **Bring your own** for custom integrations
 
-## Quick Start
+## Quick start
 
 1. **Install**: Community plugins → Search "Jira Issue Manager"
 2. **Connect**: Settings → Add your Jira URL + credentials
@@ -56,7 +56,7 @@ We include mappings for:
 	- Edit like any note
 	- When you are ready -> `Update issue in Jira` - changes sync back.
 
-## Real-World Template
+## Real-world Template
 
 ```markdown
 ---
