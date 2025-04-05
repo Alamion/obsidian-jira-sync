@@ -56,7 +56,7 @@ We include mappings for:
 	- Edit like any note
 	- When you are ready -> `Update issue in Jira` - changes sync back.
 
-## Real-world Template
+## Real-world template
 
 ```markdown
 ---
@@ -79,4 +79,4 @@ The auth middleware needs to...
 `jira-sync-line-openLink` [Open in Jira](http://jira/browse/DEV-42)
 ```
 
-Docs with examples: [GitHub](https://github.com/Alamion/obsidian-jira-sync/tree/master/docs)
+Docs with more detailed info and examples: [GitHub](https://github.com/Alamion/obsidian-jira-sync/tree/master/docs)
