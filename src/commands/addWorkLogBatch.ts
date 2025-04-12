@@ -1,17 +1,15 @@
-// commands/updateWorkLog.ts
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
-import {WorkLogModal} from "../modals/issueWorkLogModal";
-import {addWorkLog, authenticate} from "../api";
+import {addWorkLog} from "../api";
 import {debugLog} from "../tools/debugLogging";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
 /**
  * Register the update work log command
  */
-export function registerUpdateWorkLogCommand(plugin: JiraPlugin): void {
+export function registerUpdateWorkLogBatchCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
-		id: "update-work-log-jira",
+		id: "update-work-log-jira-batch",
 		name: "Update work log in Jira",
 		checkCallback: (checking: boolean) => {
 			return checkCommandCallback(plugin, checking, processWorkLog, [], ["jira_selected_week_data","key"]);
@@ -19,11 +17,8 @@ export function registerUpdateWorkLogCommand(plugin: JiraPlugin): void {
 	});
 }
 
-async function processWorkLog(plugin: JiraPlugin, _: TFile, jira_selected_week_data?: any, issueKey?: string): Promise<void> {
-	const batchProcessed = await processFrontmatterWorkLogs(plugin, jira_selected_week_data);
-	if (!batchProcessed) {
-		await processManualWorkLog(plugin, issueKey);
-	}
+async function processWorkLog(plugin: JiraPlugin, _: TFile, jira_selected_week_data?: any, __?: string): Promise<void> {
+	await processFrontmatterWorkLogs(plugin, jira_selected_week_data);
 }
 
 /**
@@ -61,23 +56,6 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, jira_selected_week
 	}
 }
 
-/**
- * Process a single manual work log entry
- */
-async function processManualWorkLog(plugin: JiraPlugin, issueKey?: string): Promise<void> {
-	if (!(await authenticate(plugin))) {
-		return;
-	}
-
-	if (!issueKey) {
-		new Notice("No issue key found in the current file");
-		return;
-	}
-
-	new WorkLogModal(plugin.app, async (timeSpent: string, startDate: string, comment: string) => {
-		await addWorkLog(plugin, issueKey, timeSpent, startDate, comment);
-	}).open();
-}
 
 /**
  * Process a batch of work logs

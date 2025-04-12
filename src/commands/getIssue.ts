@@ -29,7 +29,7 @@ export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
 export function registerGetIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira",
-		name: "Get issue from Jira",
+		name: "Get current issue from Jira",
 		checkCallback: (checking: boolean) => {
 			return checkCommandCallback(plugin, checking, fetchAndOpenIssue, ["key"], ["key"]);
 		},

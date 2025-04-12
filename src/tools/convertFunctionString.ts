@@ -23,7 +23,7 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 
 		try {
 			if (isSimpleExpression(fnString) || (fnString.startsWith("{") && fnString.endsWith("}") && !fnString.includes("return"))) {
-				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = {fields: {}}`:`${varName} = {}`).join(', ')}) => ${fnString}`;
+				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = any`:`${varName} = {}`).join(', ')}) => ${fnString}`;
 			}
 			debugLog(`checking function: ${fnString}`);
 			// @ts-ignore

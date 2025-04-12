@@ -7,8 +7,9 @@ import {
 	registerGetIssueCommand,
 	registerCreateIssueCommand, registerGetIssueCommandWithKey, registerUpdateIssueStatusCommand
 } from "./commands";
-import {registerUpdateWorkLogCommand} from "./commands/addWorkLog";
+import {registerUpdateWorkLogManuallyCommand} from "./commands/addWorkLogManually";
 import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
+import {registerUpdateWorkLogBatchCommand} from "./commands/addWorkLogBatch";
 
 /**
  * Main plugin class
@@ -56,7 +57,8 @@ export default class JiraPlugin extends Plugin {
 		registerGetIssueCommandWithKey(this);
 		registerCreateIssueCommand(this);
 
-		registerUpdateWorkLogCommand(this);
+		registerUpdateWorkLogManuallyCommand(this);
+		registerUpdateWorkLogBatchCommand(this);
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));

@@ -1,34 +1,22 @@
 import { JiraIssue } from "../interfaces";
 import {jiraToMarkdown} from "./markdown_html";
-import {htmlToMarkdown, Notice, TFile} from "obsidian";
+import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
 
-/**
- * Field mapping configurations
- * This central configuration defines how fields are transformed between
- * Jira and Obsidian frontmatter/sections
- */
 export interface FieldMapping {
-	// Function to transform a value from Obsidian to Jira format
 	toJira: (value: any) => any;
-	// Function to transform a value from Jira to Obsidian format
 	fromJira: (issue: JiraIssue, data_source: Record<string, any> | null) => any;
 }
 
-/**
- * Central field mappings configuration
- * Add new fields here with their transformation logic
- */
 export const fieldMappings: Record<string, FieldMapping> = {
-	// Core fields
 	"summary": {
 		toJira: (value) => value,
 		fromJira: (issue) => issue.fields.summary,
 	},
 	"description": {
 		toJira: () => null, // markdownToJira is applied separately
-		fromJira: (issue) => htmlToMarkdown(issue.fields.description || ""),
+		fromJira: (issue) => issue.fields.description,
 	},
 	"key": {
 		toJira: () => null, // Not sent to Jira
@@ -92,20 +80,6 @@ export const fieldMappings: Record<string, FieldMapping> = {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.aggregateprogress.percent+'%',
 	},
-
-	// Forbidden
-	"tags": {
-		toJira: () => null,
-		fromJira: () => null,
-	},
-	"aliases": {
-		toJira: () => null,
-		fromJira: () => null,
-	},
-	"deadline": {
-		toJira: () => null,
-		fromJira: () => null,
-	},
 };
 
 /**
@@ -157,7 +131,7 @@ export function localToJiraFields(
 		}
 		// Handle custom fields
 		else {
-			jiraFields[key] = value;
+			// jiraFields[key] = value;
 		}
 	}
 

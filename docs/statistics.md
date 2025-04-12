@@ -1,5 +1,5 @@
 ---
-jira_selected_week_data: '[]'
+jira_worklog_batch: '[]'
 ---
 
 
@@ -8,9 +8,9 @@ const tasksDirectory = "Kanban";
 const show_max_weeks = 3;
 
 // Get all markdown files in the Kanban directory
-const files = app.vault.getMarkdownFiles().filter(file => file.path.startsWith(tasksDirectory));
+const files = app.vault.getMarkdownFiles().filter(file => file.path.startsWith(`${tasksDirectory}/`) && file.key !== null);
 
-// Regular expression to extract issue key (assuming it's in format like "PROJECT-123" in the file content)
+// Regular expression to extract issue key
 const issueKeyRegex = /(?:^|\s)([A-Z]+-\d+)(?:\s|$)/;
 
 async function processFiles() {
@@ -20,34 +20,26 @@ async function processFiles() {
     await Promise.all(files.map(async file => {
         const content = await app.vault.read(file);
         
-        // Extract issue key from file content instead of using file.key
-        let issueKey = null;
-        const keyMatch = content.match(issueKeyRegex);
-        if (keyMatch) {
-            issueKey = keyMatch[1];
-        }
+	    if (!content.includes("```timekeep")) return;
+	    const metadata = app.metadataCache.getFileCache(file);
+        const issueKey = metadata?.frontmatter?.key;
         
-        // Match all timekeep blocks using a single regex
-        const timekeepMatches = content.match(/```timekeep\n([\s\S]*?)```/g);
-        
-        if (timekeepMatches) {
-            timekeepMatches.forEach(block => {
-                try {
-                    // Extract JSON content and parse it
-                    const jsonContent = block.replace(/```timekeep\n/, "").replace(/```/, "").trim();
-                    const data = JSON.parse(jsonContent);
-                    
-                    timekeepBlocks.push({ 
-                        file: file.name, 
-                        path: file.path, 
-                        issueKey: issueKey, // Use extracted issue key
-                        data: data 
-                    });
-                } catch (error) {
-                    console.error(`Error parsing JSON in ${file.name}:`, error);
-                }
-            });
-        }
+        const timekeepMatches = content.match(/```timekeep([\s\S]*?)```/g);
+		timekeepMatches?.forEach(block => {
+			try {
+				const jsonContent = block.slice(11, -3).trim();
+				const data = JSON.parse(jsonContent);
+				
+				timekeepBlocks.push({ 
+					file: file.name, 
+					path: file.path, 
+					issueKey, 
+					data 
+				});
+			} catch (error) {
+				console.error(`Error in ${file.name}:`, error);
+			}
+		});
     }));
 
     // Group entries by week
@@ -88,7 +80,7 @@ async function processFiles() {
         // Display meta-bind controls
         dv.paragraph(`Select a week to sent work log to Jira. Always reselect before pressing the button`);
         dv.paragraph(`\`\`\`meta-bind
-INPUT[inlineSelect(option('[]', 'select week'), ${options}): jira_selected_week_data]
+INPUT[inlineSelect(option('[]', 'select week'), ${options}): jira_worklog_batch]
 \`\`\``);
         
         dv.paragraph(`\`\`\`meta-bind-button
@@ -98,7 +90,7 @@ id: ""
 style: primary
 actions:
   - type: command
-    command: jira-sync:update-work-log-jira
+    command: jira-sync:update-work-log-jira-batch
 \`\`\``);
     } else {
         dv.paragraph("No entries found.");
