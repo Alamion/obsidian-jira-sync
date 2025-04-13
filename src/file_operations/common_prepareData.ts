@@ -1,8 +1,9 @@
 import JiraPlugin from "../main";
 import {Notice, TFile} from "obsidian";
 import {extractAllJiraSyncValuesFromContent} from "../tools/sectionTools";
-import {fieldMappings, localToJiraFields} from "../tools/mappingObsidianJiraFields";
+import {localToJiraFields} from "../tools/mapObsidianJiraFields";
 import {debugLog} from "../tools/debugLogging";
+import {obsidianJiraFieldMappings} from "../constants/obsidianJiraFieldsMapping";
 
 /**
  * Prepares Jira fields from the content and frontmatter of a file
@@ -33,7 +34,7 @@ export async function prepareJiraFieldsFromFile(
 		// Convert frontmatter and sections to Jira fields
 		fields = localToJiraFields(
 			{...syncSections, ...frontmatter},
-			{...fieldMappings, ...plugin.settings.fieldMappings});
+			{...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
 	});
 
 	return { fields, issueKey };

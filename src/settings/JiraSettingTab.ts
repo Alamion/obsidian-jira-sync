@@ -1,8 +1,8 @@
 import {App, normalizePath, Notice, PluginSettingTab, setIcon, Setting} from "obsidian";
 import JiraPlugin from "../main";
-import {fieldMappings} from "../tools/mappingObsidianJiraFields";
+import {obsidianJiraFieldMappings} from "../constants/obsidianJiraFieldsMapping";
 import {
-	functionToExpressionString, transform_string_to_functions_mappings, validateFunctionString
+	jiraFunctionToString, transform_string_to_functions_mappings, validateFunctionString
 } from "../tools/convertFunctionString";
 import {debugLog} from "../tools/debugLogging";
 
@@ -31,12 +31,9 @@ export class JiraSettingTab extends PluginSettingTab {
 				return;
 			}
 
-			// @ts-ignore
-			const fieldName = fieldNameInput.value.trim();
-			// @ts-ignore
-			const toJira = toJiraInput.value.trim();
-			// @ts-ignore
-			const fromJira = fromJiraInput.value.trim();
+			const fieldName = (fieldNameInput as any).value.trim();
+			const toJira = (toJiraInput as any).value.trim();
+			const fromJira = (fromJiraInput as any).value.trim();
 
 			// Only save valid mappings with all fields filled
 			if (fieldName) {
@@ -63,34 +60,6 @@ export class JiraSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		// containerEl.createEl("h2", { text: "Jira integration settings" });
-
-		new Setting(containerEl)
-			.setName("Jira username")
-			.setDesc("Your Jira username or email")
-			.addText((text) =>
-				text
-					.setPlaceholder("Username")
-					.setValue(this.plugin.settings.username)
-					.onChange(async (value) => {
-						this.plugin.settings.username = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Jira password or API token")
-			.setDesc("Your Jira password or API token")
-			.addText((text) => {
-				text.inputEl.type = "password";
-				text
-					.setPlaceholder("Password")
-					.setValue(this.plugin.settings.password)
-					.onChange(async (value) => {
-						this.plugin.settings.password = value;
-						await this.plugin.saveSettings();
-					});
-			});
 
 		new Setting(containerEl)
 			.setName("Jira URL")
@@ -101,6 +70,61 @@ export class JiraSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.jiraUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.jiraUrl = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Jira PAT")
+			.setDesc("Personal Access Token (preferred over username+password authentication)")
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text
+					.setPlaceholder("NjM5MDI5MzQ0NT...")
+					.setValue(this.plugin.settings.apiToken)
+					.onChange(async (value) => {
+						this.plugin.settings.apiToken = value;
+						await this.plugin.saveSettings();
+					})
+			});
+
+		new Setting(containerEl)
+			.setName("Jira username")
+			.setDesc("Your Jira username or email")
+			.addText((text) =>
+				text
+					.setPlaceholder("admin")
+					.setValue(this.plugin.settings.username)
+					.onChange(async (value) => {
+						this.plugin.settings.username = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Jira password")
+			.setDesc("Your Jira password or API token")
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text
+					.setPlaceholder("qwerty")
+					.setValue(this.plugin.settings.password)
+					.onChange(async (value) => {
+						this.plugin.settings.password = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+
+		new Setting(containerEl)
+			.setName("Session cookie name")
+			.setDesc("Only needed for username+password authentication")
+			.addText((text) =>
+				text
+					.setPlaceholder("JSESSIONID")
+					.setValue(this.plugin.settings.sessionCookieName)
+					.onChange(async (value) => {
+						this.plugin.settings.sessionCookieName = value;
 						await this.plugin.saveSettings();
 					})
 			);
@@ -119,19 +143,6 @@ export class JiraSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Session cookie name")
-			.setDesc("The name of the session cookie used by your Jira instance")
-			.addText((text) =>
-				text
-					.setPlaceholder("JSESSIONID")
-					.setValue(this.plugin.settings.sessionCookieName)
-					.onChange(async (value) => {
-						this.plugin.settings.sessionCookieName = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
 			.setName("Template path")
 			.setDesc("The path of used template for creating Jira tasks (with or without .md extension)")
 			.addText((text) =>
@@ -139,7 +150,6 @@ export class JiraSettingTab extends PluginSettingTab {
 					.setPlaceholder("templates/template1")
 					.setValue(this.plugin.settings.templatePath)
 					.onChange(async (value) => {
-						// Normalize path - ensure it has .md extension
 						value = normalizePath(value);
 						this.plugin.settings.templatePath = value;
 						await this.plugin.saveSettings();
@@ -214,19 +224,15 @@ export class JiraSettingTab extends PluginSettingTab {
 					configurable: true
 				});
 			} else {
-				// @ts-ignore
-				input.removeEventListener("change", input._validatorFunction);
-				// @ts-ignore
-				input._validatorFunction = validatorFunction;
+				input.removeEventListener("change", (input as any)._validatorFunction);
+				(input as any)._validatorFunction = validatorFunction;
 			}
 
 			if (requireValidating) {
-				// @ts-ignore
-				input.addEventListener("change", input._validatorFunction);
+				input.addEventListener("change", (input as any)._validatorFunction);
 				await validatorFunction(); // Run initial validation
 			} else {
-				// @ts-ignore
-				input.removeEventListener("change", input._validatorFunction);
+				input.removeEventListener("change", (input as any)._validatorFunction);
 				pointInvalidField({ isValid: true}, input, false); // Clear any validation errors
 			}
 		}
@@ -315,18 +321,18 @@ export class JiraSettingTab extends PluginSettingTab {
 
 		const reloadBtn = buttonView.createEl("button", {
 			text: "",
-			cls: "reset-field-mappings-btn"
+			cls: "reload-field-mappings-btn"
 		})
 		setIcon(reloadBtn, "list-restart")
 		reloadBtn.addEventListener("click", async () => {
-			this.plugin.settings.fieldMappings = fieldMappings;
+			this.plugin.settings.fieldMappings = obsidianJiraFieldMappings;
 
 			// Also reset the string representations with default values
 			const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
-			for (const [fieldName, mapping] of Object.entries(fieldMappings)) {
+			for (const [fieldName, mapping] of Object.entries(obsidianJiraFieldMappings)) {
 				defaultMappingsStrings[fieldName] = {
-					toJira: functionToExpressionString(mapping.toJira),
-					fromJira: functionToExpressionString(mapping.fromJira)
+					toJira: jiraFunctionToString(mapping.toJira, false),
+					fromJira: jiraFunctionToString(mapping.fromJira, true)
 				};
 			}
 			this.plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
@@ -369,8 +375,8 @@ export class JiraSettingTab extends PluginSettingTab {
 					if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 						await addFieldMapping(
 							fieldName,
-							functionToExpressionString(mapping.toJira),
-							functionToExpressionString(mapping.fromJira)
+							jiraFunctionToString(mapping.toJira, false),
+							jiraFunctionToString(mapping.fromJira, true)
 						);
 					}
 				}

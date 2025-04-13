@@ -1,7 +1,7 @@
 import { Plugin } from "obsidian";
 import { JiraSettingTab } from "./settings/JiraSettingTab";
-import { JiraIssueType, JiraProject, JiraSettings } from "./interfaces";
-import { DEFAULT_SETTINGS } from "./settings/default";
+import { JiraIssueType, JiraProject } from "./interfaces";
+import {DEFAULT_SETTINGS, JiraSettings} from "./settings/default";
 import {
 	registerUpdateIssueCommand,
 	registerGetIssueCommand,
@@ -16,8 +16,7 @@ import {registerUpdateWorkLogBatchCommand} from "./commands/addWorkLogBatch";
  */
 export default class JiraPlugin extends Plugin {
 	settings: JiraSettings;
-	projects: JiraProject[] = [];
-	issueTypes: JiraIssueType[] = [];
+	temp_vars = {projects: [] as JiraProject[], issueTypes: [] as JiraIssueType[]};
 
 	async onload() {
 		await this.loadSettings();
@@ -28,7 +27,6 @@ export default class JiraPlugin extends Plugin {
 		// 	"Push current Kanban issues statuses to Jira",
 		// 	() => {
 		// 		// Use the getIssue command's functionality
-		// 		// @ts-ignore
 		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:push-all-issues"];
 		// 		if (getIssuesCommand) {
 		// 			getIssuesCommand.callback();
@@ -42,7 +40,6 @@ export default class JiraPlugin extends Plugin {
 		// 	"Pull Jira all issues statuses + sync statuses of Kanban",
 		// 	() => {
 		// 		// Use the getIssue command's functionality
-		// 		// @ts-ignore
 		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:pull-all-issues"];
 		// 		if (getIssuesCommand) {
 		// 			getIssuesCommand.callback();

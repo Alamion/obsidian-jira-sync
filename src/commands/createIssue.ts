@@ -1,7 +1,7 @@
 import { Notice, TFile } from "obsidian";
 import JiraPlugin from "../main";
 import { IssueTypeModal, ProjectModal } from "../modals";
-import {authenticate, fetchIssueTypes, fetchProjects} from "../api";
+import {fetchIssueTypes, fetchProjects} from "../api";
 import {createIssueFromFile} from "../file_operations/createUpdateIssue";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
@@ -23,20 +23,17 @@ export function registerCreateIssueCommand(plugin: JiraPlugin): void {
  */
 export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void> {
 	try {
-		if (!(await authenticate(plugin))) {
-			return;
-		}
 
 		// Fetch projects to show in selection modal
 		await fetchProjects(plugin);
 
 		// Open project selection modal
-		new ProjectModal(plugin.app, plugin.projects, async (projectKey: string) => {
+		new ProjectModal(plugin.app, plugin.temp_vars.projects, async (projectKey: string) => {
 			// Fetch issue types for the selected project
 			await fetchIssueTypes(plugin, projectKey);
 
 			// Open issue type selection modal
-			new IssueTypeModal(plugin.app, plugin.issueTypes, async (issueType: string) => {
+			new IssueTypeModal(plugin.app, plugin.temp_vars.issueTypes, async (issueType: string) => {
 				try {
 					// Create the issue with selected project and issue type
 					const issueKey = await createIssueFromFile(plugin, file, projectKey, issueType);

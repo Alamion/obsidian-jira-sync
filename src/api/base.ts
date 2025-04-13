@@ -12,7 +12,7 @@ export async function baseRequest(
 	const response = await requestUrl({
 		url: `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
 		method: method,
-		headers: getAuthHeaders(plugin),
+		headers: await getAuthHeaders(plugin),
 		contentType: "application/json",
 		throw: false,
 		body
