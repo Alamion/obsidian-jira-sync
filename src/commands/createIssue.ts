@@ -1,7 +1,7 @@
 import { Notice, TFile } from "obsidian";
 import JiraPlugin from "../main";
 import { IssueTypeModal, ProjectModal } from "../modals";
-import {authenticate, fetchIssueTypes, fetchProjects} from "../api";
+import {fetchIssueTypes, fetchProjects} from "../api";
 import {createIssueFromFile} from "../file_operations/createUpdateIssue";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
@@ -23,9 +23,6 @@ export function registerCreateIssueCommand(plugin: JiraPlugin): void {
  */
 export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void> {
 	try {
-		if (!(await authenticate(plugin))) {
-			return;
-		}
 
 		// Fetch projects to show in selection modal
 		await fetchProjects(plugin);

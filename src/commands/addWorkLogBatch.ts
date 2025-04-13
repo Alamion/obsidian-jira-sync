@@ -4,62 +4,45 @@ import {addWorkLog} from "../api";
 import {debugLog} from "../tools/debugLogging";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
-/**
- * Register the update work log command
- */
 export function registerUpdateWorkLogBatchCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "update-work-log-jira-batch",
 		name: "Update work log in Jira",
 		checkCallback: (checking: boolean) => {
-			return checkCommandCallback(plugin, checking, processWorkLog, [], ["jira_selected_week_data","key"]);
+			return checkCommandCallback(plugin, checking, processFrontmatterWorkLogs, ["jira_worklog_batch"], ["jira_worklog_batch"]);
 		},
 	});
 }
 
-async function processWorkLog(plugin: JiraPlugin, _: TFile, jira_selected_week_data?: any, __?: string): Promise<void> {
-	await processFrontmatterWorkLogs(plugin, jira_selected_week_data);
-}
-
-/**
- * Process work logs from frontmatter data
- */
-async function processFrontmatterWorkLogs(plugin: JiraPlugin, jira_selected_week_data?: any): Promise<boolean> {
+async function processFrontmatterWorkLogs(plugin: JiraPlugin, _: TFile, jira_worklog_batch: any): Promise<void> {
 	try {
 		let workLogData: any[] = [];
 		let foundData = false;
 
 		try {
-			if (typeof jira_selected_week_data === 'string') {
-				workLogData = JSON.parse(jira_selected_week_data);
+			if (typeof jira_worklog_batch === 'string') {
+				workLogData = JSON.parse(jira_worklog_batch);
 				foundData = true;
-			} else if (typeof jira_selected_week_data === 'object') {
-				workLogData = jira_selected_week_data;
+			} else if (typeof jira_worklog_batch === 'object') {
+				workLogData = jira_worklog_batch;
 				foundData = true;
 			} else {
-				throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_selected_week_data}`);
+				throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_worklog_batch}`);
 			}
 		} catch (error) {
-			console.error("Failed to parse jira_selected_week_data:", error);
+			console.error("Failed to parse jira_worklog_batch:", error);
 		}
 
 		if (!foundData || workLogData.length === 0) {
-			return false;
+			return;
 		}
-		// Process found work logs
 		await processWorkLogBatch(plugin, workLogData);
-		return true;
 	} catch (error) {
 		console.error("Error processing frontmatter work logs:", error);
 		new Notice("Failed to process work log data from frontmatter");
-		return false;
 	}
 }
 
-
-/**
- * Process a batch of work logs
- */
 async function processWorkLogBatch(plugin: JiraPlugin, workLogs: any[]): Promise<void> {
 	const results = {
 		success: 0,
@@ -95,13 +78,9 @@ async function processWorkLogBatch(plugin: JiraPlugin, workLogs: any[]): Promise
 		}
 	}
 
-	// Show summary and errors
 	showResults(results);
 }
 
-/**
- * Show batch processing results
- */
 function showResults(results: { success: number, total: number, failures: { reason: string; issueKeys: string[] }[] }): void {
 	new Notice(`Work logs updated: ${results.success}/${results.total} succeeded`);
 
@@ -116,9 +95,6 @@ function showResults(results: { success: number, total: number, failures: { reas
 	}
 }
 
-/**
- * Add a failure entry to the results object
- */
 function addFailure(results: { failures: { reason: string; issueKeys: string[] }[] }, reason: string, issueKey: string): void {
 	const existingFailure = results.failures.find(f => f.reason === reason);
 	if (existingFailure) {
@@ -128,9 +104,6 @@ function addFailure(results: { failures: { reason: string; issueKeys: string[] }
 	}
 }
 
-/**
- * Convert date from DD-MM-YYYY HH:MM format to YYYY-MM-DDTHH:MM:SS.000+0000
- */
 function convertToStandardDate(dateString: string): string | null {
 	try {
 		const [datePart, timePart] = dateString.split(' ');
@@ -153,8 +126,8 @@ function parseDuration(input: string): string {
 		const value = parseInt(match[1], 10);
 		const unit = match[2];
 
-		if (value === 0) continue; // Filter out "0w", "0d", "0h", "0m", "0s"
-		if (unit !== 's') validParts.push(`${value}${unit}`); // Exclude seconds
+		if (value === 0) continue;
+		if (unit !== 's') validParts.push(`${value}${unit}`);
 	}
 
 	return validParts.join(' ');

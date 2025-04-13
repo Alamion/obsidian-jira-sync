@@ -1,8 +1,8 @@
 import { Notice } from "obsidian";
-import { FieldMapping } from "./mappingObsidianJiraFields";
 import { JiraIssue } from "../interfaces";
 import { parse } from "acorn";
 import {debugLog} from "./debugLogging";
+import {FieldMapping} from "../constants/obsidianJiraFieldsMapping";
 
 // Constants for validation and error messages
 const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout"]; // Prevent unsafe code execution
@@ -23,11 +23,10 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 
 		try {
 			if (isSimpleExpression(fnString) || (fnString.startsWith("{") && fnString.endsWith("}") && !fnString.includes("return"))) {
-				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = any`:`${varName} = {}`).join(', ')}) => ${fnString}`;
+				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = {fields: {}}`:`${varName} = {}`).join(', ')}) => ${fnString}`;
 			}
 			debugLog(`checking function: ${fnString}`);
-			// @ts-ignore
-			let func = iframeWindow.eval(fnString);
+			let func = (iframeWindow as any).eval(fnString);
 			if (typeof func === 'function') {
 				func(); // Execute the function to catch runtime errors
 			}
@@ -41,12 +40,6 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 	});
 }
 
-/**
- * Validates a function string for security and syntax issues
- * @param fnString - The function string to validate
- * @param approved_vars - An array of approved variable names
- * @returns An object with validation result and optional error message
- */
 export async function validateFunctionString(fnString: string, approved_vars: string[] = []): Promise<{ isValid: boolean; errorMessage?: string }> {
 	// Check for null, undefined or empty string
 	if (!fnString || fnString.trim().length === 0) {
@@ -106,7 +99,6 @@ export async function safeStringToFunction(
 		if (exprString.trim().length === 0) {
 			return () => null;
 		}
-		// First validate the string
 		if (extraValidate) {
 			const validation = await validateFunctionString(exprString, type === 'fromJira' ? ['issue', 'data_source'] : ['value']);
 			if (!validation.isValid) {
@@ -117,27 +109,20 @@ export async function safeStringToFunction(
 		}
 
 
-		// Extract just the function body if it's an arrow function
 		const arrowFnMatch = exprString.match(/^\s*\((.*?)\)\s*=>\s*(.*)$/s);
 		let body = arrowFnMatch ? arrowFnMatch[2].trim() : exprString.trim();
 
-		// If it's a simple expression, wrap it in a return statement
 		if (isSimpleExpression(body)) {
 			body = `return ${body};`;
 		}
 
-		// If body is wrapped in curly braces but doesn't contain a return statement, add one
 		if (body.startsWith("{") && body.endsWith("}") && !body.includes("return")) {
-			// Remove the outer braces, add return and put the braces back
 			body = `{ return ${body.slice(1, -1)} }`;
 		}
 
-		// Create appropriate function based on the type
 		if (type === 'toJira') {
 			return function(value: any) {
 				const context = {
-					// Add utility functions that should be available in the executed function
-					// markdownToJira: utility.markdownToJira
 				};
 
 				const fn = new Function('value', `
@@ -154,8 +139,6 @@ export async function safeStringToFunction(
 		} else { // fromJira
 			return function(issue: JiraIssue, data_source: Record<string, any> | null) {
 				const context = {
-					// Add utility functions for the fromJira context
-					// jiraToMarkdown: utility.jiraToMarkdown
 				};
 
 				const fn = new Function('issue', 'data_source', `
@@ -175,6 +158,48 @@ export async function safeStringToFunction(
 		new Notice(`Failed to create function: ${(error as Error).message}`);
 		return null;
 	}
+}
+
+export function jiraFunctionToString(fn: Function, isFromJira: boolean = false): string {
+	const baseStr = functionToExpressionString(fn);
+
+	if (!baseStr) return baseStr;
+
+	if (isFromJira) {
+		const fnStr = fn.toString().trim();
+
+		const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
+		if (paramMatch) {
+			const params = (paramMatch[1] || paramMatch[2] || '').split(',').map(p => p.trim());
+
+			let resultStr = baseStr;
+
+			if (params.length >= 1 && params[0]) {
+				const regex1 = new RegExp(`\\b${params[0]}\\b`, 'g');
+				resultStr = resultStr.replace(regex1, 'issue');
+			}
+			if (params.length >= 2 && params[1]) {
+				const regex2 = new RegExp(`\\b${params[1]}\\b`, 'g');
+				resultStr = resultStr.replace(regex2, 'data_source');
+			}
+
+			return resultStr;
+		}
+	} else {
+		const fnStr = fn.toString().trim();
+
+		const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
+		if (paramMatch) {
+			const param = (paramMatch[1] || paramMatch[2] || '').trim();
+
+			if (param) {
+				const regex = new RegExp(`\\b${param}\\b`, 'g');
+				return baseStr.replace(regex, 'value');
+			}
+		}
+	}
+
+	return baseStr;
 }
 
 export function functionToExpressionString(fn: Function): string {

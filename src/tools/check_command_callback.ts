@@ -31,7 +31,7 @@ export function checkCommandCallback(
 		if (!checking) {
 			functionToExecute(plugin, file, ...functionArgsValues).catch(
 				(error) => {
-					new Notice("Error creating issue: " + (error.message || "Unknown error"));
+					new Notice(`Error when doing ${functionToExecute.name}: ` + (error.message || "Unknown error"));
 					console.error(error);
 				}
 			);

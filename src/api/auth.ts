@@ -1,18 +1,11 @@
 import { Notice, requestUrl } from "obsidian";
 import JiraPlugin from "../main";
 
-/**
- * Get the session cookie key
- */
 export function getSessionCookieKey(plugin: JiraPlugin): string {
-	// @ts-ignore
-	return "jira-issue-managing-session-cookie-" + plugin.app.appId;
+	return "jira-issue-managing-session-cookie-" + (plugin.app as any).appId;
 }
 
-/**
- * Authenticate with Jira and get session cookie
- * @returns true if authentication was successful
- */
+// Session cookie only
 export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 	try {
 		if (!validateSettings(plugin)) {
@@ -44,23 +37,35 @@ export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 	}
 }
 
-/**
- * Validate that required settings are present
- */
 export function validateSettings(plugin: JiraPlugin): boolean {
-	if (!plugin.settings.username || !plugin.settings.password || !plugin.settings.jiraUrl) {
-		new Notice("Please configure Jira username, password and URL in plugin settings");
+	if (!plugin.settings.jiraUrl) {
+		new Notice("Please configure Jira URL in plugin settings");
+		return false;
+	}
+	if ((!plugin.settings.username || !plugin.settings.password) && !plugin.settings.apiToken) {
+		new Notice("Please configure Jira username and password or PAT API token in plugin settings");
 		return false;
 	}
 	return true;
 }
 
-/**
- * Get the request headers with authentication
- */
-export function getAuthHeaders(plugin: JiraPlugin): Record<string, string> {
+
+export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string, string>> {
+	const pat = plugin.settings.apiToken;
+	if (pat) {
+		return {
+			Authorization: `Bearer ${pat}`,
+			"Content-type": "application/json",
+			Origin: plugin.settings.jiraUrl,
+		};
+	}
+	let cookie = localStorage.getItem(getSessionCookieKey(plugin));
+	if (!cookie) {
+		await authenticate(plugin);
+		cookie = localStorage.getItem(getSessionCookieKey(plugin));
+	}
 	return {
-		Cookie: `${plugin.settings.sessionCookieName}=${localStorage.getItem(getSessionCookieKey(plugin))}`,
+		Cookie: `${plugin.settings.sessionCookieName}=${cookie}`,
 		"Content-type": "application/json",
 		Origin: plugin.settings.jiraUrl,
 	};

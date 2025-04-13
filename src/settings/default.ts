@@ -1,10 +1,20 @@
-import {JiraSettings} from "../interfaces";
-// import {fieldMappings} from "../tools/mappingObsidianJiraFields";
+import {FieldMapping} from "../constants/obsidianJiraFieldsMapping";
 
-/**
- * Default plugin settings
- */
+export interface JiraSettings {
+	apiToken: string;
+	username: string;
+	password: string;
+	jiraUrl: string;
+	issuesFolder: string;
+	sessionCookieName: string;
+	templatePath: string;
+	fieldMappings: Record<string, FieldMapping>;
+	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string }>;
+	enableFieldValidation: boolean;
+}
+
 export const DEFAULT_SETTINGS: JiraSettings = {
+	apiToken: "",
 	username: "",
 	password: "",
 	jiraUrl: "",

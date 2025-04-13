@@ -1,13 +1,10 @@
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {IssueSearchModal} from "../modals";
-import {authenticate, fetchIssue, validateSettings} from "../api";
+import {fetchIssue, validateSettings} from "../api";
 import {createOrUpdateIssueNote} from "../file_operations/getIssue";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
-/**
- * Register the get issue command
- */
 export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira-key",
@@ -23,9 +20,6 @@ export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
 	});
 }
 
-/**
- * Register the get issue command
- */
 export function registerGetIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira",
@@ -36,28 +30,14 @@ export function registerGetIssueCommand(plugin: JiraPlugin): void {
 	});
 }
 
-
-/**
- * Open the issue selection modal
- */
 function openIssueModal(plugin: JiraPlugin): void {
 	new IssueSearchModal(plugin.app, async (issueKey: string) => {
 		await fetchAndOpenIssue(plugin, null, issueKey);
 	}).open();
 }
 
-/**
- * Fetch an issue from Jira and open it in Obsidian
- * @param plugin The plugin instance
- * @param file The file containing issue data
- * @param issueKey The issue key to fetch
- */
 export async function fetchAndOpenIssue(plugin: JiraPlugin, file: TFile | null, issueKey: string): Promise<void> {
 	try {
-		if (!(await authenticate(plugin))) {
-			return;
-		}
-
 		const issue = await fetchIssue(plugin, issueKey);
 		await createOrUpdateIssueNote(plugin, issue, file?.path);
 	} catch (error) {

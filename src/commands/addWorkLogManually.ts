@@ -1,8 +1,8 @@
 
-import {Notice, TFile} from "obsidian";
+import {TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {WorkLogModal} from "../modals/issueWorkLogModal";
-import {addWorkLog, authenticate} from "../api";
+import {addWorkLog} from "../api";
 import {checkCommandCallback} from "../tools/check_command_callback";
 
 export function registerUpdateWorkLogManuallyCommand(plugin: JiraPlugin): void {
@@ -10,25 +10,12 @@ export function registerUpdateWorkLogManuallyCommand(plugin: JiraPlugin): void {
 		id: "update-work-log-jira-manually",
 		name: "Update work log in Jira manually",
 		checkCallback: (checking: boolean) => {
-			return checkCommandCallback(plugin, checking, processWorkLog, [], ["jira_selected_week_data","key"]);
+			return checkCommandCallback(plugin, checking, processManualWorkLog, ["key"], ["key"]);
 		},
 	});
 }
 
-async function processWorkLog(plugin: JiraPlugin, _: TFile, __?: any, issueKey?: string): Promise<void> {
-	await processManualWorkLog(plugin, issueKey);
-}
-
-
-async function processManualWorkLog(plugin: JiraPlugin, issueKey?: string): Promise<void> {
-	if (!(await authenticate(plugin))) {
-		return;
-	}
-
-	if (!issueKey) {
-		new Notice("No issue key found in the current file");
-		return;
-	}
+async function processManualWorkLog(plugin: JiraPlugin, _: TFile, issueKey: string): Promise<void> {
 
 	new WorkLogModal(plugin.app, async (timeSpent: string, startDate: string, comment: string) => {
 		await addWorkLog(plugin, issueKey, timeSpent, startDate, comment);
