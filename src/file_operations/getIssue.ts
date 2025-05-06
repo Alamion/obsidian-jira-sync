@@ -32,6 +32,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 		new Notice(`Issue ${issue.key} imported successfully`);
 	} catch (error) {
 		new Notice("Error creating issue note: " + (error.message || "Unknown error"));
+		console.error(error);
 	}
 }
 

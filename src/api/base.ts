@@ -1,32 +1,38 @@
 import JiraPlugin from "../main";
 import {requestUrl} from "obsidian";
-import {getAuthHeaders} from "./auth";
+import {authenticate, getAuthHeaders, getSessionCookieKey} from "./auth";
 import {debugLog} from "../tools/debugLogging";
 
 export async function baseRequest(
 	plugin: JiraPlugin,
 	method: string,
 	additional_url_path: string,
-	body?: string
+	body?: string,
+	retries: number = 1
 ): Promise<any> {
-	const response = await requestUrl({
+	const requestParams = {
 		url: `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
 		method: method,
 		headers: await getAuthHeaders(plugin),
 		contentType: "application/json",
 		throw: false,
 		body
-	});
+	}
+	debugLog(requestParams)
+	const response = await requestUrl(requestParams);
+	debugLog(response);
 	if (response.status < 200 || response.status >= 300) {
-		const error = new Error(`Error updating issue: 
+		if (response.status === 401 && retries > 0) {
+			await authenticate(plugin);
+			return await baseRequest(plugin, method, additional_url_path, body, retries-1);
+		}
+		// console.error(error);
+		throw new Error(`
 ${response.text || "Unknown error"}
 ${body && '\nbody:' + body || ""}`);
-		console.error(error);
-		throw error;
 	}
 	debugLog({"url": `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
 		"method": method, "body": body});
-	debugLog(response);
 	return response.status === 204 ? null : response.json;
 
 }

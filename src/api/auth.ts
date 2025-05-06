@@ -49,24 +49,56 @@ export function validateSettings(plugin: JiraPlugin): boolean {
 	return true;
 }
 
+// Helper function to create Basic Auth header
+function createBasicAuthHeader(email: string, token: string): string {
+	const credentials = `${email}:${token}`;
+	// Convert to base64
+	const base64Credentials = btoa(credentials);
+	return `Basic ${base64Credentials}`;
+}
 
 export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string, string>> {
-	const pat = plugin.settings.apiToken;
-	if (pat) {
-		return {
-			Authorization: `Bearer ${pat}`,
-			"Content-type": "application/json",
-			Origin: plugin.settings.jiraUrl,
-		};
-	}
-	let cookie = localStorage.getItem(getSessionCookieKey(plugin));
-	if (!cookie) {
-		await authenticate(plugin);
-		cookie = localStorage.getItem(getSessionCookieKey(plugin));
-	}
-	return {
-		Cookie: `${plugin.settings.sessionCookieName}=${cookie}`,
+	// Common headers
+	const commonHeaders = {
 		"Content-type": "application/json",
 		Origin: plugin.settings.jiraUrl,
 	};
+
+	// Personal Access Token
+	const pat = plugin.settings.apiToken?.trim() || "";
+
+	// Option 1: Bearer token (PAT)
+	if (plugin.settings.authMethod === "bearer" || !plugin.settings.authMethod) {
+		return {
+			...commonHeaders,
+			Authorization: `Bearer ${pat}`,
+		};
+	}
+
+	// Option 2: Basic Auth with API token
+	else if (plugin.settings.authMethod === "basic") {
+		return {
+			...commonHeaders,
+			Authorization: createBasicAuthHeader(plugin.settings.email || "", pat),
+		};
+	}
+
+	else if (plugin.settings.authMethod === "session") {
+		// Option 3: Session cookie
+		let cookie = localStorage.getItem(getSessionCookieKey(plugin));
+		if (!cookie) {
+			await authenticate(plugin);
+			cookie = localStorage.getItem(getSessionCookieKey(plugin));
+		}
+
+		if (cookie) {
+			return {
+				...commonHeaders,
+				Cookie: `${plugin.settings.sessionCookieName}=${cookie}`,
+			};
+		}
+	}
+
+	// No valid auth method found
+	throw new Error("No valid authentication method available");
 }

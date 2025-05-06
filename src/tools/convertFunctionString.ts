@@ -3,6 +3,7 @@ import { JiraIssue } from "../interfaces";
 import { parse } from "acorn";
 import {debugLog} from "./debugLogging";
 import {FieldMapping} from "../constants/obsidianJiraFieldsMapping";
+import {defaultIssue} from "../constants/defaultIssue";
 
 // Constants for validation and error messages
 const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout"]; // Prevent unsafe code execution
@@ -23,7 +24,7 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 
 		try {
 			if (isSimpleExpression(fnString) || (fnString.startsWith("{") && fnString.endsWith("}") && !fnString.includes("return"))) {
-				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = {fields: {}}`:`${varName} = {}`).join(', ')}) => ${fnString}`;
+				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = ${JSON.stringify(defaultIssue)}`:`${varName} = {}`).join(', ')}) => ${fnString}`;
 			}
 			debugLog(`checking function: ${fnString}`);
 			let func = (iframeWindow as any).eval(fnString);

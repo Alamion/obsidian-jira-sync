@@ -37,11 +37,6 @@ function openIssueModal(plugin: JiraPlugin): void {
 }
 
 export async function fetchAndOpenIssue(plugin: JiraPlugin, file: TFile | null, issueKey: string): Promise<void> {
-	try {
-		const issue = await fetchIssue(plugin, issueKey);
-		await createOrUpdateIssueNote(plugin, issue, file?.path);
-	} catch (error) {
-		new Notice("Error retrieving issue: " + (error.message || "Unknown error"));
-		console.error(error);
-	}
+	const issue = await fetchIssue(plugin, issueKey);
+	await createOrUpdateIssueNote(plugin, issue, file?.path);
 }

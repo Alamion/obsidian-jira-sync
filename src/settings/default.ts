@@ -1,10 +1,15 @@
 import {FieldMapping} from "../constants/obsidianJiraFieldsMapping";
 
 export interface JiraSettings {
+	collapsedSections: Record<string, boolean>;
+
+	authMethod: "bearer" | "basic" | "session";
 	apiToken: string;
 	username: string;
+	email: string;
 	password: string;
 	jiraUrl: string;
+
 	issuesFolder: string;
 	sessionCookieName: string;
 	templatePath: string;
@@ -14,10 +19,18 @@ export interface JiraSettings {
 }
 
 export const DEFAULT_SETTINGS: JiraSettings = {
+	collapsedSections: {
+		connection: true,
+		general: true,
+		fieldMappings: false
+	},
+	authMethod: "bearer",
 	apiToken: "",
 	username: "",
+	email: "",
 	password: "",
 	jiraUrl: "",
+
 	issuesFolder: "jira-issues",
 	sessionCookieName: "JSESSIONID",
 	templatePath: "",
