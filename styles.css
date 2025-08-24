@@ -18,10 +18,48 @@
 	padding-left: 20px;
 }
 
-.jira-test-mappings-container {
-  margin-top: 2em;
-  padding: 1em 0;
+
+/* Template Selector Styles */
+.suggest-select-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
 }
+
+.suggest-select-container .icon-open {
+	position: absolute;
+	bottom: 1em;
+	right: 1em;
+}
+
+.suggest-search-input {
+	padding: 6px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
+.suggest-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.suggest-select-item {
+	max-width: 400px;
+	width: 100%;
+	align-self: flex-end;
+}
+
+
+.mod-warning {
+	color: var(--text-warning);
+	font-style: italic;
+	margin-top: 4px;
+}
+
 
 .test-mappings-header {
   margin-bottom: 0.2em;
@@ -51,11 +89,12 @@
 }
 
 .value-display {
-  background: var(--background-primary-alt);
+  background: var(--background-secondary);
   border-radius: 4px;
   padding: 0.5em 0.8em;
-  font-family: var(--font-monospace);
+  /*font-family: var(--font-monospace);*/
   font-size: 0.98em;
+  min-height: 2em;
   margin-top: 0.2em;
   white-space: pre-wrap;
   word-break: break-all;
@@ -69,32 +108,15 @@
 .test-mapping-item .from-jira-input {
   width: 100%;
   min-height: 2.2em;
-  font-family: var(--font-monospace);
+  /*font-family: var(--font-monospace);*/
   font-size: 1em;
   margin-top: 0.2em;
   border-radius: 4px;
   border: 1px solid var(--background-modifier-border);
-  background: var(--background-primary-alt);
+  background: var(--background-secondary);
   color: var(--text-normal);
   padding: 0.3em 0.5em;
   resize: vertical;
-}
-
-.remove-field-btn {
-  position: absolute;
-  top: 0.5em;
-  right: 0.7em;
-  background: var(--background-modifier-error);
-  color: var(--text-on-accent);
-  border: none;
-  border-radius: 4px;
-  font-size: 1.1em;
-  padding: 0.1em 0.5em;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.remove-field-btn:hover {
-  background: var(--background-modifier-error-hover);
 }
 
 .add-test-mapping-btn {
@@ -109,26 +131,31 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.add-test-mapping-btn:hover {
-  background: var(--interactive-accent-hover);
-}
-
-.jira-field-mappings {
-	margin-top: 10px;
-}
 
 .field-mappings-list {
-	margin: 10px 0;
+	margin: 20px 0;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	background: var(--background-primary-alt);
+	padding: 20px;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
 }
 
 .field-mapping-item {
-	display: grid;
-	grid-template-columns: 1fr 2fr 2fr auto;
-	gap: 8px;
-	margin-bottom: 8px;
-	padding: 8px;
+	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
-	align-items: center;
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	position: relative;
+	transition: all 0.2s ease;
+}
+
+.field-mapping-item:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .work-description-container textarea {
@@ -136,63 +163,111 @@
 }
 
 .field-name-container {
-	background-color: var(--background-primary);
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 2px solid var(--background-modifier-border);
 }
 
 
 .field-mapping-label {
-	font-weight: 500;
+	font-weight: 600;
+	color: var(--text-normal);
+	font-size: 0.9em;
+	/*text-transform: uppercase;*/
+	letter-spacing: 0.5px;
+	display: block;
+	margin-bottom: 8px;
 }
 
-.field-name-input, .to-jira-input, .from-jira-input {
+.field-name-input {
 	width: 100%;
-	border: 1px solid var(--background-modifier-border);
+	padding: 10px 12px;
+	border: 2px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	font-size: 1em;
+	font-weight: 500;
+	transition: border-color 0.2s ease;
+}
+
+.field-name-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);
+}
+
+.functions-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+	margin-top: 16px;
+}
+
+.to-jira-container,
+.from-jira-container {
+	background: var(--background-secondary-alt);
+	padding: 16px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border-hover);
+}
+
+.test-mapping-item .from-jira-container {
+	background: var(--transparent);
+	padding: 0;
+	border: 0;
 }
 
 
-.field-mapping-item .invalid,
-.setting-item.invalid input {
-	background-color: rgba(var(--color-red-rgb), 0.2);
+.to-jira-input,
+.from-jira-input {
+	width: 100%;
+	min-height: 40px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+	line-height: 1.4;
+	resize: vertical;
+	transition: border-color 0.2s ease;
+}
+
+.to-jira-input:focus,
+.from-jira-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.1);
+}
+
+.field-mapping-item .invalid {
+	border-color: var(--color-red) !important;
+	background-color: rgba(var(--color-red-rgb), 0.1) !important;
+	box-shadow: 0 0 0 2px rgba(var(--color-red-rgb), 0.2) !important;
 }
 
 .remove-field-btn {
-	background-color: var(--background-modifier-error);
+	position: absolute;
+	top: 8px;
+	right: 16px;
+	background: var(--background-modifier-error);
 	color: var(--text-on-accent);
+	border: none;
+	border-radius: 50%;
+	width: 28px;
+	height: 28px;
+	font-size: 14px;
 	cursor: pointer;
-	font-weight: bold;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.add-field-mapping-btn {
-	padding: 6px 12px;
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-.mapping-examples {
-	margin-top: 20px;
-	padding: 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-}
-
-.mapping-examples ul {
-	padding-left: 20px;
-}
-
-.mapping-examples li {
-	margin-bottom: 10px;
-}
-
-.use-example-btn {
-	margin-left: 8px;
-	padding: 2px 6px;
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 0.8em;
+.remove-field-btn:hover {
+	background: var(--background-modifier-error-hover);
+	transform: scale(1.1);
 }
 
 .button-view {
@@ -207,6 +282,121 @@
 	width: fit-content;
 }
 
+.button-view {
+	display: flex;
+	justify-content: flex-start;
+	gap: 12px;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.button-view button {
+	padding: 10px 16px;
+	border: none;
+	border-radius: 6px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	position: relative;
+}
+
+.add-field-mapping-btn {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.add-field-mapping-btn:hover {
+	background: var(--interactive-accent-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reset-field-mappings-btn,
+.reload-field-mappings-btn {
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.reset-field-mappings-btn:hover,
+.reload-field-mappings-btn:hover {
+	background: var(--background-secondary-alt);
+	border-color: var(--interactive-accent);
+	transform: translateY(-1px);
+}
+
+.button-view button::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--background-tooltip);
+	color: var(--text-on-accent);
+	padding: 6px 10px;
+	border-radius: 4px;
+	font-size: 0.8em;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+	margin-bottom: 8px;
+}
+
+.button-view button:hover::after {
+	opacity: 1;
+}
+
+.mapping-examples {
+	margin-top: 24px;
+	padding: 20px;
+	background: var(--background-secondary-alt);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.mapping-examples h4 {
+	color: var(--text-normal);
+	margin-bottom: 16px;
+	font-size: 1.1em;
+}
+
+.mapping-examples ul {
+	list-style: none;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+
+.mapping-examples li {
+	background: var(--background-primary);
+	padding: 16px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border-hover);
+	position: relative;
+}
+
+.use-example-btn {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	padding: 6px 12px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	font-size: 0.8em;
+	cursor: pointer;
+	transition: background 0.2s ease;
+}
+
+.use-example-btn:hover {
+	background: var(--interactive-accent-hover);
+}
 
 /*hljs.css*/
 pre code.hljs {
@@ -330,4 +520,237 @@ code.hljs {
 .hljs-tag {
 	/* purposely ignored */
 
+}
+
+/* Period selector improvements */
+.period-selector .setting-item-control {
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 0.75rem;
+}
+
+.period-selector .timekeep-btn {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 6px;
+	padding: 0.5rem 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.period-selector .timekeep-btn:hover:not(:disabled) {
+	background: var(--interactive-accent-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.period-selector .timekeep-btn:disabled {
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* Custom dates container */
+.custom-dates-container {
+	margin-top: 1rem;
+	padding: 1.25rem;
+	background: var(--background-primary-alt);
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border-hover);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Main display container */
+.all-periods-display {
+	margin-top: 1.5rem;
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}
+
+.timekeep-section-title {
+	color: var(--text-normal);
+	margin-bottom: 1.5rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 2px solid var(--interactive-accent);
+	font-size: 1.1em;
+	font-weight: 600;
+}
+
+/* Period sections */
+.period-section {
+	margin-bottom: 2rem;
+	background: var(--background-primary);
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.timekeep-period-title {
+	background: var(--background-secondary);
+	padding: 0.875rem 1.25rem;
+	margin: 0;
+	color: var(--text-normal);
+	font-weight: 600;
+	font-size: 0.95em;
+	border-bottom: 1px solid var(--background-modifier-border);
+	letter-spacing: 0.025em;
+}
+
+/* Table container and styling */
+.timekeep-table-container {
+	overflow-x: auto;
+	background: var(--background-primary);
+}
+
+.timekeep-entries-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875em;
+}
+
+.timekeep-entries-table th {
+	background: var(--background-secondary-alt);
+	color: var(--text-normal);
+	font-weight: 600;
+	text-align: left;
+	padding: 0.75rem 1rem;
+	border-bottom: 2px solid var(--background-modifier-border);
+	font-size: 0.8em;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	white-space: nowrap;
+}
+
+.timekeep-entries-table td {
+	padding: 0.875rem 1rem;
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+	vertical-align: top;
+	line-height: 1.4;
+}
+
+.timekeep-entries-table tbody tr {
+	transition: background-color 0.2s ease;
+}
+
+.timekeep-entries-table tbody tr:hover {
+	background: var(--background-secondary-alt);
+}
+
+.timekeep-table-row-alt {
+	background: var(--background-primary-alt);
+}
+
+.timekeep-table-row-alt:hover {
+	background: var(--background-secondary-alt);
+}
+
+/* Column-specific styling */
+.timekeep-entries-table td:nth-child(1) {
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.timekeep-entries-table td:nth-child(2) {
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+	color: var(--interactive-accent);
+	font-weight: 500;
+}
+
+.timekeep-entries-table td:nth-child(3) {
+	color: var(--text-muted);
+	font-size: 0.85em;
+	max-width: 200px;
+	word-wrap: break-word;
+	hyphens: auto;
+}
+
+.timekeep-entries-table td:nth-child(4) {
+	font-family: var(--font-monospace);
+	font-size: 0.8em;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.timekeep-entries-table td:nth-child(5) {
+	font-family: var(--font-monospace);
+	font-weight: 600;
+	color: var(--text-accent);
+	white-space: nowrap;
+}
+
+/* No data state */
+.timekeep-no-data {
+	text-align: center;
+	padding: 3rem 1rem;
+	color: var(--text-muted);
+	font-style: italic;
+	background: var(--background-secondary-alt);
+	border-radius: 8px;
+	border: 1px dashed var(--background-modifier-border);
+	margin-top: 1.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+	.functions-container {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	.button-view {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.button-view button {
+		justify-content: center;
+	}
+
+	.timekeep-entries-table {
+		font-size: 0.8em;
+	}
+
+	.timekeep-entries-table td {
+		padding: 0.625rem 0.75rem;
+	}
+
+	.timekeep-entries-table th {
+		padding: 0.625rem 0.75rem;
+		font-size: 0.75em;
+	}
+
+	.timekeep-entries-table td:nth-child(3) {
+		max-width: 150px;
+	}
+}
+
+/* Loading and transition states */
+.timekeep-loading {
+	opacity: 0.6;
+	pointer-events: none;
+	transition: opacity 0.3s ease;
+}
+
+.timekeep-fade-in {
+	animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }

@@ -1,0 +1,4 @@
+title: Raw issue viewer
+key:
+    name: View raw issue data
+    desc: Enter a Jira issue key to view its raw data from API

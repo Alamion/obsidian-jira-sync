@@ -1,0 +1,2 @@
+with_key: Get issue from Jira with custom key
+without_key: Get current issue from Jira

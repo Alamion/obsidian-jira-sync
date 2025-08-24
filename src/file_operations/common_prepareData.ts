@@ -3,7 +3,7 @@ import {Notice, TFile} from "obsidian";
 import {extractAllJiraSyncValuesFromContent} from "../tools/sectionTools";
 import {localToJiraFields} from "../tools/mapObsidianJiraFields";
 import {debugLog} from "../tools/debugLogging";
-import {obsidianJiraFieldMappings} from "../constants/obsidianJiraFieldsMapping";
+import {obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
 
 /**
  * Prepares Jira fields from the content and frontmatter of a file

@@ -1,0 +1,58 @@
+title: Timekeep work log statistics
+description: Manage and send work logs to Jira
+
+settings:
+    max_weeks:
+        name: Maximum Weeks to Show
+        description: Number of recent weeks to display
+    
+    time_range:
+        name: Time Range
+        description: Select the time range for grouping entries
+        options:
+            days: Days
+            weeks: Weeks
+            months: Months
+            custom: Custom Range
+    
+    max_items:
+        name: Maximum Items to Show
+        description: Number of recent time periods to display
+    
+    date_from:
+        name: From Date
+        description: Start date for custom range
+        placeholder: YYYY-MM-DD
+    
+    date_to:
+        name: To Date
+        description: End date for custom range
+        placeholder: YYYY-MM-DD
+
+display:
+    select_period: Select Period
+    select_period_placeholder: Select a time period...
+    selected_period: "Selected: {period}"
+    all_periods: All Recent Periods
+    no_entries: No timekeep entries found.
+    period_of: Period of {date}
+    
+    table:
+        task: Task
+        block_path: Subtask
+        start_time: Start Time
+        duration: Duration
+        issue_key: Issue Key
+
+actions:
+    send_to_jira: Send Work Log to Jira
+    refresh_data: Refresh Data
+
+messages:
+    select_period_first: Please select a time period first.
+    refresh_success: Data refreshed successfully
+    refresh_error: "Failed to refresh data: {error}"
+    send_success: Work log sent to Jira successfully
+    send_error: "Failed to send work log to Jira: {error}"
+    invalid_date_range: Invalid date range. End date must be after start date.
+    custom_range_required: Please specify both start and end dates for custom range.

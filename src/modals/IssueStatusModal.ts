@@ -1,5 +1,8 @@
 import {App, SuggestModal} from "obsidian";
 import {JiraTransitionType} from "../interfaces";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("modals.status").t;
 
 /**
  * Modal for selecting an issue status
@@ -12,7 +15,7 @@ export class IssueStatusModal extends SuggestModal<JiraTransitionType> {
 		super(app);
 		this.onSubmit = onSubmit;
 		this.issueTransitions = issueTransitions;
-		this.setPlaceholder("Search for an issue transition...");
+		this.setPlaceholder(t("placeholder"));
 	}
 
 	getSuggestions(query: string): JiraTransitionType[] {

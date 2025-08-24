@@ -1,5 +1,8 @@
 import {App, SuggestModal} from "obsidian";
 import {JiraIssueType} from "../interfaces";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("modals.type").t;
 
 /**
  * Modal for selecting an issue type
@@ -12,7 +15,7 @@ export class IssueTypeModal extends SuggestModal<JiraIssueType> {
 		super(app);
 		this.onSubmit = onSubmit;
 		this.issueTypes = issueTypes;
-		this.setPlaceholder("Search for an issue type...");
+		this.setPlaceholder(t("placeholder"));
 	}
 
 	getSuggestions(query: string): JiraIssueType[] {

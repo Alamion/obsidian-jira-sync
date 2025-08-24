@@ -1,0 +1,28 @@
+title: Настройки подключения
+url:
+    title: URL Jira
+    desc: URL вашей инстанции Jira
+    def: https://yourcompany.atlassian.net
+auth:
+    title: Метод аутентификации
+    desc: Выберите способ подключения к Jira
+    options:
+        bearer: Bearer Token (PAT)
+        basic: Basic Auth (Имя пользователя + PAT)
+        session: Session Cookie (Имя пользователя + Пароль)
+pat:
+    title: Jira PAT
+    desc: Персональный токен доступа
+    def: NjM5MDI5MzQ0NT...
+username:
+    title: Имя пользователя Jira
+    desc: Ваше имя пользователя Jira
+    def: admin
+email:
+    title: Email Jira
+    desc: Ваш email в Jira
+    def: admin@gmail.com
+password:
+    title: Пароль Jira
+    desc: Ваш пароль от Jira
+    def: qwerty

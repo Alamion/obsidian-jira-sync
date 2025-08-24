@@ -1,12 +1,17 @@
 import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
 import debounce from "lodash/debounce";
 import { safeStringToFunction } from "../../tools/convertFunctionString";
+import {useTranslations} from "../../localization/translator";
+import {setIcon} from "obsidian";
+
+const t = useTranslations("settings.tfm").t;
 
 export class TestFieldMappingsComponent implements SettingsComponent {
     private props: SettingsComponentProps;
     private testMappingsContainer: HTMLElement | null = null;
     private currentIssueData: any = null;
     private getCurrentIssue: (() => any) | null = null;
+	private _testMappingItemsContainer: HTMLElement | null = null;
 
     constructor(props: SettingsComponentProps & { getCurrentIssue?: () => any }) {
         this.props = props;
@@ -21,36 +26,44 @@ export class TestFieldMappingsComponent implements SettingsComponent {
             cls: "jira-test-mappings-container"
         });
 
-        this.testMappingsContainer.createEl("h3", {
-            text: "Test field mappings",
-            cls: "test-mappings-header"
-        });
-
-        this.testMappingsContainer.createEl("p", {
-            text: "Test your field mappings against the current issue data from Raw issue viewer. Enter a fromJira expression to see the result.",
-            cls: "test-mappings-desc"
-        });
+		this.testMappingsContainer.createEl("p", {
+			text: t("desc"),
+			cls: "test-mappings-desc"
+		});
 
         // Container for all test mapping items
-        const itemsContainer = this.testMappingsContainer.createDiv({ cls: "test-mapping-items-list" });
-        (this as any)._testMappingItemsContainer = itemsContainer; // store for later use
+        this._testMappingItemsContainer =  this.testMappingsContainer.createDiv({ cls: "test-mapping-items-list" });
 
         // Add first test mapping item
         this.addTestMappingItem();
 
+		const buttonView = this.testMappingsContainer.createDiv({ cls: "button-view" });
+
         // Add new mapping button (only once, at the bottom)
-        const addBtn = this.testMappingsContainer.createEl("button", {
-            text: "+ Add test mapping",
-            cls: "add-test-mapping-btn"
-        });
+		const addBtn = buttonView.createEl("button", {
+			text: t("add_mapping") || "Add Mapping",
+			cls: "add-field-mapping-btn",
+			attr: { 'data-tooltip': t("add_mapping_tooltip") || "Add new field mapping" }
+		});
+		setIcon(addBtn, "circle-plus");
         addBtn.addEventListener("click", () => {
             this.addTestMappingItem();
         });
+
+		const resetBtn = buttonView.createEl("button", {
+			text: t("reset") || "Reset All",
+			cls: "reset-field-mappings-btn",
+			attr: { 'data-tooltip': t("reset_tooltip") || "Clear all field mappings" }
+		});
+		setIcon(resetBtn, "refresh-cw");
+		resetBtn.addEventListener("click", () => {
+			this._testMappingItemsContainer?.empty();
+		});
     }
 
     private addTestMappingItem(): void {
         // Use the dedicated items container
-        const itemsContainer = (this as any)._testMappingItemsContainer as HTMLElement;
+        const itemsContainer = this._testMappingItemsContainer as HTMLElement;
         if (!itemsContainer) return;
 
         const itemContainer = itemsContainer.createDiv({
@@ -59,7 +72,7 @@ export class TestFieldMappingsComponent implements SettingsComponent {
 
         // From Jira expression input
         const fromJiraContainer = itemContainer.createDiv({ cls: "from-jira-container" });
-        fromJiraContainer.createEl("span", { text: "from Jira:", cls: "field-mapping-label" });
+        fromJiraContainer.createEl("span", { text: t("from_jira")+":", cls: "field-mapping-label" });
 
         const fromJiraInput = fromJiraContainer.createEl("textarea", {
             cls: "from-jira-input"
@@ -69,7 +82,7 @@ export class TestFieldMappingsComponent implements SettingsComponent {
 
         // Value display
         const valueContainer = itemContainer.createDiv({ cls: "value-container" });
-        valueContainer.createEl("span", { text: "Value:", cls: "field-mapping-label" });
+        valueContainer.createEl("span", { text: t("value")+":", cls: "field-mapping-label" });
         const valueDisplay = valueContainer.createEl("div", {
             cls: "value-display",
             attr: {
@@ -81,7 +94,7 @@ export class TestFieldMappingsComponent implements SettingsComponent {
         const debouncedEvaluate = debounce(async () => {
             const issueData = this.getCurrentIssue ? this.getCurrentIssue() : this.currentIssueData;
             if (!issueData) {
-                valueDisplay.setText("No issue data available");
+                valueDisplay.setText(t("no_data"));
                 return;
             }
 
@@ -91,7 +104,7 @@ export class TestFieldMappingsComponent implements SettingsComponent {
                     const result = fromJiraFn(issueData, null);
                     valueDisplay.setText(JSON.stringify(result, null, 2));
                 } else {
-                    valueDisplay.setText("Invalid expression");
+                    valueDisplay.setText(t("invalid_exp"));
                 }
             } catch (error) {
                 valueDisplay.setText(`Error: ${error.message}`);

@@ -1,0 +1,14 @@
+title: Общие настройки
+
+folder:
+    name: Папка для задач
+    desc: Папка, в которой будут создаваться и искаться задачи Jira
+
+template:
+    name: Путь к шаблону
+    desc: Выберите файл шаблона для создания задач Jira
+    selector:
+        placeholder: Поиск шаблонов...
+        empty: Шаблон не выбран
+    warning: В данный момент не активированы плагины шаблонов (Core Templates или
+        Community Templater).

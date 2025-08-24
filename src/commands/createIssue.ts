@@ -4,6 +4,9 @@ import { IssueTypeModal, ProjectModal } from "../modals";
 import {fetchIssueTypes, fetchProjects} from "../api";
 import {createIssueFromFile} from "../file_operations/createUpdateIssue";
 import {checkCommandCallback} from "../tools/check_command_callback";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("commands.create_issue").t;
 
 /**
  * Register the create issue command
@@ -11,7 +14,7 @@ import {checkCommandCallback} from "../tools/check_command_callback";
 export function registerCreateIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "create-issue-jira",
-		name: "Create issue in Jira",
+		name: t("name"),
 		checkCallback: (checking: boolean) => {
 			return checkCommandCallback(plugin, checking, createIssue, ["summary"]);
 		},
@@ -37,15 +40,15 @@ export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void
 				try {
 					// Create the issue with selected project and issue type
 					const issueKey = await createIssueFromFile(plugin, file, projectKey, issueType);
-					new Notice(`Issue ${issueKey} created successfully`);
+					new Notice(t('success', { issueKey }));
 				} catch (error) {
-					new Notice("Error creating issue: " + (error.message || "Unknown error"), 3000);
+					new Notice(t('error') + ": " + (error.message || "Unknown error"), 3000);
 					console.error(error);
 				}
 			}).open();
 		}).open();
 	} catch (error) {
-		new Notice("Error creating issue: " + (error.message || "Unknown error"));
+		new Notice(t('error') + ": " + (error.message || "Unknown error"));
 		console.error(error);
 	}
 }

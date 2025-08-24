@@ -1,4 +1,4 @@
-import {FieldMapping} from "../constants/obsidianJiraFieldsMapping";
+import {FieldMapping} from "../default/obsidianJiraFieldsMapping";
 
 export interface JiraSettings {
 	collapsedSections: Record<string, boolean>;
@@ -16,13 +16,20 @@ export interface JiraSettings {
 	fieldMappings: Record<string, FieldMapping>;
 	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string }>;
 	enableFieldValidation: boolean;
+
+	statisticsTimeType: string;
+	maxItemsToShow: number;
+	customDateRange: { start: string; end: string };
 }
 
 export const DEFAULT_SETTINGS: JiraSettings = {
 	collapsedSections: {
 		connection: true,
 		general: true,
-		fieldMappings: false
+		fieldMappings: false,
+		rawIssueViewer: false,
+		testFieldMappings: false,
+		statistics: false,
 	},
 	authMethod: "bearer",
 	apiToken: "",
@@ -36,6 +43,10 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 	templatePath: "",
 	fieldMappings: {},
 	fieldMappingsStrings: {},
-	enableFieldValidation: true
+	enableFieldValidation: true,
+
+	statisticsTimeType: "weeks",
+	maxItemsToShow: 10,
+	customDateRange: { start: "", end: "" }
 };
 

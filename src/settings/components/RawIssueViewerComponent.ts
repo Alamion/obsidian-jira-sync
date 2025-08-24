@@ -3,7 +3,9 @@ import { SettingsComponent, SettingsComponentProps } from "../../interfaces/sett
 import { fetchIssue } from "../../api";
 import debounce from "lodash/debounce";
 import hljs from "highlight.js";
+import {useTranslations} from "../../localization/translator";
 
+const t = useTranslations("settings.issue_view").t;
 /**
  * Component for viewing raw Jira issue data
  */
@@ -22,8 +24,8 @@ export class RawIssueViewerComponent implements SettingsComponent {
     render(containerEl: HTMLElement): void {
         // Add input field for issue key
         new Setting(containerEl)
-            .setName("View raw issue data")
-            .setDesc("Enter a Jira issue key to view its raw data from the API")
+            .setName(t("key.name"))
+            .setDesc(t("key.desc"))
             .addText((text) =>
                 text
                     .setPlaceholder("PROJ-123")
@@ -66,10 +68,7 @@ export class RawIssueViewerComponent implements SettingsComponent {
         this.issueDataContainer.empty();
 
         const pre = this.issueDataContainer.createEl("pre", {
-            cls: "jira-raw-issue-data",
-            attr: {
-                style: "user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;"
-            }
+            cls: "jira-copyable",
         });
 
         const code = pre.createEl("code", {

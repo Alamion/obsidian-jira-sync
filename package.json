@@ -1,13 +1,16 @@
 {
 	"name": "obsidian-sample-plugin",
-	"version": "1.1.8",
+	"version": "1.1.9",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
-		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"buildObsidian": "node buildStatistics.mjs"
+		"validate_locale": "node src/localization/validator.js --watch",
+		"compile_locale": "node src/localization/compiler.js --watch",
+		"validate_locale_once": "node src/localization/validator.js",
+		"compile_locale_once": "node src/localization/compiler.js",
+		"dev": "yarn run compile_locale_once && node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && yarn run compile_locale_once && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
 	"author": "",
@@ -26,6 +29,8 @@
 	},
 	"dependencies": {
 		"acorn": "^8.14.1",
+		"chokidar": "^4.0.3",
+		"fs-extra": "^11.3.0",
 		"highlight.js": "^11.11.1",
 		"yaml": "^2.7.0"
 	}

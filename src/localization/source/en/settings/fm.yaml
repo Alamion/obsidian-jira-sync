@@ -1,0 +1,23 @@
+title: Field mappings
+desc: Configure how fields are mapped between Obsidian and Jira. Each field requires both a 'To Jira' and 'From Jira' transformation function.
+fv:
+    name: Enable field validation
+    desc: Check fields before saving based on the standard API response (validation does not account for custom fields)
+secNote:
+    name: "⚠️ Note: "
+    desc: Field mapping uses JavaScript lambda functions.
+example:
+    name: Example field mapping
+    use: Use
+
+from_jira: From Jira
+to_jira: To Jira
+field_name: Field name
+
+add_mapping_tooltip: Add new field mapping
+reset_tooltip: Reset
+reset_confirm_title: Reset field mapping
+reset_confirm_text: Field mapping will be cleaned up. Are you sure?
+reload_defaults_tooltip: Reload
+reload_confirm_title: Reload default field mapping
+reload_confirm_text: Current field mappings will be overwritten with the default mappings. Are you sure?

@@ -4,6 +4,7 @@ import {ensureIssuesFolder} from "../tools/filesUtils";
 import {sanitizeFileName} from "../tools/sanitizers";
 import {updateJiraToLocal} from "../tools/mapObsidianJiraFields";
 import {Notice, TFile} from "obsidian";
+import {defaultTemplate} from "../default/default_template";
 
 export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIssue, filePath?: string): Promise<void> {
 	try {
@@ -42,17 +43,7 @@ async function createNewIssueFile(
 ): Promise<TFile> {
 	let initialContent = "";
 
-	const hardcodedTemplate =
-`---
-key: 
-summary: 
-status: 
-assignee: 
-tags: 
-description: 
----
 
-`;
 	let templatePath = plugin.settings.templatePath
 	if (templatePath && !templatePath.endsWith(".md")) {
 		templatePath += ".md";
@@ -66,7 +57,7 @@ description:
 			new Notice(`Template file not found: ${templatePath}, using default template`);
 		}
 	}
-	if (initialContent === "") initialContent = hardcodedTemplate
+	if (initialContent === "") initialContent = defaultTemplate
 
 	// Create the file with initial content
 	await plugin.app.vault.create(filePath, initialContent);

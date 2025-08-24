@@ -8,7 +8,10 @@ import { RawIssueViewerComponent } from "./components/RawIssueViewerComponent";
 import { TestFieldMappingsComponent } from "./components/TestFieldMappingsComponent";
 import { debugLog } from "../tools/debugLogging";
 import { CollapsibleSection } from "./CollapsibleSection";
+import {useTranslations} from "../localization/translator";
+import {TimekeepSettingsComponent} from "./components/TimekeepSettingsComponent";
 
+const t = useTranslations("settings").t;
 /**
  * Settings tab for the Jira plugin
  * Orchestrates all components and manages the overall settings UI
@@ -20,6 +23,7 @@ export class JiraSettingTab extends PluginSettingTab {
 	private fieldMappingsSettings: FieldMappingsComponent;
 	private rawIssueViewer: RawIssueViewerComponent;
 	private testFieldMappings: TestFieldMappingsComponent;
+	private timekeepSettings: TimekeepSettingsComponent;
 
 	constructor(app: App, plugin: JiraPlugin) {
 		super(app, plugin);
@@ -39,6 +43,7 @@ export class JiraSettingTab extends PluginSettingTab {
 		this.rawIssueViewer = new RawIssueViewerComponent(componentProps);
 		this.testFieldMappings = new TestFieldMappingsComponent({ ...componentProps, getCurrentIssue: () => this.rawIssueViewer.getCurrentIssue() });
 		this.rawIssueViewer.onIssueDataChange = () => this.testFieldMappings.setCurrentIssue(this.rawIssueViewer.getCurrentIssue());
+		this.timekeepSettings = new TimekeepSettingsComponent(componentProps);
 	}
 
 	/**
@@ -58,20 +63,25 @@ export class JiraSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		new CollapsibleSection(this.plugin, containerEl, this.connectionSettings, "Connection settings",
+		// remember to add collapsable section name ("connection", "general", etc.) in settings/default.ts in order to be able to save last state
+
+		new CollapsibleSection(this.plugin, containerEl, this.connectionSettings, t("connection.title"),
 			this.plugin.settings.collapsedSections.connection, "connection").getContentContainer();
 
-		new CollapsibleSection(this.plugin, containerEl, this.generalSettings, "General settings",
+		new CollapsibleSection(this.plugin, containerEl, this.generalSettings, t("general.title"),
 			this.plugin.settings.collapsedSections.general, "general").getContentContainer();
 
-		new CollapsibleSection(this.plugin, containerEl, this.fieldMappingsSettings, "Field mappings",
+		new CollapsibleSection(this.plugin, containerEl, this.fieldMappingsSettings, t("fm.title"),
 			this.plugin.settings.collapsedSections.fieldMappings, "fieldMappings").getContentContainer();
 
-		new CollapsibleSection(this.plugin, containerEl, this.rawIssueViewer, "Raw issue viewer",
+		new CollapsibleSection(this.plugin, containerEl, this.rawIssueViewer, t("issue_view.title"),
 			this.plugin.settings.collapsedSections.rawIssueViewer, "rawIssueViewer").getContentContainer();
 
-		new CollapsibleSection(this.plugin, containerEl, this.testFieldMappings, "Test field mappings",
+		new CollapsibleSection(this.plugin, containerEl, this.testFieldMappings, t("tfm.title"),
 			this.plugin.settings.collapsedSections.testFieldMappings, "testFieldMappings").getContentContainer();
+
+		new CollapsibleSection(this.plugin, containerEl, this.timekeepSettings, t("statistics.title"),
+			this.plugin.settings.collapsedSections.statistics, "statistics").getContentContainer();
 	}
 
 	/**

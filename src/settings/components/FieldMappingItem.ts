@@ -1,5 +1,7 @@
 import { validateField } from "../tools/fieldValidation";
+import {useTranslations} from "../../localization/translator";
 
+const t = useTranslations("settings.fm").t;
 /**
  * Interface for field mapping item props
  */
@@ -49,37 +51,40 @@ export class FieldMappingItem {
 
 		// Create field name input
 		const fieldNameContainer = this.fieldContainer.createDiv({ cls: "field-name-container" });
-		fieldNameContainer.createEl("span", { text: "Field Name:", cls: "field-mapping-label" });
+		fieldNameContainer.createEl("span", { text: t("field_name"), cls: "field-mapping-label" });
 		this.fieldNameInput = fieldNameContainer.createEl("input", {
 			type: "text",
 			value: fieldName,
-			cls: "field-name-input"
+			cls: "field-name-input",
+			placeholder: t("field_name_placeholder") || "e.g., summary, assignee, priority"
 		});
 
+		// Create functions container (grid layout)
+		const functionsContainer = this.fieldContainer.createDiv({ cls: "functions-container" });
+
 		// Create toJira function input
-		const toJiraContainer = this.fieldContainer.createDiv({ cls: "to-jira-container" });
-		toJiraContainer.createEl("span", { text: "to Jira:", cls: "field-mapping-label" });
+		const toJiraContainer = functionsContainer.createDiv({ cls: "to-jira-container" });
+		toJiraContainer.createEl("span", { text: t("to_jira"), cls: "field-mapping-label" });
 		this.toJiraInput = toJiraContainer.createEl("textarea", {
 			cls: "to-jira-input"
 		});
-		this.toJiraInput.placeholder = "(value) => null";
+		this.toJiraInput.placeholder = "(value) => {\n  // Transform Obsidian value to Jira\n  return value;\n}";
 		this.toJiraInput.value = toJira;
-		this.toJiraInput.rows = 1;
 
 		// Create fromJira function input
-		const fromJiraContainer = this.fieldContainer.createDiv({ cls: "from-jira-container" });
-		fromJiraContainer.createEl("span", { text: "from Jira:", cls: "field-mapping-label" });
+		const fromJiraContainer = functionsContainer.createDiv({ cls: "from-jira-container" });
+		fromJiraContainer.createEl("span", { text: t("from_jira"), cls: "field-mapping-label" });
 		this.fromJiraInput = fromJiraContainer.createEl("textarea", {
 			cls: "from-jira-input"
 		});
 		this.fromJiraInput.value = fromJira;
-		this.fromJiraInput.placeholder = "(issue, data_source) => null";
-		this.fromJiraInput.rows = 1;
+		this.fromJiraInput.placeholder = "(issue, data_source) => {\n  // Extract value from Jira issue\n  return issue.fields.fieldName;\n}";
 
 		// Add remove button
 		const removeBtn = this.fieldContainer.createEl("button", {
 			text: "✕",
-			cls: "remove-field-btn"
+			cls: "remove-field-btn",
+			attr: { 'aria-label': t("remove_field") || 'Remove field mapping' }
 		});
 
 		// Handle field removal
@@ -88,8 +93,25 @@ export class FieldMappingItem {
 			this.props.onRemove();
 		});
 
+		// Auto-resize textareas
+		this.setupAutoResize(this.toJiraInput);
+		this.setupAutoResize(this.fromJiraInput);
+
 		// Setup validation
 		this.setupValidation(enableValidation);
+	}
+
+	private setupAutoResize(textarea: HTMLTextAreaElement) {
+		const resize = () => {
+			textarea.style.height = 'auto';
+			textarea.style.height = Math.max(40, textarea.scrollHeight) + 'px';
+		};
+
+		textarea.addEventListener('input', resize);
+		textarea.addEventListener('focus', resize);
+
+		// Initial resize
+		setTimeout(resize, 0);
 	}
 
 	/**

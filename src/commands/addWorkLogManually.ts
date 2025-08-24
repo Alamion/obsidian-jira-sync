@@ -1,14 +1,17 @@
 
 import {TFile} from "obsidian";
 import JiraPlugin from "../main";
-import {WorkLogModal} from "../modals/issueWorkLogModal";
+import {IssueWorkLogModal} from "../modals";
 import {addWorkLog} from "../api";
 import {checkCommandCallback} from "../tools/check_command_callback";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("commands.add_worklog.manual").t;
 
 export function registerUpdateWorkLogManuallyCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "update-work-log-jira-manually",
-		name: "Update work log in Jira manually",
+		name: t("name"),
 		checkCallback: (checking: boolean) => {
 			return checkCommandCallback(plugin, checking, processManualWorkLog, ["key"], ["key"]);
 		},
@@ -17,7 +20,7 @@ export function registerUpdateWorkLogManuallyCommand(plugin: JiraPlugin): void {
 
 async function processManualWorkLog(plugin: JiraPlugin, _: TFile, issueKey: string): Promise<void> {
 
-	new WorkLogModal(plugin.app, async (timeSpent: string, startDate: string, comment: string) => {
+	new IssueWorkLogModal(plugin.app, async (timeSpent: string, startDate: string, comment: string) => {
 		await addWorkLog(plugin, issueKey, timeSpent, startDate, comment);
 	}).open();
 }

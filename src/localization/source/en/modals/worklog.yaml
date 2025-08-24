@@ -1,0 +1,26 @@
+name: Add work log
+
+spent:
+    name: Time spent
+    desc: "Format: weeks days hours, minutes"
+    placeholder: "3w 4d 12h 30m"
+
+start:
+    name: Start datetime
+    desc: "Format: DD/MMM/YY HH:MM"
+    placeholder: "03/feb/25 15:22"
+
+comment:
+    name: Work description
+    desc: Optional
+    placeholder: ""
+
+months: ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+
+submit: Submit
+
+warns:
+    no_time: Time spent is required
+    invalid_time: Invalid time format. Use combinations of w (weeks), d (days), h (hours), m (minutes)
+    no_start: Start datetime is required
+    invalid_start: Invalid date format. Use DD/MMM/YY HH:MM AM/PM

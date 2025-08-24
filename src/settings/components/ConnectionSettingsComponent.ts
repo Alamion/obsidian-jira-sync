@@ -1,5 +1,8 @@
 import { Setting } from "obsidian";
+import { useTranslations } from "src/localization/translator"
 import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
+
+const t = useTranslations("settings.connection").t
 
 /**
  * Component for Jira connection settings
@@ -19,11 +22,11 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 		// Always show: Jira URL
 		new Setting(containerEl)
-			.setName("Jira URL")
-			.setDesc("Your Jira instance URL")
+			.setName(t("url.title"))
+			.setDesc(t("url.desc"))
 			.addText((text) =>
 				text
-					.setPlaceholder("https://yourcompany.atlassian.net")
+					.setPlaceholder(t("url.def"))
 					.setValue(plugin.settings.jiraUrl)
 					.onChange(async (value) => {
 						plugin.settings.jiraUrl = value;
@@ -32,14 +35,14 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 			);
 
 		// Auth Method Select
-		const authMethodSetting = new Setting(containerEl)
-			.setName("Authentication method")
-			.setDesc("Choose how to authenticate with Jira")
+		new Setting(containerEl)
+			.setName(t("auth.title"))
+			.setDesc(t("auth.desc"))
 			.addDropdown((cb) =>
 				cb
-					.addOption("bearer", "Bearer Token (PAT)")
-					.addOption("basic", "Basic Auth (Username + PAT)")
-					.addOption("session", "Session Cookie (Username + Password)")
+					.addOption("bearer", t("auth.options.bearer"))
+					.addOption("basic", t("auth.options.basic"))
+					.addOption("session", t("auth.options.session"))
 					.setValue(this.currentAuthMethod)
 					.onChange(async (value: "bearer" | "basic" | "session") => {
 						plugin.settings.authMethod = value;
@@ -54,12 +57,12 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 		// Jira PAT
 		const patSetting = new Setting(containerEl)
-			.setName("Jira PAT")
-			.setDesc("Personal Access Token")
+			.setName(t("pat.title"))
+			.setDesc(t("pat.desc"))
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
-					.setPlaceholder("NjM5MDI5MzQ0NT...")
+					.setPlaceholder(t("pat.def"))
 					.setValue(plugin.settings.apiToken)
 					.onChange(async (value) => {
 						plugin.settings.apiToken = value;
@@ -70,11 +73,11 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 		// Jira username
 		const usernameSetting = new Setting(containerEl)
-			.setName("Jira username")
-			.setDesc("Your Jira username")
+			.setName(t("username.title"))
+			.setDesc(t("username.desc"))
 			.addText((text) =>
 				text
-					.setPlaceholder("admin")
+					.setPlaceholder(t("username.def"))
 					.setValue(plugin.settings.username)
 					.onChange(async (value) => {
 						plugin.settings.username = value;
@@ -85,11 +88,11 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 		// Jira username
 		const emailSetting = new Setting(containerEl)
-			.setName("Jira email")
-			.setDesc("Your Jira email")
+			.setName(t("username.title"))
+			.setDesc(t("username.desc"))
 			.addText((text) =>
 				text
-					.setPlaceholder("admin@gmail.com")
+					.setPlaceholder(t("username.def"))
 					.setValue(plugin.settings.email)
 					.onChange(async (value) => {
 						plugin.settings.email = value;
@@ -100,12 +103,12 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 		// Jira password
 		const passwordSetting = new Setting(containerEl)
-			.setName("Jira password")
-			.setDesc("Your Jira password")
+			.setName(t("password.title"))
+			.setDesc(t("password.desc"))
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
-					.setPlaceholder("qwerty")
+					.setPlaceholder(t("password.def"))
 					.setValue(plugin.settings.password)
 					.onChange(async (value) => {
 						plugin.settings.password = value;

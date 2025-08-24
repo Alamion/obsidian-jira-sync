@@ -3,13 +3,11 @@ import { JiraSettingTab } from "./settings/JiraSettingTab";
 import { JiraIssueType, JiraProject } from "./interfaces";
 import {DEFAULT_SETTINGS, JiraSettings} from "./settings/default";
 import {
-	registerUpdateIssueCommand,
-	registerGetIssueCommand,
+	registerUpdateIssueCommand, registerUpdateWorkLogManuallyCommand,
+	registerGetIssueCommand, registerUpdateWorkLogBatchCommand,
 	registerCreateIssueCommand, registerGetIssueCommandWithKey, registerUpdateIssueStatusCommand
 } from "./commands";
-import {registerUpdateWorkLogManuallyCommand} from "./commands/addWorkLogManually";
 import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
-import {registerUpdateWorkLogBatchCommand} from "./commands/addWorkLogBatch";
 
 /**
  * Main plugin class

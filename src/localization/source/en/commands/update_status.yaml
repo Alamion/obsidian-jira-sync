@@ -1,0 +1,3 @@
+name: Update issue status in Jira
+success: Issue {issueKey} updated successfully
+error: Error updating issue

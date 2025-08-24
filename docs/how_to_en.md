@@ -22,10 +22,10 @@ Not all fields are predefined, and some may need adjustments. For example, the t
 
 Currently, the plugin provides the following commands:
 - `Get issue from Jira with custom key` - allows creating a file in the configured folder that imports information from Jira using a manually specified ID.
-- `Get issue from Jira` - allows updating the active file if its formatter contains a `key` (the Jira task ID).
-- `Update issue from Jira` - allows updating the information from the file in Jira using the key specified in the formatter. Some system fields (e.g., `status`) cannot be changed this way and have dedicated commands.
-- `Create issue from Jira` - allows creating a new task in Jira. The formatter must include `summary` (task title) and optionally `project` and `issuetype` (the latter two can be selected from existing options during creation).
-- `Update work log in Jira` - enables tracking time spent on a task. Currently, this is not reflected in the file, but it will be available in future updates. If the formatter contains `jira_selected_week_data` (as described in [[docs/jira_selected_week_data]]), instead of manual entry, a batch of data from `jira_selected_week_data` will be sent, updating each listed entity.
+- `Get current issue from Jira` - allows updating the active file if its formatter contains a `key` (the Jira task ID).
+- `Update issue in Jira` - allows updating the information from the file in Jira using the key specified in the formatter. Some system fields (e.g., `status`) cannot be changed this way and have dedicated commands.
+- `Create issue in Jira` - allows creating a new task in Jira. The formatter must include `summary` (task title) and optionally `project` and `issuetype` (the latter two can be selected from existing options during creation).
+- `Update work log in Jira` - enables tracking time spent on a task. Currently, this is not reflected in the file, but it will be available in future updates. If the formatter contains `jira_worklog_batch` (as described in [[docs/jira_worklog_batch]]), instead of manual entry, a batch of data from `jira_worklog_batch` will be sent, updating each listed entity.
 - `Update issue status in Jira` - allows updating a task's status by selecting one of the available options.
 
 ### Advanced Usage

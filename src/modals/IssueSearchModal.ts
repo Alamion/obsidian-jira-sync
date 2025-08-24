@@ -1,5 +1,7 @@
 import {App, Modal, Setting} from "obsidian";
+import {useTranslations} from "../localization/translator";
 
+const t = useTranslations("modals.search").t;
 /**
  * Modal for searching issues by key
  */
@@ -13,14 +15,14 @@ export class IssueSearchModal extends Modal {
 	}
 
 	onOpen() {
-		this.contentEl.createEl("h2", {text: "Search issue by key"});
+		this.contentEl.createEl("h2", {text: t("desc")});
 
 		new Setting(this.contentEl)
-			.setName("Issue key")
-			.setDesc("Enter the Jira issue key (e.g., PROJECT-123)")
+			.setName(t("key.name"))
+			.setDesc(t("key.desc"))
 			.addText((text) =>
 				text
-					.setPlaceholder("Issue key")
+					.setPlaceholder(t("key.placeholder"))
 					.onChange((value) => {
 						this.issueKey = value;
 					})
@@ -29,7 +31,7 @@ export class IssueSearchModal extends Modal {
 		new Setting(this.contentEl)
 			.addButton((btn) =>
 				btn
-					.setButtonText("Search")
+					.setButtonText(t("submit"))
 					.setCta()
 					.onClick(() => {
 						this.close();

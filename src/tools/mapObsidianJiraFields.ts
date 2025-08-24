@@ -3,7 +3,7 @@ import {jiraToMarkdown} from "./markdown_html";
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
-import {FieldMapping, obsidianJiraFieldMappings} from "../constants/obsidianJiraFieldsMapping";
+import {FieldMapping, obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
 
 
 export function localToJiraFields(

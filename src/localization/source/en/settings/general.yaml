@@ -1,0 +1,13 @@
+title: General settings
+
+folder:
+    name: Issues folder
+    desc: Folder where Jira issues will be stored and searched for
+
+template:
+    name: Template path
+    desc: Select a template file for creating Jira tasks
+    selector:
+        placeholder: Search templates...
+        empty: Template is not chosen
+    warning: No template plugins are currently enabled (Core Templates or Community Templater).

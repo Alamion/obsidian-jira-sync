@@ -3,11 +3,14 @@ import JiraPlugin from "../main";
 import {addWorkLog} from "../api";
 import {debugLog} from "../tools/debugLogging";
 import {checkCommandCallback} from "../tools/check_command_callback";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("commands.add_worklog.batch").t;
 
 export function registerUpdateWorkLogBatchCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "update-work-log-jira-batch",
-		name: "Update work log in Jira",
+		name: t("name"),
 		checkCallback: (checking: boolean) => {
 			return checkCommandCallback(plugin, checking, processFrontmatterWorkLogs, ["jira_worklog_batch"], ["jira_worklog_batch"]);
 		},
@@ -27,7 +30,7 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, _: TFile, jira_wor
 				workLogData = jira_worklog_batch;
 				foundData = true;
 			} else {
-				throw new TypeError(`jira_selected_week_data has an invalid type: ${typeof jira_worklog_batch}`);
+				throw new TypeError(`jira_worklog_batch has an invalid type: ${typeof jira_worklog_batch}`);
 			}
 		} catch (error) {
 			console.error("Failed to parse jira_worklog_batch:", error);
@@ -43,7 +46,7 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, _: TFile, jira_wor
 	}
 }
 
-async function processWorkLogBatch(plugin: JiraPlugin, workLogs: any[]): Promise<void> {
+export async function processWorkLogBatch(plugin: JiraPlugin, workLogs: any[]): Promise<void> {
 	const results = {
 		success: 0,
 		total: workLogs.length,

@@ -1,0 +1,8 @@
+desc: Search issue by key
+
+key:
+    name: Issue key
+    placeholder: Issue key
+    desc: Enter the Jira issue key (e.g., PROJECT-123)
+
+submit: Search

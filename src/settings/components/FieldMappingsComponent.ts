@@ -3,8 +3,11 @@ import { SettingsComponent, SettingsComponentProps } from "../../interfaces/sett
 import { FieldMappingItem } from "./FieldMappingItem";
 import { collectFieldMappingsFromUI, processMappings } from "../tools/mappingTransformers";
 import {jiraFunctionToString, transform_string_to_functions_mappings} from "../../tools/convertFunctionString";
-import { obsidianJiraFieldMappings } from "../../constants/obsidianJiraFieldsMapping";
+import { obsidianJiraFieldMappings } from "../../default/obsidianJiraFieldsMapping";
 import { debugLog } from "../../tools/debugLogging";
+import {useTranslations} from "../../localization/translator";
+
+const t = useTranslations("settings.fm").t;
 
 /**
  * Component for field mappings section
@@ -29,13 +32,13 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 		// Add explanation
 		mappingSection.createEl("p", {
-			text: "Configure how fields are mapped between Obsidian and Jira. Each field requires both a toJira and fromJira transformation function."
+			text: t("desc")
 		});
 
 		// Add validation toggle
 		new Setting(mappingSection)
-			.setName('Enable field validation')
-			.setDesc('Check fields before saving as functions')
+			.setName(t("fv.name"))
+			.setDesc(t("fv.desc"))
 			.addToggle(toggle => toggle
 				.setValue(plugin.settings.enableFieldValidation)
 				.onChange(async (value) => {
@@ -56,8 +59,9 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 		// Add button to add new field mapping
 		const addFieldBtn = buttonView.createEl("button", {
-			text: "",
-			cls: "add-field-mapping-btn"
+			text: t("add_mapping") || "Add Mapping",
+			cls: "add-field-mapping-btn",
+			attr: { 'data-tooltip': t("add_mapping_tooltip") || "Add new field mapping" }
 		});
 		setIcon(addFieldBtn, "circle-plus");
 
@@ -67,40 +71,57 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 		// Reset button
 		const resetBtn = buttonView.createEl("button", {
-			text: "",
-			cls: "reset-field-mappings-btn"
+			text: t("reset") || "Reset All",
+			cls: "reset-field-mappings-btn",
+			attr: { 'data-tooltip': t("reset_tooltip") || "Clear all field mappings" }
 		});
 		setIcon(resetBtn, "refresh-cw");
 
 		resetBtn.addEventListener("click", async () => {
-			plugin.settings.fieldMappings = {};
-			plugin.settings.fieldMappingsStrings = {};
-			await this.loadExistingMappings();
-			await plugin.saveSettings();
+			// Add confirmation dialog
+			const confirmed = await this.showConfirmDialog(
+				t("reset_confirm_title") || "Reset Field Mappings",
+				t("reset_confirm_text") || "Are you sure you want to clear all field mappings? This action cannot be undone."
+			);
+
+			if (confirmed) {
+				plugin.settings.fieldMappings = {};
+				plugin.settings.fieldMappingsStrings = {};
+				await this.loadExistingMappings();
+				await plugin.saveSettings();
+			}
 		});
 
 		// Reload default mappings button
 		const reloadBtn = buttonView.createEl("button", {
-			text: "",
-			cls: "reload-field-mappings-btn"
+			text: t("reload_defaults") || "Load Defaults",
+			cls: "reload-field-mappings-btn",
+			attr: { 'data-tooltip': t("reload_defaults_tooltip") || "Restore default field mappings" }
 		});
 		setIcon(reloadBtn, "list-restart");
 
 		reloadBtn.addEventListener("click", async () => {
-			plugin.settings.fieldMappings = obsidianJiraFieldMappings;
+			const confirmed = await this.showConfirmDialog(
+				t("reload_confirm_title") || "Load Default Mappings",
+				t("reload_confirm_text") || "This will replace all current mappings with defaults. Continue?"
+			);
 
-			// Also reset the string representations with default values
-			const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
-			for (const [fieldName, mapping] of Object.entries(obsidianJiraFieldMappings)) {
-				defaultMappingsStrings[fieldName] = {
-					toJira: jiraFunctionToString(mapping.toJira, false),
-					fromJira: jiraFunctionToString(mapping.fromJira, true)
-				};
+			if (confirmed) {
+				plugin.settings.fieldMappings = obsidianJiraFieldMappings;
+
+				// Also reset the string representations with default values
+				const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
+				for (const [fieldName, mapping] of Object.entries(obsidianJiraFieldMappings)) {
+					defaultMappingsStrings[fieldName] = {
+						toJira: jiraFunctionToString(mapping.toJira, false),
+						fromJira: jiraFunctionToString(mapping.fromJira, true)
+					};
+				}
+				plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
+
+				await this.loadExistingMappings();
+				await plugin.saveSettings();
 			}
-			plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
-
-			await this.loadExistingMappings();
-			await plugin.saveSettings();
 		});
 
 		// Load existing mappings
@@ -111,9 +132,41 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 		// Add security notice
 		const securityNote = containerEl.createEl("div", { cls: "setting-item-description" });
-		securityNote.createEl("strong", { text: "⚠️ Security note: " });
+		securityNote.createEl("strong", { text: t("secNote.name") });
 		securityNote.createSpan({
-			text: "Field mapping uses JavaScript function strings. Validate any shared mappings to prevent security issues."
+			text: t("secNote.desc")
+		});
+	}
+
+	private async showConfirmDialog(title: string, message: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			const modal = document.createElement('div');
+			modal.className = 'modal-container';
+			modal.innerHTML = `
+				<div class="modal">
+					<div class="modal-title">${title}</div>
+					<div class="modal-content">${message}</div>
+					<div class="modal-button-container">
+						<button class="mod-cta" id="confirm-btn">Confirm</button>
+						<button id="cancel-btn">Cancel</button>
+					</div>
+				</div>
+			`;
+
+			document.body.appendChild(modal);
+
+			const confirmBtn = modal.querySelector('#confirm-btn') as HTMLButtonElement;
+			const cancelBtn = modal.querySelector('#cancel-btn') as HTMLButtonElement;
+
+			confirmBtn?.addEventListener('click', () => {
+				document.body.removeChild(modal);
+				resolve(true);
+			});
+
+			cancelBtn?.addEventListener('click', () => {
+				document.body.removeChild(modal);
+				resolve(false);
+			});
 		});
 	}
 
@@ -214,7 +267,8 @@ export class FieldMappingsComponent implements SettingsComponent {
 		plugin.settings.fieldMappingsStrings = newStringMappings;
 		plugin.settings.fieldMappings = functionMappings;
 
-		debugLog(`To strings ${JSON.stringify(plugin.settings.fieldMappingsStrings)}\nand funcs ${JSON.stringify(plugin.settings.fieldMappings)}`);
+		debugLog(`To strings ${JSON.stringify(plugin.settings.fieldMappingsStrings).substring(0, 100)}\n
+		and funcs ${JSON.stringify(plugin.settings.fieldMappings).substring(0, 100)}`);
 		await plugin.saveSettings();
 	}
 
@@ -223,7 +277,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 	 */
 	private renderExamples(containerEl: HTMLElement): void {
 		const examplesSection = containerEl.createDiv({ cls: "mapping-examples" });
-		examplesSection.createEl("h4", { text: "Example field mappings" });
+		examplesSection.createEl("h4", { text: t("example.name") });
 
 		const examplesList = examplesSection.createEl("ul");
 
@@ -251,7 +305,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 			// Add button to use this example
 			const useBtn = item.createEl("button", {
-				text: "Use",
+				text: t("example.use"),
 				cls: "use-example-btn"
 			});
 

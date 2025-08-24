@@ -1,5 +1,8 @@
 import {App, SuggestModal} from "obsidian";
 import {JiraProject} from "../interfaces";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("modals.project").t;
 
 /**
  * Modal for selecting a project
@@ -12,7 +15,7 @@ export class ProjectModal extends SuggestModal<JiraProject> {
 		super(app);
 		this.onSubmit = onSubmit;
 		this.projects = projects;
-		this.setPlaceholder("Search for a project...");
+		this.setPlaceholder(t("placeholder"));
 	}
 
 	getSuggestions(query: string): JiraProject[] {

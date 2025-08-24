@@ -1,0 +1,34 @@
+title: Connection settings
+
+url:
+    title: Jira URL
+    desc: Your Jira instance URL
+    def: https://yourcompany.atlassian.net
+
+auth:
+    title: Authentication method
+    desc: Choose how to authenticate with Jira
+    options:
+        bearer: Bearer Token (PAT)
+        basic: Basic Auth (Username + PAT)
+        session: Session Cookie (Username + Password)
+
+pat:
+    title: Jira PAT
+    desc: Personal Access Token
+    def: NjM5MDI5MzQ0NT...
+
+username:
+    title: Jira username
+    desc: Your Jira username
+    def: admin
+
+email:
+    title: Jira email
+    desc: Your Jira email
+    def: admin@gmail.com
+
+password:
+    title: Jira password
+    desc: Your Jira password
+    def: qwerty

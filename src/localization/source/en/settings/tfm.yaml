@@ -1,0 +1,11 @@
+title: Test field mapping
+name: Test field mapping
+desc: Test your field mapping against the current issue data from Raw issue viewer. Enter a fromJira expression to see the result.
+no_data: No test field mapping
+invalid_exp: Invalid expression
+
+from_jira: From Jira
+value: Value
+
+add_mapping_tooltip: Add test mapping entry
+reset_tooltip: Reset

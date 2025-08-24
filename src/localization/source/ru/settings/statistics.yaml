@@ -1,0 +1,50 @@
+title: Статистика ведения журнала работы через Timekeep
+description: Управление и отправка журнала работы в Jira
+settings:
+    max_weeks:
+        name: Максимум недель для отображения
+        description: Количество последних недель для показа
+    time_range:
+        name: Период времени
+        description: Выберите период для группировки записей
+        options:
+            days: Дни
+            weeks: Недели
+            months: Месяцы
+            custom: Произвольный период
+    max_items:
+        name: Максимум элементов для отображения
+        description: Количество последних периодов для показа
+    date_from:
+        name: Дата начала
+        description: Дата начала для произвольного периода
+        placeholder: ГГГГ-ММ-ДД
+    date_to:
+        name: Дата окончания
+        description: Дата окончания для произвольного периода
+        placeholder: ГГГГ-ММ-ДД
+display:
+    select_period: Выбрать период
+    select_period_placeholder: Выберите период...
+    selected_period: 'Выбрано: {period}'
+    all_periods: Все последние периоды
+    no_entries: Записи рабочего лога не найдены.
+    period_of: Период от {date}
+    table:
+        task: Задача
+        block_path: Подзадача
+        start_time: Время начала
+        duration: Длительность
+        issue_key: Номер задачи
+actions:
+    send_to_jira: Отправить рабочий лог в Jira
+    refresh_data: Обновить данные
+messages:
+    select_period_first: Сначала выберите период.
+    refresh_success: Данные успешно обновлены
+    refresh_error: 'Ошибка при обновлении данных: {error}'
+    send_success: Рабочий лог успешно отправлен в Jira
+    send_error: 'Не удалось отправить рабочий лог в Jira: {error}'
+    invalid_date_range: Некорректный диапазон дат. Дата окончания должна быть позже
+        даты начала.
+    custom_range_required: Укажите дату начала и окончания для произвольного периода.

@@ -1,0 +1,3 @@
+name: Create issue in Jira
+success: Issue {issueKey} created successfully
+error: Error creating issue

@@ -1,10 +1,12 @@
-// modals/WorkLogModal.ts
 import {App, Modal, Notice, Setting} from "obsidian";
+import {useTranslations} from "../localization/translator";
+
+const t = useTranslations("modals.worklog").t;
 
 /**
  * Modal for adding work log entries
  */
-export class WorkLogModal extends Modal {
+export class IssueWorkLogModal extends Modal {
 	private onSubmit: (timeSpent: string, startDate: string, workDescription: string) => void;
 	private timeSpent: string = "";
 	private startDate: string = "";
@@ -27,7 +29,7 @@ export class WorkLogModal extends Modal {
 		this.startDate = date.toISOString().split('.')[0] + ".000+0000";
 
 		// Set the display format (01/Jun/21 09:00 AM)
-		const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		const months = t('months') as any;
 		const day = String(date.getDate()).padStart(2, '0');
 		const month = months[date.getMonth()];
 		const year = String(date.getFullYear()).slice(2);
@@ -46,12 +48,16 @@ export class WorkLogModal extends Modal {
 			const [day, month, year] = datePart.split('/');
 			const [hours, minutes] = timePart.split(':');
 
-			const months = {'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-				'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11};
+			const months = Object.fromEntries(
+				(t('months') as any).map((month: string, index: number) => [month, index])
+			) as Record<string, number>;
+
+			// {'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+			// 'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11};
 
 			let hour = parseInt(hours);
-			if (ampm === 'PM' && hour < 12) hour += 12;
-			if (ampm === 'AM' && hour === 12) hour = 0;
+			if (ampm.toUpperCase() === 'PM' && hour < 12) hour += 12;
+			if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0;
 
 			const fullYear = parseInt(year) + 2000;
 
@@ -66,14 +72,14 @@ export class WorkLogModal extends Modal {
 	}
 
 	onOpen() {
-		new Setting(this.contentEl).setName('Add work log').setHeading();
+		new Setting(this.contentEl).setName(t('name')).setHeading();
 		// Time Spent field
 		this.timeSpentSetting = new Setting(this.contentEl)
-			.setName("Time spent")
-			.setDesc("Format: 3w 4d 12h 30m (weeks, days, hours, minutes)")
+			.setName(t('spent.name'))
+			.setDesc(t('spent.desc'))
 			.addText((text) =>
 				text
-					.setPlaceholder("e.g., 4h 30m")
+					.setPlaceholder(t('spent.placeholder'))
 					.setValue(this.timeSpent)
 					.onChange((value) => {
 						this.timeSpent = value;
@@ -81,11 +87,11 @@ export class WorkLogModal extends Modal {
 			);
 
 		this.dateSetting = new Setting(this.contentEl)
-			.setName("Start time")
-			.setDesc("Format: DD/MMM/YY HH:MM AM/PM")
+			.setName(t('start.name'))
+			.setDesc(t('start.desc'))
 			.addText((text) =>
 				text
-					.setPlaceholder("e.g., 01/Feb/25 10:00 AM")
+					.setPlaceholder(t('start.placeholder'))
 					.setValue(this.displayDate)
 					.onChange((value) => {
 						this.displayDate = value;
@@ -158,11 +164,11 @@ export class WorkLogModal extends Modal {
 
 		// Work Description field
 		new Setting(this.contentEl)
-			.setName("Work description")
-			.setDesc("Optional description of the work done")
+			.setName(t("comment.name"))
+			.setDesc(t("comment.name"))
 			.addTextArea((text) =>
 				text
-					.setPlaceholder("Description of work done...")
+					.setPlaceholder(t("comment.placeholder"))
 					.onChange((value) => {
 						this.workDescription = value;
 					})
@@ -179,7 +185,7 @@ export class WorkLogModal extends Modal {
 		new Setting(this.contentEl)
 			.addButton((btn) =>
 				btn
-					.setButtonText("Submit")
+					.setButtonText(t("submit"))
 					.setCta()
 					.onClick(() => {
 						if (!this.validateInputs()) {
@@ -196,7 +202,7 @@ export class WorkLogModal extends Modal {
 	 */
 	private validateInputs(): boolean {
 		if (!this.timeSpent.trim()) {
-			new Notice("Time spent is required");
+			new Notice(t("warns.no_time"));
 			this.timeSpentSetting.setClass('invalid');
 			return false;
 		}
@@ -204,20 +210,20 @@ export class WorkLogModal extends Modal {
 		// Validate time spent format
 		const timeSpentPattern = /^(\d+[wdhm]\s*)+$/;
 		if (!timeSpentPattern.test(this.timeSpent)) {
-			new Notice("Invalid time format. Use combinations of w (weeks), d (days), h (hours), m (minutes)");
+			new Notice(t("warns.invalid_time"));
 			this.timeSpentSetting.setClass('invalid');
 			return false;
 		}
 
 		if (!this.displayDate.trim()) {
-			new Notice("Start date is required");
+			new Notice(t("warns.no_start"));
 			this.dateSetting.setClass('invalid');
 			return false;
 		}
 
 		// Validate date format by trying to parse it
 		if (!this.parseDisplayDate(this.displayDate)) {
-			new Notice("Invalid date format. Use DD/MMM/YY HH:MM AM/PM");
+			new Notice(t("warns.invalid_start"));
 			this.dateSetting.setClass('invalid');
 			return false;
 		}

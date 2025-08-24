@@ -1,0 +1,4 @@
+manual:
+    name: Update work log in Jira manually
+batch:
+    name: Update work log in Jira by batch
