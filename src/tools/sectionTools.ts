@@ -1,6 +1,6 @@
 import {debugLog} from "./debugLogging";
 
-const getSectionRegex = (sectionName: string) => new RegExp(`\`jira-sync-section-${sectionName}\`([\\s\\S]*?)\\n([\\s\\S]*?)(?=\\n#+ |\\n\`jira-sync-|$)`, 'g');
+const getSectionRegex = (sectionName: string) => new RegExp(`\`jira-sync-section-${sectionName}\`([\\s\\S]*?)\\n?([\\s\\S]*?)(?=\\n#+ |\\n\`jira-sync-|$)`, 'g');
 const getLineRegex = (sectionName: string) => new RegExp(`\`jira-sync-line-${sectionName}\` *(.*?)(?=\\n|$)`, 'g');
 //   ([w-]+)
 
