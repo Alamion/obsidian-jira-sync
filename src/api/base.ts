@@ -18,9 +18,9 @@ export async function baseRequest(
 		throw: false,
 		body
 	}
-	debugLog(requestParams)
+	debugLog("Request:\n", requestParams)
 	const response = await requestUrl(requestParams);
-	debugLog(response);
+	debugLog("Response:\n", response);
 	if (response.status < 200 || response.status >= 300) {
 		if (response.status === 401 && retries > 0) {
 			await authenticate(plugin);
@@ -31,7 +31,7 @@ export async function baseRequest(
 ${response.text || "Unknown error"}
 ${body && '\nbody:' + body || ""}`);
 	}
-	debugLog({"url": `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
+	debugLog("Additional request info:\n", {"url": `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
 		"method": method, "body": body});
 	return response.status === 204 ? null : response.json;
 

@@ -1,4 +1,4 @@
 manual:
-    name: Вести журнал работы в Jira вручную
+    name: Вести журнал работы в Jira вручную (Update work log in Jira manually)
 batch:
-    name: Вести журнал работы в Jira массово
+    name: Вести журнал работы в Jira массово (Update work log in Jira by batch)

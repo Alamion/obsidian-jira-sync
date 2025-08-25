@@ -26,8 +26,19 @@ export class IssueStatusModal extends SuggestModal<JiraTransitionType> {
 	}
 
 	renderSuggestion(type: JiraTransitionType, el: HTMLElement) {
-		el.createEl("div", {text: type.action && type.status ? `${type.action} -> ${type.status}` :
-		type.action ? `${type.action}` : `${type.status}`});
+		let result = "";
+		if (type.action && type.status) {
+			if (type.action === type.status) {
+				result = type.action;
+			} else {
+				result = `${type.action} (${type.status})`;
+			}
+		} else if (type.action) {
+			result = type.action;
+		} else if (type.status) {
+			result = type.status;
+		}
+		el.createEl("div", {text: result});
 	}
 
 	onChooseSuggestion(type: JiraTransitionType) {

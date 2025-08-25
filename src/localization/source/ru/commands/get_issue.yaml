@@ -1,2 +1,2 @@
-with_key: Получить данные задачи из Jira по указанному ключу
-without_key: Получить данные текущей задачи из Jira
+with_key: Получить данные задачи из Jira по номеру (Get issue from Jira with custom key)
+without_key: Получить данные текущей задачи из Jira (Get current issue from Jira)

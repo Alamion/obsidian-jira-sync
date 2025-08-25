@@ -566,7 +566,7 @@ code.hljs {
 }
 
 /* Main display container */
-.all-periods-display {
+.jira-copyable {
 	margin-top: 1.5rem;
 	user-select: text;
 	-webkit-user-select: text;

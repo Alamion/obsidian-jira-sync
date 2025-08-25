@@ -4,6 +4,7 @@ import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
 import {FieldMapping, obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
+import {debugLog} from "./debugLogging";
 
 
 export function localToJiraFields(
@@ -65,6 +66,7 @@ export async function updateJiraToLocal(
 		let updatedContent = fileContent;
 		for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
 			const markdownValue = jiraToMarkdown(fieldValue);
+			debugLog(`Updating sync section: ${fieldName}: ${markdownValue}`);
 			updatedContent = updateJiraSyncContent(updatedContent, fieldName, markdownValue);
 		}
 
@@ -104,6 +106,7 @@ function updateFieldFromJira(
 		if (key in fieldMappings) {
 			value = fieldMappings[key].fromJira(issue, targetObject);
 		}
+		// debugLog(`Updating field: ${key}: ${issue.fields[key]}`);
 
 		// Only update if value exists
 		if (value !== null && value !== undefined) {

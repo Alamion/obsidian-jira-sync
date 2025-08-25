@@ -33,10 +33,13 @@ async function processFrontmatterWorkLogs(plugin: JiraPlugin, _: TFile, jira_wor
 				throw new TypeError(`jira_worklog_batch has an invalid type: ${typeof jira_worklog_batch}`);
 			}
 		} catch (error) {
+			new Notice("Failed to parse jira_worklog_batch");
 			console.error("Failed to parse jira_worklog_batch:", error);
 		}
 
 		if (!foundData || workLogData.length === 0) {
+			new Notice("No work log data to process");
+			console.warn("No work log data to process");
 			return;
 		}
 		await processWorkLogBatch(plugin, workLogData);
@@ -109,10 +112,17 @@ function addFailure(results: { failures: { reason: string; issueKeys: string[] }
 
 function convertToStandardDate(dateString: string): string | null {
 	try {
-		const [datePart, timePart] = dateString.split(' ');
-		const [day, month, year] = datePart.split('-');
-		const [hours, minutes] = timePart.split(':');
-		return `${year}-${month}-${day}T${hours}:${minutes}:00.000+0000`;
+		// Try to parse the date string directly
+		const date = new Date(dateString);
+
+		if (isNaN(date.getTime())) {
+			throw new Error("Invalid date format");
+		}
+
+		// Format to ISO string and adjust to desired format
+		const isoString = date.toISOString();
+		return isoString.replace('Z', '+0000');
+
 	} catch (error) {
 		console.error("Error converting date:", error);
 		return null;

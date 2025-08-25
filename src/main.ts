@@ -14,7 +14,6 @@ import {transform_string_to_functions_mappings} from "./tools/convertFunctionStr
  */
 export default class JiraPlugin extends Plugin {
 	settings: JiraSettings;
-	temp_vars = {projects: [] as JiraProject[], issueTypes: [] as JiraIssueType[]};
 
 	async onload() {
 		await this.loadSettings();

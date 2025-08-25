@@ -1,3 +1,3 @@
-name: Создать задачу в Jira
+name: Создать задачу в Jira (Create issue in Jira)
 success: Задача {issueKey} успешно создана
 error: Ошибка при создании задачи

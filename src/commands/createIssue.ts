@@ -28,15 +28,15 @@ export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void
 	try {
 
 		// Fetch projects to show in selection modal
-		await fetchProjects(plugin);
+		const projects = await fetchProjects(plugin);
 
 		// Open project selection modal
-		new ProjectModal(plugin.app, plugin.temp_vars.projects, async (projectKey: string) => {
+		new ProjectModal(plugin.app, projects, async (projectKey: string) => {
 			// Fetch issue types for the selected project
-			await fetchIssueTypes(plugin, projectKey);
+			const issueTypes = await fetchIssueTypes(plugin, projectKey);
 
 			// Open issue type selection modal
-			new IssueTypeModal(plugin.app, plugin.temp_vars.issueTypes, async (issueType: string) => {
+			new IssueTypeModal(plugin.app, issueTypes, async (issueType: string) => {
 				try {
 					// Create the issue with selected project and issue type
 					const issueKey = await createIssueFromFile(plugin, file, projectKey, issueType);

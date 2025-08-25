@@ -79,4 +79,6 @@ The auth middleware needs to...
 `jira-sync-line-openLink` [Open in Jira](http://jira/browse/DEV-42)
 ```
 
+
+
 Docs with more detailed info and examples: [GitHub](https://github.com/Alamion/obsidian-jira-sync/tree/master/docs)

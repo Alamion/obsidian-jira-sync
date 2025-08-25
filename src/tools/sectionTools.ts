@@ -1,5 +1,9 @@
 import {debugLog} from "./debugLogging";
 
+const getSectionRegex = (sectionName: string) => new RegExp(`\`jira-sync-section-${sectionName}\`([\\s\\S]*?)\\n([\\s\\S]*?)(?=\\n#+ |\\n\`jira-sync-|$)`, 'g');
+const getLineRegex = (sectionName: string) => new RegExp(`\`jira-sync-line-${sectionName}\` *(.*?)(?=\\n|$)`, 'g');
+//   ([w-]+)
+
 /**
  * Updates or adds a Jira sync section in the file content
  * @param fileContent - The current content of the file
@@ -23,17 +27,16 @@ export function updateJiraSyncContent(fileContent: string, sectionName: string, 
  * @returns The updated file content
  */
 function updateJiraSyncSection(fileContent: string, sectionName: string, markdownContent: string, force: boolean = false): string {
-	const sectionRegex = new RegExp(`(\`jira-sync-section-${sectionName}\` [\\s\\S]*?)\\n([\\s\\S]*?)(?=\\n##|\`jira-sync-|$)`, 'g');
+	const sectionRegex = getSectionRegex(sectionName);
 
 	// If section exists, update it, otherwise append it
 	// debugLog(`Trying to find field ${sectionName} in section`)
 	if (sectionRegex.test(fileContent)) {
 		// Reset regex lastIndex
-		// debugLog(`Found a field ${sectionName} in section`)
 		sectionRegex.lastIndex = 0;
 		return fileContent.replace(
 			sectionRegex,
-			(match, group1) => `${group1}\n${markdownContent}\n`
+			(_, group1) => `\`jira-sync-section-${sectionName}\`${group1}\n${markdownContent}`
 		);
 	} else if (force) {
 		// No section found, append it
@@ -52,7 +55,7 @@ function updateJiraSyncSection(fileContent: string, sectionName: string, markdow
  * @returns The updated file content
  */
 function updateJiraSyncLine(fileContent: string, lineName: string, lineContent: string, force: boolean = false): string {
-	const lineRegex = new RegExp(`\`jira-sync-line-${lineName}\`.*?(?=\\n|$)`, 'g');
+	const lineRegex = getLineRegex(lineName);
 	const newLine = `\`jira-sync-line-${lineName}\` ${lineContent.split('\n')[0]}`;
 
 	// If line exists, update it, otherwise append it
@@ -88,10 +91,11 @@ export function extractAllJiraSyncValuesFromContent(fileContent: string): Record
  * @returns Object mapping section names to their content
  */
 function extractAllJiraSyncValuesFromSections(fileContent: string): Record<string, string> {
-	const syncSectionRegex = /`jira-sync-section-([\w-]+)` ([\s\S]*?)\n([\s\S]*?)(?=\n##|\n`jira-sync-|$)/g;
+	const sectionRegex = getSectionRegex(`([\\w-]+)`);
+	debugLog(sectionRegex);
 	const sections: Record<string, string> = {};
 	let match;
-	while ((match = syncSectionRegex.exec(fileContent)) !== null) {
+	while ((match = sectionRegex.exec(fileContent)) !== null) {
 		// debugLog(`Found match ${JSON.stringify(match)} in section`)
 		const sectionName = match[1];
 		sections[sectionName] = match[3].trim();
@@ -106,11 +110,11 @@ function extractAllJiraSyncValuesFromSections(fileContent: string): Record<strin
  * @returns Object mapping line names to their content
  */
 function extractAllJiraSyncValuesFromLines(fileContent: string): Record<string, string> {
-	const syncLineRegex = /`jira-sync-line-([\w-]+)`\s+(.*?)(?=\n|$)/g;
+	const lineRegex = getLineRegex(`([\\w-]+)`);
+	debugLog(lineRegex);
 	const lines: Record<string, string> = {};
-
 	let match;
-	while ((match = syncLineRegex.exec(fileContent)) !== null) {
+	while ((match = lineRegex.exec(fileContent)) !== null) {
 		// debugLog(`Found match ${JSON.stringify(match)} in line`)
 		const lineName = match[1];
 		lines[lineName] = match[2].trim();
