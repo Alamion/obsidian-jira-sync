@@ -1,6 +1,6 @@
 import JiraPlugin from "../main";
 import {requestUrl} from "obsidian";
-import {authenticate, getAuthHeaders, getSessionCookieKey} from "./auth";
+import {authenticate, getAuthHeaders} from "./auth";
 import {debugLog} from "../tools/debugLogging";
 
 export async function baseRequest(
@@ -8,13 +8,21 @@ export async function baseRequest(
 	method: string,
 	additional_url_path: string,
 	body?: string,
+	params?: Record<string, any>,
 	retries: number = 1
 ): Promise<any> {
+
+	const queryString = params && Object.keys(params).length > 0
+		? "?" + new URLSearchParams(params).toString()
+		: "";
+
+	const url = `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}${queryString}`;
 	const requestParams = {
-		url: `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
+		url,
 		method: method,
 		headers: await getAuthHeaders(plugin),
 		contentType: "application/json",
+		accept: "application/json",
 		throw: false,
 		body
 	}
@@ -24,16 +32,29 @@ export async function baseRequest(
 	if (response.status < 200 || response.status >= 300) {
 		if (response.status === 401 && retries > 0) {
 			await authenticate(plugin);
-			return await baseRequest(plugin, method, additional_url_path, body, retries-1);
+			return await baseRequest(plugin, method, additional_url_path, body, params, retries-1);
 		}
 		// console.error(error);
 		throw new Error(`
 ${response.text || "Unknown error"}
 ${body && '\nbody:' + body || ""}`);
 	}
-	debugLog("Additional request info:\n", {"url": `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}`,
-		"method": method, "body": body});
+	debugLog("Additional request info:\n", {"url": url,
+		"method": method, "body": body, params: params});
 	return response.status === 204 ? null : response.json;
 
 }
 
+export function sanitizeObject(obj: any): any {
+	if (Array.isArray(obj)) {
+		obj = obj.map((item: any) => sanitizeObject(item));
+	}
+	else if (typeof obj === "object") {
+		obj = Object.entries(obj).filter(([, v]) => v !== null && v !== undefined).reduce((acc, [k, v]) => {
+			acc[k] = sanitizeObject(v)
+			return acc
+		}, {} as Record<string, any>);
+	}
+
+	return obj;
+}

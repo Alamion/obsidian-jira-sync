@@ -20,6 +20,9 @@ export interface JiraSettings {
 	statisticsTimeType: string;
 	maxItemsToShow: number;
 	customDateRange: { start: string; end: string };
+
+	// Cache for issue key to file path mapping
+	issueKeyToFilePathCache: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: JiraSettings = {
@@ -47,6 +50,9 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 
 	statisticsTimeType: "weeks",
 	maxItemsToShow: 10,
-	customDateRange: { start: "", end: "" }
+	customDateRange: { start: "", end: "" },
+
+	// Initialize empty cache
+	issueKeyToFilePathCache: {}
 };
 

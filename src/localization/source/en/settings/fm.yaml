@@ -14,10 +14,13 @@ from_jira: From Jira
 to_jira: To Jira
 field_name: Field name
 
+add_mapping: Add mapping
 add_mapping_tooltip: Add new field mapping
+reset: Reset
 reset_tooltip: Reset
 reset_confirm_title: Reset field mapping
 reset_confirm_text: Field mapping will be cleaned up. Are you sure?
 reload_defaults_tooltip: Reload
 reload_confirm_title: Reload default field mapping
 reload_confirm_text: Current field mappings will be overwritten with the default mappings. Are you sure?
+reload_defaults: Reload

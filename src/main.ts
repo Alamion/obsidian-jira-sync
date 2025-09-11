@@ -1,75 +1,126 @@
-import { Plugin } from "obsidian";
+import {Plugin } from "obsidian";
 import { JiraSettingTab } from "./settings/JiraSettingTab";
-import { JiraIssueType, JiraProject } from "./interfaces";
 import {DEFAULT_SETTINGS, JiraSettings} from "./settings/default";
 import {
 	registerUpdateIssueCommand, registerUpdateWorkLogManuallyCommand,
-	registerGetIssueCommand, registerUpdateWorkLogBatchCommand,
-	registerCreateIssueCommand, registerGetIssueCommandWithKey, registerUpdateIssueStatusCommand
+	registerGetCurrentIssueCommand, registerUpdateWorkLogBatchCommand,
+	registerCreateIssueCommand, registerGetIssueCommandWithCustomKey, registerUpdateIssueStatusCommand,
+	registerBatchFetchIssuesCommand
 } from "./commands";
 import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
+import {createJiraSyncExtension} from "./postprocessing/livePreview";
+import {hideJiraPointersReading} from "./postprocessing/reading";
+import { buildCacheFromFilesystem, validateCache } from "./tools/cacheUtils";
 
-/**
- * Main plugin class
- */
 export default class JiraPlugin extends Plugin {
 	settings: JiraSettings;
+	
+	// In-memory cache for instant access during synchronization
+	private issueKeyToFilePathCache: Map<string, string> = new Map();
 
 	async onload() {
 		await this.loadSettings();
-
-		// // Add ribbon icon to export  issues
-		// this.addRibbonIcon(
-		// 	"book-up",
-		// 	"Push current Kanban issues statuses to Jira",
-		// 	() => {
-		// 		// Use the getIssue command's functionality
-		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:push-all-issues"];
-		// 		if (getIssuesCommand) {
-		// 			getIssuesCommand.callback();
-		// 		}
-		// 	}
-		// );
-		//
-		// // Add ribbon icon to import issues
-		// this.addRibbonIcon(
-		// 	"book-down",
-		// 	"Pull Jira all issues statuses + sync statuses of Kanban",
-		// 	() => {
-		// 		// Use the getIssue command's functionality
-		// 		const getIssuesCommand = this.app.commands.commands["jira-plugin:pull-all-issues"];
-		// 		if (getIssuesCommand) {
-		// 			getIssuesCommand.callback();
-		// 		}
-		// 	}
-		// );
+		
+		// validate cache from settings
+		this.initializeCache();
+		await validateCache(this);
 
 		// Register all commands
 		registerUpdateIssueCommand(this);
 		registerUpdateIssueStatusCommand(this);
-		registerGetIssueCommand(this);
-		registerGetIssueCommandWithKey(this);
+		registerGetCurrentIssueCommand(this);
+		registerGetIssueCommandWithCustomKey(this);
 		registerCreateIssueCommand(this);
+		registerBatchFetchIssuesCommand(this);
 
 		registerUpdateWorkLogManuallyCommand(this);
 		registerUpdateWorkLogBatchCommand(this);
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));
+
+		// Handle Reading mode (post-processor for rendered markdown)
+		this.registerMarkdownPostProcessor(hideJiraPointersReading.bind(this));
+
+		// Handle Live Preview/Edit mode (CodeMirror extension)
+		this.registerEditorExtension(createJiraSyncExtension(this));
+
+		// Register vault event listeners for cache maintenance
+		this.registerVaultEventListeners();
+
 	}
 
-	/**
-	 * Load plugin settings
-	 */
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 		this.settings.fieldMappings = await transform_string_to_functions_mappings(this.settings.fieldMappingsStrings);
 	}
 
-	/**
-	 * Save plugin settings
-	 */
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	private initializeCache() {
+		this.issueKeyToFilePathCache.clear();
+		Object.entries(this.settings.issueKeyToFilePathCache).forEach(([key, path]) => {
+			this.issueKeyToFilePathCache.set(key, path);
+		});
+	}
+
+	getAllIssueKeysMap(): Map<string, string> {
+		return this.issueKeyToFilePathCache
+	}
+
+	getFilePathForIssueKey(issueKey: string): string | undefined {
+		return this.issueKeyToFilePathCache.get(issueKey);
+	}
+
+	setFilePathForIssueKey(issueKey: string, filePath: string) {
+		this.issueKeyToFilePathCache.set(issueKey, filePath);
+		this.settings.issueKeyToFilePathCache[issueKey] = filePath;
+		this.saveSettings();
+	}
+
+	removeIssueKeyFromCache(issueKey: string) {
+		this.issueKeyToFilePathCache.delete(issueKey);
+		delete this.settings.issueKeyToFilePathCache[issueKey];
+		this.saveSettings();
+	}
+
+	clearCache() {
+		this.issueKeyToFilePathCache.clear();
+		this.settings.issueKeyToFilePathCache = {};
+		this.saveSettings();
+	}
+
+	async rebuildCache() {
+		this.clearCache();
+		await buildCacheFromFilesystem(this);
+	}
+
+	private registerVaultEventListeners() {
+
+		// Handle file renames
+		this.registerEvent(
+			this.app.vault.on('rename', (file, oldPath) => {
+				for (const [issueKey, cachedPath] of this.issueKeyToFilePathCache.entries()) {
+					if (cachedPath === oldPath) {
+						this.setFilePathForIssueKey(issueKey, file.path);
+						break;
+					}
+				}
+			})
+		);
+
+		// Handle file deletions
+		this.registerEvent(
+			this.app.vault.on('delete', (file) => {
+				for (const [issueKey, cachedPath] of this.issueKeyToFilePathCache.entries()) {
+					if (cachedPath === file.path) {
+						this.removeIssueKeyFromCache(issueKey);
+						break;
+					}
+				}
+			})
+		);
 	}
 }

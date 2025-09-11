@@ -1,4 +1,4 @@
-import { Setting, Notice } from 'obsidian';
+import {Setting, Notice, setIcon} from 'obsidian';
 import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
 import { processWorkLogBatch } from "../../commands";
 import { SuggestSelectComponent, SuggestSelectConfig } from './SuggestSelectComponent';
@@ -233,54 +233,158 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		sortedPeriods.forEach((period, index) => {
 			const periodDiv = display.createDiv('period-section');
-			// Добавляем небольшую задержку для каскадной анимации
 			periodDiv.style.animationDelay = `${index * 50}ms`;
 
-			periodDiv.createEl('h4', {
+			// Calculate total duration for this period
+			const totalMs = this.groupedByPeriod[period].reduce((sum, e) => {
+				return e.duration === 'ongoing' ? sum : sum + this.parseDurationToMs(e.duration);
+			}, 0);
+
+			// Create period header with title and total
+			const headerContainer = periodDiv.createDiv('timekeep-period-header');
+			headerContainer.createEl('h4', {
 				text: this.formatPeriodLabel(period),
 				cls: 'timekeep-period-title'
 			});
+			headerContainer.createEl('span', {
+				text: this.parseMsToDuration(totalMs),
+				cls: 'timekeep-period-total'
+			});
 
-			const entries = this.groupedByPeriod[period];
-			this.createEntriesTable(periodDiv, entries);
+			this.createEntriesTable(periodDiv, this.groupedByPeriod[period]);
 		});
 	}
 
-	private createEntriesTable(container: HTMLElement, entries: ProcessedEntry[]): void {
-		const tableContainer = container.createDiv('timekeep-table-container');
-		const table = tableContainer.createEl('table', { cls: 'timekeep-entries-table' });
-		const thead = table.createEl('thead');
-		const headerRow = thead.createEl('tr');
+	private groupAndSummarizeEntries(entries: ProcessedEntry[]):
+		Record<string, Record<string, { entries: ProcessedEntry[], totalMs: number }>>
+	{
+		const grouped: ReturnType<typeof this.groupAndSummarizeEntries> = {};
 
-		headerRow.createEl('th', { text: t("display.table.task") });
-		headerRow.createEl('th', { text: t("display.table.issue_key") });
-		headerRow.createEl('th', { text: t("display.table.block_path") });
-		headerRow.createEl('th', { text: t("display.table.start_time") });
-		headerRow.createEl('th', { text: t("display.table.duration") });
+		entries.forEach(entry => {
+			const file = entry.file;
+			const issueKey = entry.issueKey || "no-issue";
 
-		const tbody = table.createEl('tbody');
-		entries.forEach((entry, index) => {
-			const row = tbody.createEl('tr');
-			if (index % 2 === 1) row.addClass('timekeep-table-row-alt');
-
-			// Добавляем title для длинных текстов
-			const taskCell = row.createEl('td', { text: entry.file });
-			taskCell.title = entry.file;
-
-			const issueCell = row.createEl('td', { text: entry.issueKey || '-' });
-			if (entry.issueKey) {
-				issueCell.title = `Issue: ${entry.issueKey}`;
+			if (!grouped[file]) grouped[file] = {};
+			if (!grouped[file][issueKey]) {
+				grouped[file][issueKey] = { entries: [], totalMs: 0 };
 			}
 
-			const pathCell = row.createEl('td', { text: entry.blockPath });
-			pathCell.title = entry.blockPath; // Полный путь в тултипе
+			const group = grouped[file][issueKey];
 
-			const timeCell = row.createEl('td', { text: entry.startTime });
-			timeCell.title = `Started: ${entry.startTime}`;
+			if (entry.duration !== 'ongoing') {
+				const ms = this.parseDurationToMs(entry.duration);
+				group.totalMs += ms;
+			}
 
-			const durationCell = row.createEl('td', { text: entry.duration });
-			durationCell.title = `Duration: ${entry.duration}`;
+			group.entries.push(entry);
 		});
+
+		return grouped;
+	}
+
+	private createEntriesTable(container: HTMLElement, entries: ProcessedEntry[]): void {
+		if (!entries.length) return;
+
+		const grouped = this.groupAndSummarizeEntries(entries);
+		const tableContainer = container.createDiv('timekeep-table-container');
+		const groupCards: HTMLDivElement[] = [];
+
+		Object.entries(grouped).forEach(([file, issueMap]) => {
+			Object.entries(issueMap).forEach(([issueKey, group]) => {
+				// Create group card
+				const groupCard = tableContainer.createDiv('timekeep-group-card collapsed');
+				groupCards.push(groupCard);
+				
+				// Create group header
+				const groupHeader = groupCard.createDiv('timekeep-group-header');
+				groupHeader.addEventListener('click', () => {
+					groupCard.classList.toggle('collapsed');
+				});
+
+				// Group title
+				const groupTitle = groupHeader.createEl('div', { cls: 'timekeep-group-title' });
+				groupTitle.createEl('span', { text: file });
+
+				// Group meta (issue key and duration)
+				const groupMeta = groupHeader.createEl('div', { cls: 'timekeep-group-meta' });
+
+				if (issueKey && issueKey !== 'no-issue') {
+					const issueKeySpan = groupMeta.createEl('a', {
+						text: issueKey, 
+						cls: 'timekeep-group-issue-key',
+						attr: {
+							href: `${this.props.plugin.settings.jiraUrl}/browse/${issueKey}`,
+							target: "_blank",
+							rel: "noopener noreferrer"
+						}
+					});
+					issueKeySpan.addEventListener('click', (e) => {
+						e.stopPropagation();
+					});
+					debugLog(`${this.props.plugin.settings.jiraUrl}/browse/${issueKey}`)
+				}
+				groupMeta.createEl('span', { 
+					text: this.parseMsToDuration(group.totalMs), 
+					cls: 'timekeep-group-duration' 
+				});
+
+				// Collapse icon
+				const chevron = groupMeta.createEl('span', {
+					cls: 'jira-collapse-icon',
+				});
+				setIcon(chevron, "chevron-down");
+
+				// Create entries container
+				const entriesContainer = groupCard.createDiv('timekeep-entries-container');
+
+				// Add column labels if there are entries
+				if (group.entries.length > 0) {
+					const labelsDiv = entriesContainer.createDiv('timekeep-entry-labels');
+					labelsDiv.createEl('div', { 
+						text: t("display.table.task"), 
+						cls: 'timekeep-entry-label-task'
+					});
+					labelsDiv.createEl('div', { 
+						text: t("display.table.start_time"), 
+						cls: 'timekeep-entry-label-start'
+					});
+					labelsDiv.createEl('div', { 
+						text: t("display.table.duration"), 
+						cls: 'timekeep-entry-label-duration'
+					});
+				}
+
+				// Individual entries
+				group.entries.forEach((entry) => {
+					const entryDiv = entriesContainer.createDiv('timekeep-entry');
+					
+					// Block path
+					entryDiv.createEl('div', { 
+						text: entry.blockPath, 
+						cls: 'timekeep-entry-block-path',
+						title: entry.blockPath
+					});
+
+					// Start time
+					entryDiv.createEl('div', { 
+						text: entry.startTime, 
+						cls: 'timekeep-entry-start-time',
+						title: entry.startTime
+					});
+
+					// Duration
+					entryDiv.createEl('div', { 
+						text: entry.duration, 
+						cls: 'timekeep-entry-duration',
+						title: entry.duration
+					});
+				});
+			});
+		});
+		if (groupCards.length > 0) {
+			const lastCard = groupCards[groupCards.length - 1];
+			lastCard.classList.add('timekeep-last-group-card');
+		}
 	}
 
 	private async sendWorkLogToJira(): Promise<void> {
@@ -303,21 +407,28 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private formatPeriodDate(periodKey: string): string {
+		const type = this.props.plugin.settings.statisticsTimeType;
+
+		if (type === 'custom') {
+			const from = this.props.plugin.settings.customDateRange.start;
+			const to = this.props.plugin.settings.customDateRange.end;
+			return `${from} – ${to}`;
+		}
+
 		const date = new Date(periodKey);
 
-		switch (this.props.plugin.settings.statisticsTimeType) {
+		switch (type) {
 			case 'days':
-				return date.toLocaleDateString();
-			case 'weeks':
+				return date.toISOString().split('T')[0];
+			case 'weeks': {
 				const weekEnd = new Date(date);
 				weekEnd.setDate(weekEnd.getDate() + 6);
-				return `${date.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+				return `${date.toISOString().split('T')[0]} – ${weekEnd.toISOString().split('T')[0]}`;
+			}
 			case 'months':
-				return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-			case 'custom':
-				return `${this.props.plugin.settings.customDateRange.start} - ${this.props.plugin.settings.customDateRange.end}`;
+				return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 			default:
-				return date.toLocaleDateString();
+				return date.toISOString().split('T')[0];
 		}
 	}
 
@@ -326,11 +437,12 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 			case 'days':
 				return date.toISOString().split('T')[0];
 			case 'weeks':
-				return this.getWeekStartDate(date).toISOString().split('T')[0];
+				const weekStart = this.getWeekStartDate(date);
+				return `week-${weekStart.toISOString().split('T')[0]}`;
 			case 'months':
-				return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 			case 'custom':
-				return `${this.props.plugin.settings.customDateRange.start}_${this.props.plugin.settings.customDateRange.end}`;
+				return 'custom-range';
 			default:
 				return date.toISOString().split('T')[0];
 		}
@@ -343,8 +455,9 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		const from = new Date(this.props.plugin.settings.customDateRange.start);
 		const to = new Date(this.props.plugin.settings.customDateRange.end);
-
-		return date >= from && date <= to;
+		const toPlusOneDay = new Date(to);
+		toPlusOneDay.setDate(to.getDate() + 1);
+		return date >= from && date <= toPlusOneDay;
 	}
 
 	private validateCustomRange(): boolean {
@@ -358,7 +471,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		const from = new Date(this.props.plugin.settings.customDateRange.start);
 		const to = new Date(this.props.plugin.settings.customDateRange.end);
 
-		if (from >= to) {
+		if (from > to) {
 			new Notice(t("messages.invalid_date_range"));
 			return false;
 		}
@@ -375,8 +488,8 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		return new Date(result.setHours(0, 0, 0, 0));
 	}
 
-	private formatDuration(ms: number): string {
-		const units = [
+	private parseMsToDuration(ms: number): string {
+		const units: { label: string; ms: number }[] = [
 			{ label: "w", ms: 1000 * 60 * 60 * 24 * 7 },
 			{ label: "d", ms: 1000 * 60 * 60 * 24 },
 			{ label: "h", ms: 1000 * 60 * 60 },
@@ -396,6 +509,31 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		}
 
 		return result.length > 0 ? result.join(" ") : "0s";
+	}
+
+	private parseDurationToMs(duration: string): number {
+		if (duration === 'ongoing') return 0;
+
+		const units: { label: string; ms: number }[] = [
+			{ label: "w", ms: 1000 * 60 * 60 * 24 * 7 },
+			{ label: "d", ms: 1000 * 60 * 60 * 24 },
+			{ label: "h", ms: 1000 * 60 * 60 },
+			{ label: "m", ms: 1000 * 60 },
+			{ label: "s", ms: 1000 }
+		];
+
+		let ms = 0;
+		let temp = duration;
+
+		for (const unit of units) {
+			const match = temp.match(new RegExp(`(\\d+)${unit.label}`));
+			if (match) {
+				ms += parseInt(match[1]) * unit.ms;
+				temp = temp.replace(match[0], '');
+			}
+		}
+
+		return ms;
 	}
 
 	private trimOldEntries(groupedEntries: GroupedEntries): void {
@@ -436,7 +574,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 				if (entry.endTime) {
 					endTime = new Date(entry.endTime);
-					duration = this.formatDuration(endTime.getTime() - startTime.getTime());
+					duration = this.parseMsToDuration(endTime.getTime() - startTime.getTime());
 				} else {
 					endTime = new Date();
 					duration = "ongoing";
@@ -446,8 +584,8 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 					file: fileName.replace(".md", ""),
 					issueKey: issueKey,
 					blockPath: currentPath,
-					startTime: startTime.toLocaleString(),
-					endTime: entry.endTime ? endTime.toLocaleString() : "ongoing",
+					startTime: this.toLocalIso(startTime),
+					endTime: entry.endTime ? this.toLocalIso(endTime) : "ongoing",
 					duration: duration,
 					timestamp: startTime.getTime()
 				});
@@ -517,6 +655,16 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	hide(): void {
 		this.containerEl = null;
 		this.periodSelector = null;
+	}
+
+	private toUtcIso(date: Date): string {
+		return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+			.toISOString()
+			.replace(".000", ""); // Optional: trim millis if needed
+	}
+
+	private toLocalIso(date: Date): string {
+		return date.toISOString().slice(0, 19).replace("T", " ");
 	}
 
 }

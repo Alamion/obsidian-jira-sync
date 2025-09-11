@@ -2,7 +2,7 @@ import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {addWorkLog} from "../api";
 import {debugLog} from "../tools/debugLogging";
-import {checkCommandCallback} from "../tools/check_command_callback";
+import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("commands.add_worklog.batch").t;

@@ -1,17 +1,20 @@
 import JiraPlugin from "../main";
 import {TFile} from "obsidian";
 import {createJiraIssue, updateJiraIssue, updateJiraStatus} from "../api";
-import {prepareJiraFieldsFromFile} from "./common_prepareData";
-import {updateJiraToLocal} from "../tools/mapObsidianJiraFields";
+import {prepareJiraFieldsFromFile} from "./commonPrepareData";
+import {localToJiraFields, updateJiraToLocal} from "../tools/mapObsidianJiraFields";
 import {JiraIssue, JiraTransitionType} from "../interfaces";
+import {obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
 
 export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Promise<string> {
-	const { fields, issueKey } = await prepareJiraFieldsFromFile(plugin, file);
+	let fields = await prepareJiraFieldsFromFile(plugin, file);
+	const issueKey = fields.key;
 
 	if (!issueKey) {
 		throw new Error("No issue key found in frontmatter");
 	}
 
+	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
 	await updateJiraIssue(plugin, issueKey, fields);
 	return issueKey;
 }
@@ -19,33 +22,12 @@ export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Prom
 export async function createIssueFromFile(
 	plugin: JiraPlugin,
 	file: TFile,
-	projectKey?: string,
-	issueType?: string
+	fields?: Record<string, any>,
 ): Promise<string> {
-	const { fields } = await prepareJiraFieldsFromFile(plugin, file);
-
-	// Override project and issue type if provided
-	if (projectKey) {
-		fields.project = { key: projectKey };
+	if (!fields) {
+		fields = await prepareJiraFieldsFromFile(plugin, file);
 	}
-
-	if (issueType) {
-		fields.issuetype = { name: issueType };
-	}
-
-	// Ensure required fields
-	if (!fields.summary) {
-		throw new Error("Summary is required in frontmatter");
-	}
-
-	if (!fields.project) {
-		throw new Error("Project is required in frontmatter or as parameter");
-	}
-
-	if (!fields.issuetype) {
-		throw new Error("Issue type is required in frontmatter or as parameter");
-	}
-
+	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
 	// Create the issue
 	const issueData = await createJiraIssue(plugin, fields);
 	const issueKey = issueData.key;
@@ -59,13 +41,13 @@ export async function createIssueFromFile(
 }
 
 export async function updateStatusFromFile(plugin: JiraPlugin, file: TFile, transition: JiraTransitionType): Promise<string> {
-	const { issueKey } = await prepareJiraFieldsFromFile(plugin, file);
+	const fields = await prepareJiraFieldsFromFile(plugin, file);
 
-	if (!issueKey) {
+	if (!fields.key) {
 		throw new Error("No issue key found in frontmatter");
 	}
 
-	await updateJiraStatus(plugin, issueKey, transition.id);
+	await updateJiraStatus(plugin, fields.key, transition.id);
 	await updateJiraToLocal(plugin, file, {fields: {status: {name: transition.status}}} as JiraIssue);
-	return issueKey;
+	return fields.key;
 }

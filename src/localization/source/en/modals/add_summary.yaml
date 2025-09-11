@@ -1,0 +1,8 @@
+desc: Set the Jira issue summary
+
+key:
+    name: Summary
+    placeholder: ""
+    desc: Enter new task name (e.g., "My great issue")
+
+submit: Submit

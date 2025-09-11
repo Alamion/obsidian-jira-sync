@@ -1,6 +1,6 @@
 import JiraPlugin from "../main";
 import {JiraIssue, JiraTransitionType} from "../interfaces";
-import {baseRequest} from "./base";
+import {baseRequest, sanitizeObject} from "./base";
 import {Notice} from "obsidian";
 
 /**
@@ -12,6 +12,56 @@ import {Notice} from "obsidian";
 export async function fetchIssue(plugin: JiraPlugin, issueKey: string): Promise<JiraIssue> {
 	const additional_url_path = `/issue/${issueKey}`
 	return await baseRequest(plugin, 'get', additional_url_path) as Promise<JiraIssue>;
+}
+
+/**
+ * Fetch issues by JQL with optional field selection.
+ * Returns only issues array for convenience.
+ */
+export async function fetchIssuesByJQL(
+	plugin: JiraPlugin,
+	jql: string,
+	limit?: number,
+	fields?: string[]
+): Promise<JiraIssue[]> {
+	const test = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
+	const totalAvailable = test.total;
+	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
+
+	let startAt = 0;
+	let issues: JiraIssue[] = [];
+
+	while (startAt < actualLimit) {
+		const remaining = actualLimit - startAt;
+		const maxResults = Math.min(remaining, 1000);
+
+		const result = await fetchIssuesByJQLRaw(plugin, jql, maxResults, fields, startAt);
+		issues = [...issues, ...result.issues];
+		startAt += result.issues.length;
+	}
+
+	return issues as JiraIssue[];
+}
+
+/**
+ * Fetch issues by JQL and return the raw search response (includes total, startAt, etc.).
+ * Useful for previewing results and counts.
+ */
+export async function fetchIssuesByJQLRaw(
+	plugin: JiraPlugin,
+	jql: string,
+	maxResults?: number,
+	fields?: string[],
+	startAt?: number
+): Promise<any> {
+	const additional_url_path = `/search`;
+	const body = JSON.stringify(sanitizeObject({
+		jql,
+		maxResults,
+		startAt,
+		fields: fields && fields.length > 0 ? fields : undefined,
+	}));
+	return await baseRequest(plugin, 'post', additional_url_path, body);
 }
 
 /**
@@ -29,7 +79,6 @@ export async function fetchIssueTransitions(plugin: JiraPlugin, issueKey: string
 		status: to.name
 	})) as JiraTransitionType[];
 }
-
 
 /**
  * Update an issue in Jira

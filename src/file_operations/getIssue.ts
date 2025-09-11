@@ -3,32 +3,62 @@ import {JiraIssue} from "../interfaces";
 import {ensureIssuesFolder} from "../tools/filesUtils";
 import {sanitizeFileName} from "../tools/sanitizers";
 import {updateJiraToLocal} from "../tools/mapObsidianJiraFields";
-import {Notice, TFile} from "obsidian";
-import {defaultTemplate} from "../default/default_template";
+import {Notice, TFile, TFolder} from "obsidian";
+import {defaultTemplate} from "../default/defaultTemplate";
+import { debugLog } from "src/tools/debugLogging";
 
 export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIssue, filePath?: string): Promise<void> {
 	try {
 		await ensureIssuesFolder(plugin);
 
-		const sanitizedSummary = sanitizeFileName(issue.fields.summary);
-		filePath = filePath || `${plugin.settings.issuesFolder}/${sanitizedSummary}.md`;
+		let targetFile: TFile | null = null;
+		let targetPath: string = "";
 
-		const existingFile = plugin.app.vault.getFileByPath(filePath);
-
-		if (existingFile) {
-			await updateJiraToLocal(plugin, existingFile, issue)
-
-			// Open the file
-			await plugin.app.workspace.openLinkText(existingFile.path, "");
+		if (filePath) {
+			targetPath = filePath;
+			targetFile = plugin.app.vault.getFileByPath(filePath);
 		} else {
-			// File doesn't exist, create it
-			const newFile = await createNewIssueFile(plugin, filePath);
+			// First, try to find the file using cache
+			const cachedPath = plugin.getFilePathForIssueKey(issue.key);
+			if (cachedPath) {
+				targetFile = plugin.app.vault.getFileByPath(cachedPath);
+				if (targetFile) {
+					targetPath = cachedPath;
+					debugLog(`Found issue ${issue.key} in cache: ${cachedPath}`);
+				} else {
+					debugLog(`Cached path for ${issue.key} no longer exists: ${cachedPath}`);
+				}
+			}
 
-			// Update it
+			// If not found in cache or file doesn't exist, fallback to search
+			if (!targetFile) {
+				debugLog(`Issue ${issue.key} not in cache, searching filesystem...`);
+				targetFile = await findFileByIssueKey(plugin, issue.key);
+				if (targetFile) {
+					targetPath = targetFile.path;
+					// Add to cache for future use
+					plugin.setFilePathForIssueKey(issue.key, targetPath);
+					debugLog(`Found issue ${issue.key} via search, added to cache: ${targetPath}`);
+				}
+			}
+
+			// If still not found, create new file
+			if (!targetFile) {
+				const sanitizedSummary = sanitizeFileName(issue.fields.summary);
+				targetPath = `${plugin.settings.issuesFolder}/${sanitizedSummary} [${issue.key}].md`;
+				debugLog(`Issue ${issue.key} not found in cache or filesystem, creating new file: ${targetPath}`);
+			}
+		}
+
+		if (targetFile) {
+			await updateJiraToLocal(plugin, targetFile, issue)
+			await plugin.app.workspace.openLinkText(targetFile.path, "");
+		} else {
+			const newFile = await createNewIssueFile(plugin, targetPath);
 			await updateJiraToLocal(plugin, newFile, issue)
-
-			// Open the file
 			await plugin.app.workspace.openLinkText(newFile.path, "");
+			// Add new file to cache
+			plugin.setFilePathForIssueKey(issue.key, newFile.path);
 		}
 		new Notice(`Issue ${issue.key} imported successfully`);
 	} catch (error) {
@@ -36,6 +66,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 		console.error(error);
 	}
 }
+
 
 async function createNewIssueFile(
 	plugin: JiraPlugin,
@@ -70,4 +101,30 @@ async function createNewIssueFile(
 	return newFile
 }
 
+async function findFileByIssueKey(plugin: JiraPlugin, issueKey: string): Promise<TFile | null> {
+	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.issuesFolder);
 
+	if (!issuesFolder || !(issuesFolder instanceof TFolder)) {
+		return null;
+	}
+
+	return await searchFolderForIssueKey(plugin, issuesFolder, issueKey);
+}
+
+async function searchFolderForIssueKey(plugin: JiraPlugin, folder: TFolder, issueKey: string): Promise<TFile | null> {
+	for (const child of folder.children) {
+		if (child instanceof TFile && child.extension === 'md') {
+			const metadata = plugin.app.metadataCache.getFileCache(child);
+			const foundIssueKey = metadata?.frontmatter?.key;
+			if (foundIssueKey === issueKey) {
+				return child;
+			}
+		} else if (child instanceof TFolder) {
+			const found = await searchFolderForIssueKey(plugin, child, issueKey);
+			if (found) {
+				return found;
+			}
+		}
+	}
+	return null;
+}

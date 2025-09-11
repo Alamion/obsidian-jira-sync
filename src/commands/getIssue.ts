@@ -3,12 +3,12 @@ import JiraPlugin from "../main";
 import {IssueSearchModal} from "../modals";
 import {fetchIssue, validateSettings} from "../api";
 import {createOrUpdateIssueNote} from "../file_operations/getIssue";
-import {checkCommandCallback} from "../tools/check_command_callback";
+import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("commands.get_issue").t;
 
-export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
+export function registerGetIssueCommandWithCustomKey(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira-key",
 		name: t("with_key"),
@@ -23,7 +23,7 @@ export function registerGetIssueCommandWithKey(plugin: JiraPlugin): void {
 	});
 }
 
-export function registerGetIssueCommand(plugin: JiraPlugin): void {
+export function registerGetCurrentIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "get-issue-jira",
 		name: t("without_key"),
@@ -34,7 +34,7 @@ export function registerGetIssueCommand(plugin: JiraPlugin): void {
 }
 
 function openIssueModal(plugin: JiraPlugin): void {
-	new IssueSearchModal(plugin.app, async (issueKey: string) => {
+	new IssueSearchModal(plugin.app, plugin, async (issueKey: string) => {
 		await fetchAndOpenIssue(plugin, null, issueKey);
 	}).open();
 }

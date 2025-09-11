@@ -38,6 +38,7 @@ display:
     period_of: Period of {date}
     
     table:
+        total: Total
         task: Task
         block_path: Subtask
         start_time: Start Time

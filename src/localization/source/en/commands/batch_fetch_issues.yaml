@@ -1,0 +1,8 @@
+name: Batch Fetch Issues by JQL
+
+fetching_started: Starting to fetch issues...
+fetching_completed: Found {count} issues, starting to create/update notes...
+no_issues_found: No issues found matching the JQL query
+all_success: Successfully processed {count} issues
+partial_success: Processed {success} issues successfully, {errors} failed
+fetch_error: Error fetching issues

@@ -1,16 +1,26 @@
 The functionality of the plugin can be divided into several parts.
 
 ### Basic Functionality
-For basic functionality, it is enough to specify Jira credentials (username, password, URL) and the folder for created tasks.
+For basic functionality, it is enough to specify Jira credentials and the folder for created tasks.
 
-When running `Get issues from Jira with custom key`, the command will download the latest tasks from Jira and save them in the specified folder.
+**Authentication Methods**
+The plugin supports three authentication methods:
+- **Bearer Token (PAT)** - Personal Access Token authentication
+- **Basic Auth (Username + PAT)** - Username with Personal Access Token
+- **Session Cookie (Username + Password)** - Traditional username and password authentication
+
+**Important Note for Auth Keys**: If using Personal Access Token authentication, the `write:jira-work` and `read:jira-work` scopes are essential for the plugin to function properly.
+
+When running `Get issue from Jira with custom key`, the command will download the latest tasks from Jira and save them in the specified folder.
 
 Without a template, such a page will be completely empty except for its title, so using a template is highly recommended. The template is used only when creating a new page.
 
 #### Template
 The template can consist of several different parts:
 1. **formatter** - meta-information at the top of the screen. When specifying keys for it and using any `Get issues from Jira` variant, they will be populated with corresponding fields from the response data.
-2. **body** - the main content of the page. When using indicators like `jira-sync-section-*` or `jira-sync-line-*`, they will be filled with the corresponding fields from the response data. The difference between these two options is as follows: `line` reads and writes values from the current line, separating the indicator and value with a space. `section` reads values from multiple lines after the indicator, stopping only at another indicator or a heading. An example can be found in [[docs/template_example]].
+2. **body** - the main content of the page. When using indicators like `jira-sync-section-*`, `jira-sync-line-*`, or `jira-sync-inline-start-*`, they will be filled with the corresponding fields from the response data. The difference between these options is as follows: `line` reads and writes values from the current line, separating the indicator and value with a space. `section` reads values from multiple lines after the indicator, stopping only at another indicator or a heading. `inline` allows indicators to be placed anywhere in the text, not strictly at the beginning of lines. All indicators are invisible until highlighted with the mouse, providing a cleaner editing experience.
+
+An example can be found in [[docs/template_example]].
 
 It is highly recommended to specify basic values in the template's formatter: `key` - the Jira task ID used for updates, `summary` - the Jira task title, and `status` - the current status of the task in Jira.
 
@@ -22,10 +32,12 @@ Not all fields are predefined, and some may need adjustments. For example, the t
 
 Currently, the plugin provides the following commands:
 - `Get issue from Jira with custom key` - allows creating a file in the configured folder that imports information from Jira using a manually specified ID.
+- `Batch Fetch Issues by JQL` - allows mass issue import from Jira using a JQL query.
 - `Get current issue from Jira` - allows updating the active file if its formatter contains a `key` (the Jira task ID).
 - `Update issue in Jira` - allows updating the information from the file in Jira using the key specified in the formatter. Some system fields (e.g., `status`) cannot be changed this way and have dedicated commands.
 - `Create issue in Jira` - allows creating a new task in Jira. The formatter must include `summary` (task title) and optionally `project` and `issuetype` (the latter two can be selected from existing options during creation).
-- `Update work log in Jira` - enables tracking time spent on a task. Currently, this is not reflected in the file, but it will be available in future updates. If the formatter contains `jira_worklog_batch` (as described in [[docs/jira_worklog_batch]]), instead of manual entry, a batch of data from `jira_worklog_batch` will be sent, updating each listed entity.
+- `Update work log in Jira manually` - enables manual time tracking for a task. Currently, this is not reflected in the file, but it will be available in future updates.
+- `Update work log in Jira by batch` - enables batch time tracking. If the formatter contains `jira_worklog_batch`, a batch of data from `jira_worklog_batch` will be sent, updating each listed entity.
 - `Update issue status in Jira` - allows updating a task's status by selecting one of the available options.
 
 ### Advanced Usage
@@ -42,61 +54,28 @@ It will look something like this:
 ![](images/progressPercentageExample.png)
 
 #### Statistics
-This is a pre-configured file [[docs/statistics]]. To work with it, several additional plugins are required:
-- **Timekeep** for tracking time spent on tasks - each task can have a multi-level timer started, stopped, and edited.
-- **Dataview** with JavaScript queries enabled in settings to create a dynamic table of total time spent over the last few weeks.
-- **Meta Bind** for selecting the desired week and submitting work data for the week with a single button.
-
-As mentioned, the statistics page allows sending a batch of work data for the target week, reducing manual input time.
+Statistics are now integrated into the plugin and can be accessed through the plugin settings in the "Timekeep work log statistics" section. This feature provides a dynamically generated table (or series of tables) showing work statistics and allowing you to send work logs to Jira. You can conveniently select time periods for calculation and transfer work log information to Jira directly from the settings interface.
 
 With Obsidian themes disabled, the table looks like this:
 
 ![](images/statisticsExample.png)
 
-The data batch format for submission, if you want to create an alternative [[docs/statistics]] variant:
-```json
-{
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "issueKey": {
-        "type": "string",
-        "pattern": "^[A-Z]+-\\d+$",
-        "description": "Task key in the Jira system"
-      },
-      "startTime": {
-        "type": "string",
-        "format": "date-time",
-        "description": "Start time in DD-MM-YYYY HH:MM format"
-      },
-      "duration": {
-        "type": "string",
-        "description": "Task duration in weeks (w), days (d), hours (h), minutes (m)"
-      },
-      "comment": {
-        "type": "string",
-        "description": "Job description"
-      }
-    },
-    "required": ["issueKey", "startTime", "duration"]
-  }
-}
-```
-Example:
+### Plugin Settings
 
-```json
-[
-    {
-        "issueKey": "JIR-2",
-        "startTime": "17-03-2025 17:00",
-        "duration": "1h 5m"
-    },
-    {
-        "issueKey": "JIR-2",
-        "startTime": "18-03-2025 12:00",
-        "duration": "1w 5d",
-		"comment": "This won't be met in statistics since it's a weekly push, but you can modify [[docs/statistics]], for example, to push once per month."
-    }
-]
-```
+#### Connection Settings
+This section allows you to select the authentication method and enter corresponding credentials. The plugin supports three authentication methods: Bearer Token (PAT), Basic Auth (Username + PAT), and Session Cookie (Username + Password). If using Personal Access Token authentication, ensure the `write:jira-work` and `read:jira-work` scopes are enabled for proper functionality.
+
+#### General Settings
+This section allows you to select the folder where new issues created using commands will be stored. This folder is also used for searching issues in the Timekeep work log statistics section.
+
+#### Field Mapping
+This section provides non-standard mappings (in JavaScript format) of information from Jira to Obsidian and vice versa. You can configure custom field transformations and mappings for any additional fields received from Jira.
+
+#### Raw Issue Viewer
+This section displays raw API output for entered issues, which should help with writing field mappings. This data is not saved and is provided for debugging and development purposes.
+
+#### Test Field Mapping
+This section provides a preview of mapping results for issues from the raw issue viewer. This feature helps with testing and refining field mappings. The data is not saved and is provided for convenience when working with mappings.
+
+#### Timekeep Work Log Statistics
+This section provides a dynamically generated table (or series of tables, see image) showing work statistics and providing the ability to send work logs to Jira. You can select time periods for calculation and transfer work log information to Jira directly from this interface.

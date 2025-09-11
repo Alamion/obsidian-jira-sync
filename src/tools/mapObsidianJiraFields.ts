@@ -1,5 +1,5 @@
 import { JiraIssue } from "../interfaces";
-import {jiraToMarkdown} from "./markdown_html";
+import {jiraToMarkdown} from "./markdownHtml";
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";

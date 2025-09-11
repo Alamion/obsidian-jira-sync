@@ -3,7 +3,7 @@ import {TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {IssueWorkLogModal} from "../modals";
 import {addWorkLog} from "../api";
-import {checkCommandCallback} from "../tools/check_command_callback";
+import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("commands.add_worklog.manual").t;

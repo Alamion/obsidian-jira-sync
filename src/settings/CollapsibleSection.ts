@@ -1,4 +1,4 @@
-import { ButtonComponent } from "obsidian";
+import {setIcon} from "obsidian";
 import JiraPlugin from "../main";
 import { SettingsComponent } from "../interfaces/settingsTypes";
 import { debugLog } from "../tools/debugLogging";
@@ -11,7 +11,6 @@ export class CollapsibleSection {
 	private headerText: string;
 	private saveStateKey?: string;
 	private plugin: JiraPlugin;
-	private toggleBtn: ButtonComponent;
 
 	constructor(
 		plugin: JiraPlugin,
@@ -42,10 +41,10 @@ export class CollapsibleSection {
 			await this.toggle();
 		});
 
-		// Add toggle button to the header
-		this.toggleBtn = new ButtonComponent(headerEl as any);
-		this.toggleBtn.setIcon(this.isOpen ? "chevron-down" : "chevron-right")
-			.setTooltip(this.isOpen ? "Collapse" : "Expand")
+		const chevron = headerEl.createEl('span', {
+			cls: 'jira-collapse-icon',
+		});
+		setIcon(chevron, "chevron-down");
 
 		// Content wrapper
 		this.contentEl = this.containerEl.createDiv({
@@ -56,15 +55,8 @@ export class CollapsibleSection {
 
 		if (!this.isOpen) {
 			this.contentEl.hide();
+			this.containerEl.addClass("collapsed");
 		}
-
-		// Optional: restore saved state
-		// if (this.saveStateKey && this.plugin.settings.collapsedSections[this.saveStateKey] !== undefined) {
-		// 	this.isOpen = !this.plugin.settings.collapsedSections[this.saveStateKey];
-		// 	if (!this.isOpen) {
-		// 		this.contentEl.hide();
-		// 	}
-		// }
 
 		debugLog("Rendered", this.saveStateKey || this.headerText, "as", this.isOpen);
 	}
@@ -77,18 +69,16 @@ export class CollapsibleSection {
 		this.isOpen = !this.isOpen;
 		debugLog("Toggled", this.saveStateKey || this.headerText, "to", this.isOpen);
 
-		const icon = this.isOpen ? "chevron-down" : "chevron-right";
-		const tooltip = this.isOpen ? "Collapse" : "Expand";
-
 		// Rebuild or update the toggle button if needed
 		// Or store a reference to the button and just update its properties
 
 		if (this.isOpen) {
 			this.contentEl.show();
+			this.containerEl.removeClass("collapsed");
 		} else {
 			this.contentEl.hide();
+			this.containerEl.addClass("collapsed");
 		}
-		this.toggleBtn.setIcon(icon).setTooltip(tooltip);
 
 		if (this.saveStateKey && this.plugin) {
 			this.plugin.settings.collapsedSections[this.saveStateKey] = this.isOpen;

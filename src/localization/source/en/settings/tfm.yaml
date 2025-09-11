@@ -7,5 +7,7 @@ invalid_exp: Invalid expression
 from_jira: From Jira
 value: Value
 
+add_mapping: Add mapping
 add_mapping_tooltip: Add test mapping entry
+reset: Reset
 reset_tooltip: Reset

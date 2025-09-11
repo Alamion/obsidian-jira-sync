@@ -1,0 +1,8 @@
+name: Массовое получение задач по JQL (Batch Fetch Issues by JQL)
+
+fetching_started: Начинаем получение задач...
+fetching_completed: Найдено {count} задач, начинаем создание/обновление заметок...
+no_issues_found: Не найдено задач, соответствующих JQL запросу
+all_success: Успешно обработано {count} задач
+partial_success: Обработано {success} задач успешно, {errors} не удалось
+fetch_error: Ошибка получения задач

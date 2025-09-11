@@ -1,0 +1,20 @@
+desc: Search issues by JQL query
+
+jql:
+    name: JQL Query
+    desc: Enter a JQL (Jira Query Language) query to search for issues
+    placeholder: project = "PROJECT" AND status = "To Do" ORDER BY created DESC
+
+maxResults:
+    name: Maximum Results
+    desc: Maximum number of issues to fetch (default 50)
+    placeholder: 50
+
+submit: Search Issues
+
+preview:
+    total: Total {total} issues found
+    showing: " (showing first {limit} issues)"
+    error: "{error}"
+    loading: Loading...
+    empty_input: Enter a JQL query to see preview

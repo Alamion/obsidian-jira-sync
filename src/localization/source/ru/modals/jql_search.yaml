@@ -1,0 +1,20 @@
+desc: Поиск задач по JQL запросу
+
+jql:
+    name: JQL Запрос
+    desc: Введите JQL (Jira Query Language) запрос для поиска задач
+    placeholder: project = "PROJECT" AND status = "To Do" ORDER BY created DESC
+
+maxResults:
+    name: Максимум результатов
+    desc: Максимальное количество задач для получения (по умолчанию 50)
+    placeholder: 50
+
+submit: Найти задачи
+
+preview:
+    total: "{total} задач найдено"
+    showing: " (показаны первые {limit} задач)"
+    error: "{error}"
+    loading: Загрузка...
+    empty_input: Введите JQL запрос для просмотра превью задач

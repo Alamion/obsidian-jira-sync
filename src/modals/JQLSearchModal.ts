@@ -1,21 +1,22 @@
 import {App, Modal, Setting} from "obsidian";
 import {useTranslations} from "../localization/translator";
-import {JQLPreview} from "../settings/components/JQLPreview";
 import JiraPlugin from "../main";
+import {JQLPreview} from "../settings/components/JQLPreview";
 
-const t = useTranslations("modals.search").t;
+const t = useTranslations("modals.jql_search").t;
+
 /**
- * Modal for searching issues by key
+ * Modal for searching issues by JQL query
  */
-export class IssueSearchModal extends Modal {
-	private onSubmit: (result: string) => void;
+export class JQLSearchModal extends Modal {
+	private onSubmit: (jql: string) => void;
 	private plugin: JiraPlugin;
-	private issueKey: string = "";
+	private jql: string = "";
 	private previewEl?: HTMLElement;
 	private preview?: JQLPreview;
 	private debounceTimer?: number;
 
-	constructor(app: App, plugin: JiraPlugin, onSubmit: (result: string) => void) {
+	constructor(app: App, plugin: JiraPlugin, onSubmit: (jql: string) => void) {
 		super(app);
 		this.plugin = plugin;
 		this.onSubmit = onSubmit;
@@ -25,19 +26,22 @@ export class IssueSearchModal extends Modal {
 		this.contentEl.createEl("h2", {text: t("desc")});
 
 		new Setting(this.contentEl)
-			.setName(t("key.name"))
-			.setDesc(t("key.desc"))
-			.addText((text) =>
+			.setName(t("jql.name"))
+			.setDesc(t("jql.desc"))
+			.addTextArea((text) => {
 				text
-					.setPlaceholder(t("key.placeholder"))
+					.setPlaceholder(t("jql.placeholder"))
+					.setValue(this.jql)
 					.onChange((value) => {
-						this.issueKey = value;
+						this.jql = value;
 						this.schedulePreview();
-					})
-			);
+					});
+				text.inputEl.style.height = "100px";
+			});
 
+		// Create preview container and initialize preview component
 		this.previewEl = this.contentEl.createDiv();
-		this.preview = new JQLPreview(this.plugin, this.previewEl, 1, false);
+		this.preview = new JQLPreview(this.plugin, this.previewEl, 5);
 		this.preview.loadPreview("")
 
 		new Setting(this.contentEl)
@@ -46,17 +50,21 @@ export class IssueSearchModal extends Modal {
 					.setButtonText(t("submit"))
 					.setCta()
 					.onClick(() => {
-						this.close();
-						this.onSubmit(this.issueKey);
+						if (this.jql.trim()) {
+							this.close();
+							this.onSubmit(this.jql.trim());
+						}
 					})
 			);
 
-		// Handle Enter key
+		// Handle Enter key (Ctrl+Enter for textarea)
 		this.contentEl.addEventListener("keydown", (event) => {
-			if (event.key === "Enter") {
+			if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
 				event.preventDefault();
-				this.close();
-				this.onSubmit(this.issueKey);
+				if (this.jql.trim()) {
+					this.close();
+					this.onSubmit(this.jql.trim());
+				}
 			}
 		});
 	}
@@ -67,13 +75,13 @@ export class IssueSearchModal extends Modal {
 		}
 
 		// Show loading immediately if there's text
-		if (this.issueKey.trim() && this.preview) {
+		if (this.jql.trim() && this.preview) {
 			this.preview.showLoading();
 		}
 
 		this.debounceTimer = window.setTimeout(() => {
 			if (this.preview) {
-				this.preview.loadPreview(this.issueKey? "key = "+this.issueKey : "").catch(() => {
+				this.preview.loadPreview(this.jql).catch(() => {
 					// Error handling is done within the preview component
 				});
 			}

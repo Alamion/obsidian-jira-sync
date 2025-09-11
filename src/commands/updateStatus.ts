@@ -4,7 +4,7 @@ import {fetchIssueTransitions} from "../api";
 import {updateStatusFromFile} from "../file_operations/createUpdateIssue";
 import {IssueStatusModal} from "../modals";
 import {JiraTransitionType} from "../interfaces";
-import {checkCommandCallback} from "../tools/check_command_callback";
+import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("commands.update_status").t;

@@ -1,7 +1,7 @@
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {updateIssueFromFile} from "../file_operations/createUpdateIssue";
-import {checkCommandCallback} from "../tools/check_command_callback";
+import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("commands.update_issue").t;
