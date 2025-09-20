@@ -34,6 +34,20 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 					})
 			);
 
+		new Setting(containerEl)
+			.setName(t("api_version.title"))
+			.setDesc(t("api_version.desc"))
+			.addDropdown((cb) =>
+				cb
+					.addOption("2", t("api_version.options.2"))
+					.addOption("3", t("api_version.options.3"))
+					.setValue(plugin.settings.apiVersion)
+					.onChange(async (value: "2" | "3") => {
+						plugin.settings.apiVersion = value;
+						await plugin.saveSettings();
+					})
+			)
+
 		// Auth Method Select
 		new Setting(containerEl)
 			.setName(t("auth.title"))

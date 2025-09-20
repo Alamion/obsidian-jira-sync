@@ -5,6 +5,14 @@ url:
     desc: Your Jira instance URL
     def: https://yourcompany.atlassian.net
 
+api_version:
+    title: Jira API version
+    desc: The version of the Jira API to use
+    options:
+        1: 1
+        2: 2
+        3: 3
+
 auth:
     title: Authentication method
     desc: Choose how to authenticate with Jira

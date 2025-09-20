@@ -16,7 +16,7 @@ export async function baseRequest(
 		? "?" + new URLSearchParams(params).toString()
 		: "";
 
-	const url = `${plugin.settings.jiraUrl}/rest/api/2${additional_url_path}${queryString}`;
+	const url = `${plugin.settings.jiraUrl}/rest/api/${plugin.settings.apiVersion}${additional_url_path}${queryString}`;
 	const requestParams = {
 		url,
 		method: method,
@@ -58,3 +58,4 @@ export function sanitizeObject(obj: any): any {
 
 	return obj;
 }
+

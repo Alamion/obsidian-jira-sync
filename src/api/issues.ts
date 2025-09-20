@@ -2,6 +2,8 @@ import JiraPlugin from "../main";
 import {JiraIssue, JiraTransitionType} from "../interfaces";
 import {baseRequest, sanitizeObject} from "./base";
 import {Notice} from "obsidian";
+import {chunkArray, createLimiter} from "../tools/asyncLimiter";
+
 
 /**
  * Fetch an issue from Jira by its key
@@ -10,8 +12,7 @@ import {Notice} from "obsidian";
  * @returns The issue data
  */
 export async function fetchIssue(plugin: JiraPlugin, issueKey: string): Promise<JiraIssue> {
-	const additional_url_path = `/issue/${issueKey}`
-	return await baseRequest(plugin, 'get', additional_url_path) as Promise<JiraIssue>;
+	return await baseRequest(plugin, 'get', `/issue/${issueKey}`) as Promise<JiraIssue>;
 }
 
 /**
@@ -43,6 +44,30 @@ export async function fetchIssuesByJQL(
 	return issues as JiraIssue[];
 }
 
+export async function fetchIssuesByJQLParallel(
+	plugin: JiraPlugin,
+	jql: string,
+	limit?: number,
+	fields?: string[]
+): Promise<JiraIssue[]> {
+	const test = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
+	const totalAvailable = test.total;
+	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
+
+	const tasks: (() => Promise<JiraIssue[]>)[] = [];
+	for (let startAt = 0; startAt < actualLimit; startAt += 1000) {
+		tasks.push(async () => {
+			const result = await fetchIssuesByJQLRaw(plugin, jql, 1000, fields, startAt);
+			return result.issues;
+		});
+	}
+
+	const limitConcurrency = createLimiter(5);
+	const results = await Promise.all(tasks.map(t => limitConcurrency(t)));
+	return results.flat();
+}
+
+
 /**
  * Fetch issues by JQL and return the raw search response (includes total, startAt, etc.).
  * Useful for previewing results and counts.
@@ -54,14 +79,13 @@ export async function fetchIssuesByJQLRaw(
 	fields?: string[],
 	startAt?: number
 ): Promise<any> {
-	const additional_url_path = `/search`;
 	const body = JSON.stringify(sanitizeObject({
 		jql,
 		maxResults,
 		startAt,
 		fields: fields && fields.length > 0 ? fields : undefined,
 	}));
-	return await baseRequest(plugin, 'post', additional_url_path, body);
+	return await baseRequest(plugin, 'post', `/search`, body);
 }
 
 /**
@@ -71,8 +95,7 @@ export async function fetchIssuesByJQLRaw(
  * @returns The issue data
  */
 export async function fetchIssueTransitions(plugin: JiraPlugin, issueKey: string): Promise<JiraTransitionType[]> {
-	const additional_url_path = `/issue/${issueKey}/transitions`
-	const result = await baseRequest(plugin, 'get', additional_url_path);
+	const result = await baseRequest(plugin, 'get', `/issue/${issueKey}/transitions`);
 	return result.transitions.map(({ id, name, to }: { id: string; name: string; to: { name: string }}) => ({
 		id,
 		action: name,
@@ -92,9 +115,21 @@ export async function updateJiraIssue(
 	fields: Record<string, any>
 ): Promise<JiraIssue> {
 	const body = JSON.stringify({ fields })
-	const additional_url_path = `/issue/${issueKey}`
-	return await baseRequest(plugin, 'put', additional_url_path, body) as Promise<JiraIssue>;
+	return await baseRequest(plugin, 'put', `/issue/${issueKey}`, body) as Promise<JiraIssue>;
 }
+
+
+export async function bulkUpdateJiraIssues(
+	plugin: JiraPlugin,
+	updates: { issueKey: string, fields: Record<string, any> }[]
+): Promise<any[]> {
+	const limit = createLimiter(5);
+	const promises = updates.map(update =>
+		limit(() => updateJiraIssue(plugin, update.issueKey, update.fields))
+	);
+	return await Promise.allSettled(promises);
+}
+
 
 /**
  * Create a new issue in Jira
@@ -111,9 +146,24 @@ export async function createJiraIssue(
 		throw new Error("Missing required fields: project, issuetype, and summary are required");
 	}
 	const body = JSON.stringify({ fields })
-	const additional_url_path = `/issue/`
-	return await baseRequest(plugin, 'post', additional_url_path, body) as Promise<JiraIssue>;
+	return await baseRequest(plugin, 'post', `/issue/`, body) as Promise<JiraIssue>;
 }
+
+
+export async function bulkCreateJiraIssues(
+	plugin: JiraPlugin,
+	issues: Record<string, any>[]
+): Promise<any[]> {
+	const chunks = chunkArray(issues, 50);
+	let results: any[] = [];
+	for (const chunk of chunks) {
+		const body = JSON.stringify({ issueUpdates: chunk });
+		const res = await baseRequest(plugin, 'post', '/issue/bulk', body);
+		results.push(res);
+	}
+	return results;
+}
+
 
 /**
  * Update an issue status in Jira
@@ -127,9 +177,9 @@ export async function updateJiraStatus(
 	status: string
 ): Promise<JiraIssue> {
 	const body = JSON.stringify({ transition: { id: status } })
-	const additional_url_path = `/issue/${issueKey}/transitions`
-	return await baseRequest(plugin, 'post', additional_url_path, body) as Promise<JiraIssue>;
+	return await baseRequest(plugin, 'post', `/issue/${issueKey}/transitions`, body) as Promise<JiraIssue>;
 }
+
 
 /**
  * Add a work log entry to a Jira issue
@@ -147,13 +197,24 @@ export async function addWorkLog(
 		started: startedAt,
 		comment
 	};
-
-	const additional_url_path = `/issue/${issueKey}/worklog`;
-	const response = await baseRequest(plugin, 'post', additional_url_path, JSON.stringify(payload));
+	const response = await baseRequest(plugin, 'post', `/issue/${issueKey}/worklog`, JSON.stringify(payload));
 
 	if (showNotice) {
 		new Notice(`Work log added successfully to ${issueKey}`);
 	}
 
 	return response;
+}
+
+
+export async function bulkAddWorkLog(
+	plugin: JiraPlugin,
+	worklogs: { issueKey: string, timeSpent: string, startedAt: string, comment: string }[],
+	showNotice: boolean = true
+): Promise<any[]> {
+	const limit = createLimiter(5);
+	const promises = worklogs.map(worklog =>
+		limit(() => addWorkLog(plugin, worklog.issueKey, worklog.timeSpent, worklog.startedAt, worklog.comment, showNotice))
+	);
+	return await Promise.allSettled(promises);
 }

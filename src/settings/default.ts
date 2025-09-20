@@ -9,6 +9,7 @@ export interface JiraSettings {
 	email: string;
 	password: string;
 	jiraUrl: string;
+	apiVersion: string;
 
 	issuesFolder: string;
 	sessionCookieName: string;
@@ -40,6 +41,7 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 	email: "",
 	password: "",
 	jiraUrl: "",
+	apiVersion: "2",
 
 	issuesFolder: "jira-issues",
 	sessionCookieName: "JSESSIONID",
