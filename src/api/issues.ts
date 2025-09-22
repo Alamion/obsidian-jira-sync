@@ -85,7 +85,7 @@ export async function fetchIssuesByJQLRaw(
 		startAt,
 		fields: fields && fields.length > 0 ? fields : undefined,
 	}));
-	return await baseRequest(plugin, 'post', `/search`, body);
+	return await baseRequest(plugin, 'post', `/search${plugin.settings.apiVersion === "3" ? "/jql" : ""}`, body);
 }
 
 /**
