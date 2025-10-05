@@ -35,7 +35,7 @@ export async function batchFetchAndCreateIssues(plugin: JiraPlugin, jql: string)
 	try {
 		new Notice(t("fetching_started"));
 
-		const issues = await fetchIssuesByJQL(plugin, jql, -1);
+		const issues = await fetchIssuesByJQL(plugin, jql);
 		
 		if (issues.length === 0) {
 			new Notice(t("no_issues_found"));
