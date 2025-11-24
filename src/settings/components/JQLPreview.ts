@@ -1,4 +1,4 @@
-import {fetchIssuesByJQLRaw} from "../../api";
+import {fetchCountIssuesByJQL, fetchIssuesByJQLRaw} from "../../api";
 import JiraPlugin from "../../main";
 import {useTranslations} from "../../localization/translator";
 
@@ -310,7 +310,16 @@ export class JQLPreview {
 			const fields = ["summary", "issuetype", "key", "priority", "status", "created", "updated", "reporter", "assignee"];
 			const res = await fetchIssuesByJQLRaw(this.plugin, trimmedJql, this.limit, fields);
 
-			const total = res.total ?? 0;
+			let total = 0;
+			switch (this.plugin.settings.apiVersion) {
+				case "2":
+					total = res.total;
+					break;
+				case "3":
+					total = await fetchCountIssuesByJQL(this.plugin, trimmedJql);
+					break;
+			}
+
 			const issues = Array.isArray(res.issues) ? res.issues.slice(0, this.limit) : [];
 
 			this.renderResults(total, issues);

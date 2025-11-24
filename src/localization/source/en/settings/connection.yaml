@@ -40,3 +40,8 @@ password:
     title: Jira password
     desc: Your Jira password
     def: qwerty
+
+ping:
+    title: Ping Jira
+    desc: Check your connection to Jira
+    button: Ping Jira

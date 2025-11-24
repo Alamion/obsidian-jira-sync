@@ -6,6 +6,7 @@ import {useTranslations} from "../../localization/translator";
 import {debugLog} from "../../tools/debugLogging";
 
 type TimeRangeType = 'days' | 'weeks' | 'months' | 'custom';
+type SendComment = 'no' | 'last_block' | 'block_path';
 
 interface Entry {
 	name: string;
@@ -29,6 +30,7 @@ interface ProcessedEntry {
 	file: string;
 	issueKey?: string;
 	blockPath: string;
+	lastBlockName: string;
 	startTime: string;
 	endTime: string;
 	duration: string;
@@ -73,6 +75,19 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 	private renderSettings(containerEl: HTMLElement): void {
 		const settingsContainer = containerEl.createDiv('timekeep-settings');
+
+		new Setting(settingsContainer)
+			.setName(t("settings.send_comments.name"))
+			.setDesc(t("settings.send_comments.description"))
+			.addDropdown(dropdown => {
+				dropdown.addOption('no', t("settings.send_comments.options.no"));
+				dropdown.addOption('last_block', t("settings.send_comments.options.last_block"));
+				dropdown.addOption('block_path', t("settings.send_comments.options.block_path"));
+				dropdown.setValue(this.props.plugin.settings.sendComments);
+				dropdown.onChange(async (value: SendComment) => {
+					this.props.plugin.settings.sendComments = value;
+				});
+			});
 
 		// Time range selector
 		new Setting(settingsContainer)
@@ -394,7 +409,25 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		}
 
 		try {
-			await processWorkLogBatch(this.props.plugin, this.selectedPeriodData);
+			let data_to_send;
+			switch (this.props.plugin.settings.sendComments) {
+				case 'last_block':
+					data_to_send = this.selectedPeriodData.map((entry) => ({
+						...entry,
+						comment: entry.lastBlockName
+					}));
+					break;
+				case 'block_path':
+					data_to_send = this.selectedPeriodData.map((entry) => ({
+						...entry,
+						comment: entry.blockPath
+					}));
+					break;
+				default:
+					data_to_send = this.selectedPeriodData;
+					break;
+			}
+			await processWorkLogBatch(this.props.plugin, data_to_send);
 			new Notice(t("messages.send_success"));
 		} catch (error) {
 			console.error('Error sending work log to Jira:', error);
@@ -584,6 +617,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 					file: fileName.replace(".md", ""),
 					issueKey: issueKey,
 					blockPath: currentPath,
+					lastBlockName: entry.name,
 					startTime: this.toLocalIso(startTime),
 					endTime: entry.endTime ? this.toLocalIso(endTime) : "ongoing",
 					duration: duration,

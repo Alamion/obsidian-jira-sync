@@ -26,3 +26,7 @@ password:
     title: Пароль Jira
     desc: Ваш пароль от Jira
     def: qwerty
+ping:
+    title: Ping Jira
+    desc: Проверить подключение к Jira
+    button: Ping Jira

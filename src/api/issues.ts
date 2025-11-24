@@ -25,8 +25,16 @@ export async function fetchIssuesByJQL(
 	limit?: number,
 	fields?: string[]
 ): Promise<JiraIssue[]> {
-	const test = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
-	const totalAvailable = test.total;
+	let totalAvailable = 0;
+	switch (plugin.settings.apiVersion) {
+		case "2":
+			const result = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
+			totalAvailable = result.total;
+			break;
+		case "3":
+			totalAvailable = await fetchCountIssuesByJQL(plugin, jql);
+			break;
+	}
 	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
 
 	let startAt = 0;
@@ -87,6 +95,12 @@ export async function fetchIssuesByJQLRaw(
 	}));
 	return await baseRequest(plugin, 'post', `/search${plugin.settings.apiVersion === "3" ? "/jql" : ""}`, body);
 }
+
+export async function fetchCountIssuesByJQL(plugin: JiraPlugin, jql: string): Promise<number> {
+	const body = JSON.stringify(sanitizeObject({ jql }));
+	return (await baseRequest(plugin, 'post', "/search/approximate-count", body)).count;
+}
+
 
 /**
  * Fetch an issue from Jira by its key

@@ -18,6 +18,7 @@ export interface JiraSettings {
 	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string }>;
 	enableFieldValidation: boolean;
 
+	sendComments: "no" | "last_block" | "block_path";
 	statisticsTimeType: string;
 	maxItemsToShow: number;
 	customDateRange: { start: string; end: string };
@@ -50,6 +51,7 @@ export const DEFAULT_SETTINGS: JiraSettings = {
 	fieldMappingsStrings: {},
 	enableFieldValidation: true,
 
+	sendComments: "no",
 	statisticsTimeType: "weeks",
 	maxItemsToShow: 10,
 	customDateRange: { start: "", end: "" },

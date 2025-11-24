@@ -1,6 +1,13 @@
 title: Статистика ведения журнала работы через Timekeep
 description: Управление и отправка журнала работы в Jira
 settings:
+    send_comments:
+        name: Отправлять комментарии
+        description: При включении название/путь Timekeep-блока будет записано в Jira как комментарий к журналу работы
+        options:
+            no: Нет
+            last_block: Название конечного Timekeep-блока
+            block_path: Полный путь Timekeep-блока
     max_weeks:
         name: Максимум недель для отображения
         description: Количество последних недель для показа

@@ -1,6 +1,8 @@
-import { Setting } from "obsidian";
+import {Notice, Setting} from "obsidian";
 import { useTranslations } from "src/localization/translator"
 import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
+import { fetchSelf } from "../../api";
+import {debugLog} from "../../tools/debugLogging";
 
 const t = useTranslations("settings.connection").t
 
@@ -146,8 +148,43 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 		// 	);
 		// this.settingElements.set("sessionCookie", sessionCookieSetting.settingEl);
 
+		// Ping button to test connection
+		new Setting(containerEl)
+			.setName(t("ping.title"))
+			.setDesc(t("ping.desc"))
+			.addButton((button) =>
+				button
+					.setButtonText(t("ping.button"))
+					.setCta()
+					.onClick(async () => {
+						await this.testConnection();
+					})
+			);
+
 		// Initial visibility
 		this.updateVisibility();
+	}
+
+	private async testConnection(): Promise<void> {
+		const { plugin } = this.props;
+
+		try {
+			const notice = new Notice("Testing connection to Jira...", 2);
+
+			debugLog("Testing Jira connection...");
+
+			const result = await fetchSelf(plugin);
+			notice.hide();
+
+			const successMessage = "Successfully connected to Jira";
+			new Notice(successMessage);
+			debugLog(successMessage, result);
+
+		} catch (error) {
+			const errorMessage = `Failed to connect to Jira: ${error.message}`;
+			new Notice(errorMessage);
+			console.error(errorMessage, error);
+		}
 	}
 
 	private updateVisibility(): void {

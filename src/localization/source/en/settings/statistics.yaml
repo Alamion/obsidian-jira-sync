@@ -2,6 +2,14 @@ title: Timekeep work log statistics
 description: Manage and send work logs to Jira
 
 settings:
+    send_comments:
+        name: Send Comments
+        description: When enabled, the name/path of the Timekeep block will be added as a comment to the Jira issue
+        options:
+            no: No
+            last_block: Name of endpoint Timekeep block
+            block_path: Full path of Timekeep block
+
     max_weeks:
         name: Maximum Weeks to Show
         description: Number of recent weeks to display
