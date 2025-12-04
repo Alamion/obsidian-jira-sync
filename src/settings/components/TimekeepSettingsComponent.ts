@@ -1,12 +1,16 @@
-import {Setting, Notice, setIcon} from 'obsidian';
+import {Setting, Notice, setIcon, DropdownComponent, ButtonComponent} from 'obsidian';
 import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
 import { processWorkLogBatch } from "../../commands";
-import { SuggestSelectComponent, SuggestSelectConfig } from './SuggestSelectComponent';
 import {useTranslations} from "../../localization/translator";
 import {debugLog} from "../../tools/debugLogging";
 
 type TimeRangeType = 'days' | 'weeks' | 'months' | 'custom';
 type SendComment = 'no' | 'last_block' | 'block_path';
+
+interface Option {
+	value: string;
+	label: string;
+}
 
 interface Entry {
 	name: string;
@@ -50,12 +54,13 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	private groupedByPeriod: GroupedEntries = {};
 	private selectedPeriodData: ProcessedEntry[] = [];
 	private containerEl: HTMLElement | null = null;
-	private periodSelector: SuggestSelectComponent | null = null;
+	private periodDropdown: DropdownComponent | null = null;
+	// private periodSelector: SuggestSelectComponent | null = null;
 
 	// Elements
 	private maxItemsSetting: Setting | null = null;
 	private customDatesContainer: HTMLElement | null = null;
-	private sendButton: HTMLButtonElement | null = null;
+	private sendButton: ButtonComponent | null = null;
 
 	constructor(props: SettingsComponentProps) {
 		this.props = props;
@@ -66,7 +71,6 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		containerEl.empty();
 
 		this.renderSettings(containerEl);
-		this.renderPeriodSelector(containerEl);
 		this.toggleCustomDateInputs();
 
 		// Initialize data
@@ -83,9 +87,9 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				dropdown.addOption('no', t("settings.send_comments.options.no"));
 				dropdown.addOption('last_block', t("settings.send_comments.options.last_block"));
 				dropdown.addOption('block_path', t("settings.send_comments.options.block_path"));
-				dropdown.setValue(this.props.plugin.settings.sendComments);
+				dropdown.setValue(this.props.plugin.settings.timekeep.sendComments);
 				dropdown.onChange(async (value: SendComment) => {
-					this.props.plugin.settings.sendComments = value;
+					this.props.plugin.settings.timekeep.sendComments = value;
 				});
 			});
 
@@ -98,68 +102,88 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				dropdown.addOption('weeks', t("settings.time_range.options.weeks"));
 				dropdown.addOption('months', t("settings.time_range.options.months"));
 				dropdown.addOption('custom', t("settings.time_range.options.custom"));
-				dropdown.setValue(this.props.plugin.settings.statisticsTimeType);
+				dropdown.setValue(this.props.plugin.settings.timekeep.statisticsTimeType);
 				dropdown.onChange(async (value: TimeRangeType) => {
-					this.props.plugin.settings.statisticsTimeType = value;
+					this.props.plugin.settings.timekeep.statisticsTimeType = value;
 					this.toggleCustomDateInputs();
 					await this.refreshData();
 				});
 			});
 
 		// Max items slider (hidden for custom range)
-		const maxItemsSetting = new Setting(settingsContainer)
+		this.maxItemsSetting = new Setting(settingsContainer)
 			.setName(t("settings.max_items.name"))
 			.setDesc(t("settings.max_items.description"))
 			.addSlider(slider => {
 				slider.setLimits(1, 20, 1)
-					.setValue(this.props.plugin.settings.maxItemsToShow)
+					.setValue(this.props.plugin.settings.timekeep.maxItemsToShow)
 					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.props.plugin.settings.maxItemsToShow = value;
+						this.props.plugin.settings.timekeep.maxItemsToShow = value;
 						await this.refreshData();
 					});
 			});
 
 		// Custom date inputs (initially hidden)
-		const customDatesContainer = settingsContainer.createDiv('custom-dates-container');
+		this.customDatesContainer = settingsContainer.createDiv('custom-dates-container');
 
-		new Setting(customDatesContainer)
+		new Setting(this.customDatesContainer)
 			.setName(t("settings.date_from.name"))
 			.setDesc(t("settings.date_from.description"))
 			.addText(text => {
 				text.setPlaceholder(t("settings.date_from.placeholder"));
-				text.setValue(this.props.plugin.settings.customDateRange.start);
+				text.setValue(this.props.plugin.settings.timekeep.customDateRange.start);
 				text.onChange(async (value) => {
-					this.props.plugin.settings.customDateRange.start = value;
-					if (this.props.plugin.settings.statisticsTimeType === 'custom' && this.props.plugin.settings.customDateRange.end) {
+					this.props.plugin.settings.timekeep.customDateRange.start = value;
+					if (this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' && this.props.plugin.settings.timekeep.customDateRange.end) {
 						await this.refreshData();
 					}
 				});
 			});
 
-		new Setting(customDatesContainer)
+		new Setting(this.customDatesContainer)
 			.setName(t("settings.date_to.name"))
 			.setDesc(t("settings.date_to.description"))
 			.addText(text => {
 				text.setPlaceholder(t("settings.date_to.placeholder"));
-				text.setValue(this.props.plugin.settings.customDateRange.end);
+				text.setValue(this.props.plugin.settings.timekeep.customDateRange.end);
 				text.onChange(async (value) => {
-					this.props.plugin.settings.customDateRange.end = value;
-					if (this.props.plugin.settings.statisticsTimeType === 'custom' && this.props.plugin.settings.customDateRange.start) {
+					this.props.plugin.settings.timekeep.customDateRange.end = value;
+					if (this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' && this.props.plugin.settings.timekeep.customDateRange.start) {
 						await this.refreshData();
 					}
 				});
 			});
 
-		// Store references for toggling
-		this.maxItemsSetting = maxItemsSetting;
-		this.customDatesContainer = customDatesContainer;
+
+		new Setting(settingsContainer)
+			.setName(t("display.select_period"))
+			.setClass('period-selector')
+			.addDropdown(dropdown => {
+				this.periodDropdown = dropdown;
+				this.populateTimeRangeOptions(dropdown, []);
+				dropdown
+					.setValue(this.props.plugin.settings.timekeep.sendComments)
+					.onChange(async (selectedPeriod) => {
+						this.selectedPeriodData = this.groupedByPeriod[selectedPeriod] || [];
+						this.sendButton? this.sendButton.setDisabled(false) : null;
+					});
+			})
+			.addButton(
+				button => {
+					this.sendButton = button;
+					button.setDisabled(true);
+					button.setButtonText(t("actions.send_to_jira"));
+					button.onClick(() => this.sendWorkLogToJira());
+					button.setClass('timekeep-btn');
+				}
+			);
 	}
 
 	private toggleCustomDateInputs(): void {
 		if (!this.maxItemsSetting || !this.customDatesContainer) return;
 
-		const isCustom = this.props.plugin.settings.statisticsTimeType === 'custom';
+		const isCustom = this.props.plugin.settings.timekeep.statisticsTimeType === 'custom';
 
 		if (isCustom) {
 			this.maxItemsSetting.settingEl.hide()
@@ -205,36 +229,6 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		}
 
 		this.renderAllPeriodsDisplay(this.containerEl as HTMLElement);
-	}
-
-	private renderPeriodSelector(container: HTMLElement): void {
-		const setting = new Setting(container).setClass('period-selector')
-			.setName(t("display.select_period") + ': ');
-
-		const config: SuggestSelectConfig = {
-			placeholder: t("display.select_period_placeholder"),
-			searchEnabled: false
-		};
-
-		this.periodSelector = new SuggestSelectComponent(config);
-		this.periodSelector.render(setting.controlEl);
-
-		this.sendButton = setting.controlEl.createEl('button', {
-			text: t("actions.send_to_jira"),
-			cls: 'timekeep-btn'
-		});
-		this.sendButton.addEventListener('click', () => this.sendWorkLogToJira());
-
-		this.periodSelector.onChange((selectedPeriod) => {
-			if (selectedPeriod) {
-				this.selectedPeriodData = this.groupedByPeriod[selectedPeriod] || [];
-				this.sendButton? this.sendButton.disabled = false : null;
-			}
-			else {
-				this.selectedPeriodData = [];
-				this.sendButton? this.sendButton.disabled = true : null;
-			}
-		});
 	}
 
 	private renderAllPeriodsDisplay(container: HTMLElement): void {
@@ -309,7 +303,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				// Create group card
 				const groupCard = tableContainer.createDiv('timekeep-group-card collapsed');
 				groupCards.push(groupCard);
-				
+
 				// Create group header
 				const groupHeader = groupCard.createDiv('timekeep-group-header');
 				groupHeader.addEventListener('click', () => {
@@ -325,10 +319,10 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 				if (issueKey && issueKey !== 'no-issue') {
 					const issueKeySpan = groupMeta.createEl('a', {
-						text: issueKey, 
+						text: issueKey,
 						cls: 'timekeep-group-issue-key',
 						attr: {
-							href: `${this.props.plugin.settings.jiraUrl}/browse/${issueKey}`,
+							href: `${this.props.plugin.settings.connection.jiraUrl}/browse/${issueKey}`,
 							target: "_blank",
 							rel: "noopener noreferrer"
 						}
@@ -336,11 +330,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 					issueKeySpan.addEventListener('click', (e) => {
 						e.stopPropagation();
 					});
-					debugLog(`${this.props.plugin.settings.jiraUrl}/browse/${issueKey}`)
+					debugLog(`${this.props.plugin.settings.connection.jiraUrl}/browse/${issueKey}`)
 				}
-				groupMeta.createEl('span', { 
-					text: this.parseMsToDuration(group.totalMs), 
-					cls: 'timekeep-group-duration' 
+				groupMeta.createEl('span', {
+					text: this.parseMsToDuration(group.totalMs),
+					cls: 'timekeep-group-duration'
 				});
 
 				// Collapse icon
@@ -355,16 +349,16 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				// Add column labels if there are entries
 				if (group.entries.length > 0) {
 					const labelsDiv = entriesContainer.createDiv('timekeep-entry-labels');
-					labelsDiv.createEl('div', { 
-						text: t("display.table.task"), 
+					labelsDiv.createEl('div', {
+						text: t("display.table.task"),
 						cls: 'timekeep-entry-label-task'
 					});
-					labelsDiv.createEl('div', { 
-						text: t("display.table.start_time"), 
+					labelsDiv.createEl('div', {
+						text: t("display.table.start_time"),
 						cls: 'timekeep-entry-label-start'
 					});
-					labelsDiv.createEl('div', { 
-						text: t("display.table.duration"), 
+					labelsDiv.createEl('div', {
+						text: t("display.table.duration"),
 						cls: 'timekeep-entry-label-duration'
 					});
 				}
@@ -372,24 +366,24 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				// Individual entries
 				group.entries.forEach((entry) => {
 					const entryDiv = entriesContainer.createDiv('timekeep-entry');
-					
+
 					// Block path
-					entryDiv.createEl('div', { 
-						text: entry.blockPath, 
+					entryDiv.createEl('div', {
+						text: entry.blockPath,
 						cls: 'timekeep-entry-block-path',
 						title: entry.blockPath
 					});
 
 					// Start time
-					entryDiv.createEl('div', { 
-						text: entry.startTime, 
+					entryDiv.createEl('div', {
+						text: entry.startTime,
 						cls: 'timekeep-entry-start-time',
 						title: entry.startTime
 					});
 
 					// Duration
-					entryDiv.createEl('div', { 
-						text: entry.duration, 
+					entryDiv.createEl('div', {
+						text: entry.duration,
 						cls: 'timekeep-entry-duration',
 						title: entry.duration
 					});
@@ -410,7 +404,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		try {
 			let data_to_send;
-			switch (this.props.plugin.settings.sendComments) {
+			switch (this.props.plugin.settings.timekeep.sendComments) {
 				case 'last_block':
 					data_to_send = this.selectedPeriodData.map((entry) => ({
 						...entry,
@@ -440,11 +434,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private formatPeriodDate(periodKey: string): string {
-		const type = this.props.plugin.settings.statisticsTimeType;
+		const type = this.props.plugin.settings.timekeep.statisticsTimeType;
 
 		if (type === 'custom') {
-			const from = this.props.plugin.settings.customDateRange.start;
-			const to = this.props.plugin.settings.customDateRange.end;
+			const from = this.props.plugin.settings.timekeep.customDateRange.start;
+			const to = this.props.plugin.settings.timekeep.customDateRange.end;
 			return `${from} – ${to}`;
 		}
 
@@ -466,7 +460,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private getPeriodKey(date: Date): string {
-		switch (this.props.plugin.settings.statisticsTimeType) {
+		switch (this.props.plugin.settings.timekeep.statisticsTimeType) {
 			case 'days':
 				return date.toISOString().split('T')[0];
 			case 'weeks':
@@ -482,27 +476,27 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private isDateInRange(date: Date): boolean {
-		if (this.props.plugin.settings.statisticsTimeType !== 'custom') return true;
+		if (this.props.plugin.settings.timekeep.statisticsTimeType !== 'custom') return true;
 
-		if (!this.props.plugin.settings.customDateRange.start || !this.props.plugin.settings.customDateRange.end) return false;
+		if (!this.props.plugin.settings.timekeep.customDateRange.start || !this.props.plugin.settings.timekeep.customDateRange.end) return false;
 
-		const from = new Date(this.props.plugin.settings.customDateRange.start);
-		const to = new Date(this.props.plugin.settings.customDateRange.end);
+		const from = new Date(this.props.plugin.settings.timekeep.customDateRange.start);
+		const to = new Date(this.props.plugin.settings.timekeep.customDateRange.end);
 		const toPlusOneDay = new Date(to);
 		toPlusOneDay.setDate(to.getDate() + 1);
 		return date >= from && date <= toPlusOneDay;
 	}
 
 	private validateCustomRange(): boolean {
-		if (this.props.plugin.settings.statisticsTimeType !== 'custom') return true;
+		if (this.props.plugin.settings.timekeep.statisticsTimeType !== 'custom') return true;
 
-		if (!this.props.plugin.settings.customDateRange.start || !this.props.plugin.settings.customDateRange.end) {
+		if (!this.props.plugin.settings.timekeep.customDateRange.start || !this.props.plugin.settings.timekeep.customDateRange.end) {
 			new Notice(t("messages.custom_range_required"));
 			return false;
 		}
 
-		const from = new Date(this.props.plugin.settings.customDateRange.start);
-		const to = new Date(this.props.plugin.settings.customDateRange.end);
+		const from = new Date(this.props.plugin.settings.timekeep.customDateRange.start);
+		const to = new Date(this.props.plugin.settings.timekeep.customDateRange.end);
 
 		if (from > to) {
 			new Notice(t("messages.invalid_date_range"));
@@ -570,10 +564,10 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private trimOldEntries(groupedEntries: GroupedEntries): void {
-		if (this.props.plugin.settings.statisticsTimeType === 'custom') return;
+		if (this.props.plugin.settings.timekeep.statisticsTimeType === 'custom') return;
 
 		const periods = Object.keys(groupedEntries).sort();
-		while (periods.length > this.props.plugin.settings.maxItemsToShow) {
+		while (periods.length > this.props.plugin.settings.timekeep.maxItemsToShow) {
 			const oldestPeriod = periods.shift();
 			if (oldestPeriod) {
 				delete groupedEntries[oldestPeriod];
@@ -637,7 +631,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		const timekeepBlocks: TimekeepBlock[] = [];
 		const files = this.props.app.vault.getMarkdownFiles().filter(
-			file => file.path.startsWith(`${this.props.plugin.settings.issuesFolder}/`)
+			file => file.path.startsWith(`${this.props.plugin.settings.global.issuesFolder}/`)
 		);
 
 		await Promise.all(files.map(async file => {
@@ -681,21 +675,25 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 			label: this.formatPeriodLabel(period)
 		}));
 
-		this.periodSelector?.setOptions(options);
-		this.periodSelector?.setValue("");
+		this.populateTimeRangeOptions(this.periodDropdown, options);
+		this.periodDropdown?.setValue("");
 		this.sendButton ? this.sendButton.disabled = true : null;
 	}
 
-	hide(): void {
-		this.containerEl = null;
-		this.periodSelector = null;
+	private populateTimeRangeOptions(dropdown: DropdownComponent | null, options: Option[]): void {
+		if (!dropdown) return;
+
+		// Clear existing options
+		dropdown.selectEl.empty();
+
+		// Add new options based on current state
+		const record_options = options.reduce((acc, curr) => {
+			acc[curr.value] = curr.label;
+			return acc;
+		}, {} as Record<string, string>);
+		dropdown.addOptions(record_options);
 	}
 
-	private toUtcIso(date: Date): string {
-		return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-			.toISOString()
-			.replace(".000", ""); // Optional: trim millis if needed
-	}
 
 	private toLocalIso(date: Date): string {
 		return date.toISOString().slice(0, 19).replace("T", " ");

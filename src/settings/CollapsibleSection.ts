@@ -2,6 +2,7 @@ import {setIcon} from "obsidian";
 import JiraPlugin from "../main";
 import { SettingsComponent } from "../interfaces/settingsTypes";
 import { debugLog } from "../tools/debugLogging";
+import {CollapsedSections} from "./default";
 
 export class CollapsibleSection {
 	private containerEl: HTMLDivElement;
@@ -81,7 +82,7 @@ export class CollapsibleSection {
 		}
 
 		if (this.saveStateKey && this.plugin) {
-			this.plugin.settings.collapsedSections[this.saveStateKey] = this.isOpen;
+			this.plugin.settings.collapsedSections[this.saveStateKey as keyof CollapsedSections] = this.isOpen;
 			await this.plugin.saveSettings();
 		}
 	}

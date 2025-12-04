@@ -4,9 +4,10 @@ import JiraPlugin from "../main";
  * Ensure the issues folder exists
  */
 export async function ensureIssuesFolder(plugin: JiraPlugin): Promise<void> {
-	const folder = plugin.app.vault.getFolderByPath(plugin.settings.issuesFolder);
-	if (!folder) {
-		await plugin.app.vault.createFolder(plugin.settings.issuesFolder);
+	const folderPath = plugin.settings.global.issuesFolder;
+	const folder = plugin.app.vault.getFolderByPath(folderPath);
+	if (!folder && folderPath) {
+		await plugin.app.vault.createFolder(folderPath);
 	}
 }
 

@@ -1,6 +1,7 @@
-import { App, TFile, TFolder, Setting, normalizePath } from "obsidian";
+import { App, Setting, normalizePath } from "obsidian";
 import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
-import { SuggestSelectComponent, SuggestSelectOption } from "./SuggestSelectComponent";
+import { TemplateSuggest } from "./TemplateSuggest";
+import { FolderSuggest } from "./FolderSuggest";
 import {useTranslations} from "../../localization/translator";
 
 const t = useTranslations("settings.general").t;
@@ -14,7 +15,6 @@ interface TemplatePluginInfo {
 
 export class GeneralSettingsComponent implements SettingsComponent {
 	private props: SettingsComponentProps;
-	private templateSelector: SuggestSelectComponent | null = null;
 
 	constructor(props: SettingsComponentProps) {
 		this.props = props;
@@ -23,26 +23,24 @@ export class GeneralSettingsComponent implements SettingsComponent {
 	render(containerEl: HTMLElement): void {
 		const { plugin } = this.props;
 
-		// Issues folder setting
-		new Setting(containerEl)
+		// Issues folder setting with native search
+		const folderSetting = new Setting(containerEl)
 			.setName(t("folder.name"))
-			.setDesc(t("folder.desc"))
-			.addText((text) =>
-				text
-					.setPlaceholder("jira-issues")
-					.setValue(plugin.settings.issuesFolder)
-					.onChange(async (value) => {
-						plugin.settings.issuesFolder = value;
-						await plugin.saveSettings();
-					})
-			);
+			.setDesc(t("folder.desc"));
 
-		// Template path setting with selector
-		this.createTemplateSelector(containerEl);
-	}
+		folderSetting.addSearch((search) => {
+			const onChange = async (value: string) => {
+				plugin.settings.global.issuesFolder = value;
+				await plugin.saveSettings();
+			}
+			search
+				.setPlaceholder(t("folder.placeholder"))
+				.setValue(plugin.settings.global.issuesFolder)
+				.onChange(onChange);
+			new FolderSuggest(plugin.app, search.inputEl, onChange);
+		});
 
-	private createTemplateSelector(containerEl: HTMLElement): void {
-		const { plugin } = this.props;
+		// Template path setting with native search
 		const templateInfo = this.detectTemplatePlugins(plugin.app);
 
 		const setting = new Setting(containerEl)
@@ -59,31 +57,20 @@ export class GeneralSettingsComponent implements SettingsComponent {
 			});
 		}
 
-		// Create template selector
-		this.templateSelector = new SuggestSelectComponent({
-			placeholder: t("template.selector.placeholder"),
-			emptyOptionText: t("template.selector.empty"),
-			searchEnabled: true,
-		});
-
-		// Render selector in the setting control
-		this.templateSelector.render(setting.controlEl);
-
-		// Load template options
-		const templateOptions = this.loadTemplateOptions(templateInfo);
-		this.templateSelector.setOptions(templateOptions);
-
-		// Set current value
-		if (plugin.settings.templatePath) {
-			this.templateSelector.setValue(plugin.settings.templatePath);
-		}
-
-		// Handle changes
-		this.templateSelector.onChange(async (selectedPath) => {
-			plugin.settings.templatePath = selectedPath ? normalizePath(selectedPath) : '';
-			await plugin.saveSettings();
+		// Create template search with native Obsidian API
+		setting.addSearch((search) => {
+			const onChange = async (value: string) => {
+				plugin.settings.global.templatePath = value ? normalizePath(value) : '';
+				await plugin.saveSettings();
+			}
+			search
+				.setPlaceholder(t("template.selector.placeholder"))
+				.setValue(plugin.settings.global.templatePath || "")
+				.onChange(onChange);
+			new TemplateSuggest(plugin.app, search.inputEl, templateInfo.templateDirectory, onChange);
 		});
 	}
+
 
 	private detectTemplatePlugins(app: App): TemplatePluginInfo {
 		const coreTemplates = (app as any).internalPlugins?.plugins?.templates;
@@ -111,41 +98,5 @@ export class GeneralSettingsComponent implements SettingsComponent {
 			templateDirectory,
 			warningMessage
 		};
-	}
-
-	private loadTemplateOptions(templateInfo: TemplatePluginInfo): SuggestSelectOption[] {
-		const templateOptions: SuggestSelectOption[] = [];
-
-		// Get templates from specified folder or vault root
-		const searchFolder = templateInfo.templateDirectory
-			? this.props.plugin.app.vault.getAbstractFileByPath(templateInfo.templateDirectory)
-			: this.props.plugin.app.vault.getRoot();
-
-		if (searchFolder instanceof TFolder) {
-			this.scanFolderForTemplates(searchFolder, "", templateOptions);
-		} else {
-			// Fallback to root if specified folder doesn't exist
-			this.scanFolderForTemplates(this.props.plugin.app.vault.getRoot(), "", templateOptions);
-		}
-
-		// Sort templates alphabetically
-		templateOptions.sort((a, b) => a.label.localeCompare(b.label));
-
-		return templateOptions;
-	}
-
-	private scanFolderForTemplates(folder: TFolder, prefix: string, templateOptions: SuggestSelectOption[]): void {
-		for (const child of folder.children) {
-			if (child instanceof TFile && child.extension === 'md') {
-				const displayName = prefix ? `${prefix}/${child.basename}` : child.basename;
-				templateOptions.push({
-					value: child.path,
-					label: displayName
-				});
-			} else if (child instanceof TFolder) {
-				const newPrefix = prefix ? `${prefix}/${child.name}` : child.name;
-				this.scanFolderForTemplates(child, newPrefix, templateOptions);
-			}
-		}
 	}
 }

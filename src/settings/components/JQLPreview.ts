@@ -147,7 +147,7 @@ export class JQLPreview {
 					cls: "jql-preview-key-link",
 					text: issue.key || "N/A",
 					attr: { 
-						href: `${this.plugin.settings.jiraUrl}/browse/${issue.key}`,
+						href: `${this.plugin.settings.connection.jiraUrl}/browse/${issue.key}`,
 						target: "_blank",
 						rel: "noopener noreferrer"
 					}
@@ -208,7 +208,7 @@ export class JQLPreview {
 				if (reporter) {
 					const reporterLinkEl = reporterCellEl.createEl("a", {
 						attr: { 
-							href: `${this.plugin.settings.jiraUrl}/secure/ViewProfile.jspa?name=${reporter.name}`,
+							href: `${this.plugin.settings.connection.jiraUrl}/secure/ViewProfile.jspa?name=${reporter.name}`,
 							target: "_blank",
 							rel: "noopener noreferrer",
 							title: reporter.displayName || reporter.name
@@ -237,7 +237,7 @@ export class JQLPreview {
 				if (assignee) {
 					const assigneeLinkEl = assigneeCellEl.createEl("a", {
 						attr: { 
-							href: `${this.plugin.settings.jiraUrl}/secure/ViewProfile.jspa?name=${assignee.name}`,
+							href: `${this.plugin.settings.connection.jiraUrl}/secure/ViewProfile.jspa?name=${assignee.name}`,
 							target: "_blank",
 							rel: "noopener noreferrer",
 							title: assignee.displayName || assignee.name
@@ -311,7 +311,7 @@ export class JQLPreview {
 			const res = await fetchIssuesByJQLRaw(this.plugin, trimmedJql, this.limit, fields);
 
 			let total = 0;
-			switch (this.plugin.settings.apiVersion) {
+			switch (this.plugin.settings.connection.apiVersion) {
 				case "2":
 					total = res.total;
 					break;

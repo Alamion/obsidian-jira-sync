@@ -3,6 +3,13 @@ url:
     title: URL Jira
     desc: URL вашей инстанции Jira
     def: https://yourcompany.atlassian.net
+api_version:
+    title: Версия API Jira
+    desc: Версия API, которая будет использоваться плагином.
+    options:
+        1: 1
+        2: 2
+        3: 3
 auth:
     title: Метод аутентификации
     desc: Выберите способ подключения к Jira
@@ -16,7 +23,7 @@ pat:
     def: NjM5MDI5MzQ0NT...
 username:
     title: Имя пользователя Jira
-    desc: Ваше имя пользователя Jira
+    desc: Ваше имя пользователя Jira (или email)
     def: admin
 email:
     title: Email Jira

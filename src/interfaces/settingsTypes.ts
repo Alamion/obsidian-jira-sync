@@ -47,13 +47,3 @@ export interface ValidationResult {
 	errorMessage?: string;
 }
 
-/**
- * Interface for collapsed sections
- */
-export interface CollapsedSections {
-	connection: boolean;
-	general: boolean;
-	fieldMappings: boolean;
-	rawIssueViewer: boolean;
-	testFieldMappings: boolean;
-}

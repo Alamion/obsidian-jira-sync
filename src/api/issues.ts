@@ -12,7 +12,10 @@ import {chunkArray, createLimiter} from "../tools/asyncLimiter";
  * @returns The issue data
  */
 export async function fetchIssue(plugin: JiraPlugin, issueKey: string): Promise<JiraIssue> {
-	return await baseRequest(plugin, 'get', `/issue/${issueKey}`) as Promise<JiraIssue>;
+	return await baseRequest(plugin, 'get', `/issue/${issueKey}`, undefined, {
+		fields: plugin.settings.fetchIssue.fields || ["*all"],
+		expand: plugin.settings.fetchIssue.expand.join(",") || "",
+	}) as Promise<JiraIssue>;
 }
 
 /**
@@ -26,54 +29,77 @@ export async function fetchIssuesByJQL(
 	fields?: string[]
 ): Promise<JiraIssue[]> {
 	let totalAvailable = 0;
-	switch (plugin.settings.apiVersion) {
+	let useNextPageToken = false;
+
+	switch (plugin.settings.connection.apiVersion) {
 		case "2":
 			const result = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
 			totalAvailable = result.total;
 			break;
 		case "3":
 			totalAvailable = await fetchCountIssuesByJQL(plugin, jql);
+			useNextPageToken = true;
+			if (!fields) {
+				fields = ["*all"];
+			}
 			break;
 	}
 	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
 
 	let startAt = 0;
+	let nextPageToken: string | undefined = undefined;
 	let issues: JiraIssue[] = [];
 
 	while (startAt < actualLimit) {
 		const remaining = actualLimit - startAt;
 		const maxResults = Math.min(remaining, 1000);
 
-		const result = await fetchIssuesByJQLRaw(plugin, jql, maxResults, fields, startAt);
+		let result;
+
+		if (useNextPageToken) {
+			result = await fetchIssuesByJQLRaw(plugin, jql, maxResults, fields, undefined, nextPageToken);
+			nextPageToken = result.nextPageToken;
+		} else {
+			result = await fetchIssuesByJQLRaw(plugin, jql, maxResults, fields, startAt);
+			startAt += result.issues.length;
+		}
+
 		issues = [...issues, ...result.issues];
-		startAt += result.issues.length;
+
+		if (useNextPageToken && !nextPageToken) {
+			break;
+		}
+
+		if (useNextPageToken) {
+			startAt = issues.length;
+		}
 	}
 
 	return issues as JiraIssue[];
 }
 
-export async function fetchIssuesByJQLParallel(
-	plugin: JiraPlugin,
-	jql: string,
-	limit?: number,
-	fields?: string[]
-): Promise<JiraIssue[]> {
-	const test = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
-	const totalAvailable = test.total;
-	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
-
-	const tasks: (() => Promise<JiraIssue[]>)[] = [];
-	for (let startAt = 0; startAt < actualLimit; startAt += 1000) {
-		tasks.push(async () => {
-			const result = await fetchIssuesByJQLRaw(plugin, jql, 1000, fields, startAt);
-			return result.issues;
-		});
-	}
-
-	const limitConcurrency = createLimiter(5);
-	const results = await Promise.all(tasks.map(t => limitConcurrency(t)));
-	return results.flat();
-}
+// export async function fetchIssuesByJQLParallel(
+// 	plugin: JiraPlugin,
+// 	jql: string,
+// 	limit?: number,
+// 	fields?: string[]
+// ): Promise<JiraIssue[]> {
+// 	const test = await fetchIssuesByJQLRaw(plugin, jql, 1, fields);
+// 	const totalAvailable = test.total;
+// 	const actualLimit = Math.min(limit || totalAvailable, totalAvailable);
+//
+// 	const tasks: (() => Promise<JiraIssue[]>)[] = [];
+// 	for (let startAt = 0; startAt < actualLimit; startAt += 1000) {
+// 		tasks.push(async () => {
+// 			const result = await fetchIssuesByJQLRaw(plugin, jql, 1000, fields, startAt);
+// 			return result.issues;
+// 		});
+// 	}
+//
+// 	const limitConcurrency = createLimiter(5);
+// 	const results = await Promise.all(tasks.map(t => limitConcurrency(t)));
+// 	return results.flat();
+// }
 
 
 /**
@@ -85,15 +111,18 @@ export async function fetchIssuesByJQLRaw(
 	jql: string,
 	maxResults?: number,
 	fields?: string[],
-	startAt?: number
+	startAt?: number,
+	nextPageToken?: string,
 ): Promise<any> {
 	const body = JSON.stringify(sanitizeObject({
 		jql,
 		maxResults,
 		startAt,
-		fields: fields && fields.length > 0 ? fields : undefined,
+		nextPageToken,
+		fields: fields && fields.length > 0 ? fields : plugin.settings.fetchIssue.fields || [],
+		expand: plugin.settings.fetchIssue.expand.join(",") || "",
 	}));
-	return await baseRequest(plugin, 'post', `/search${plugin.settings.apiVersion === "3" ? "/jql" : ""}`, body);
+	return await baseRequest(plugin, 'post', `/search${plugin.settings.connection.apiVersion === "3" ? "/jql" : ""}`, body);
 }
 
 export async function fetchCountIssuesByJQL(plugin: JiraPlugin, jql: string): Promise<number> {

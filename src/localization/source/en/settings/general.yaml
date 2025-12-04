@@ -3,6 +3,7 @@ title: General settings
 folder:
     name: Issues folder
     desc: Folder where Jira issues will be stored and searched for
+    placeholder: Jira Issues
 
 template:
     name: Template path

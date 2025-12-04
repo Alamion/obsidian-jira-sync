@@ -3,6 +3,7 @@ title: Общие настройки
 folder:
     name: Папка для задач
     desc: Папка, в которой будут создаваться и искаться задачи Jira
+    placeholder: Jira Issues
 
 template:
     name: Путь к шаблону

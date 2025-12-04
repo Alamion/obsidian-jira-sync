@@ -45,7 +45,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 			// If still not found, create new file
 			if (!targetFile) {
 				const sanitizedSummary = sanitizeFileName(issue.fields.summary);
-				targetPath = `${plugin.settings.issuesFolder}/${sanitizedSummary} [${issue.key}].md`;
+				targetPath = `${plugin.settings.global.issuesFolder}/${sanitizedSummary} [${issue.key}].md`;
 				debugLog(`Issue ${issue.key} not found in cache or filesystem, creating new file: ${targetPath}`);
 			}
 		}
@@ -75,7 +75,7 @@ async function createNewIssueFile(
 	let initialContent = "";
 
 
-	let templatePath = plugin.settings.templatePath
+	let templatePath = plugin.settings.global.templatePath
 	if (templatePath && !templatePath.endsWith(".md")) {
 		templatePath += ".md";
 	}
@@ -102,7 +102,7 @@ async function createNewIssueFile(
 }
 
 async function findFileByIssueKey(plugin: JiraPlugin, issueKey: string): Promise<TFile | null> {
-	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.issuesFolder);
+	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.global.issuesFolder);
 
 	if (!issuesFolder || !(issuesFolder instanceof TFolder)) {
 		return null;

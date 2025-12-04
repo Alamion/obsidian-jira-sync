@@ -4,7 +4,7 @@ import { SettingsComponentProps } from "../interfaces/settingsTypes";
 import { ConnectionSettingsComponent } from "./components/ConnectionSettingsComponent";
 import { GeneralSettingsComponent } from "./components/GeneralSettingsComponent";
 import { FieldMappingsComponent } from "./components/FieldMappingsComponent";
-import { RawIssueViewerComponent } from "./components/RawIssueViewerComponent";
+import { FetchIssueComponent } from "./components/FetchIssueComponent";
 import { TestFieldMappingsComponent } from "./components/TestFieldMappingsComponent";
 import { debugLog } from "../tools/debugLogging";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -21,7 +21,7 @@ export class JiraSettingTab extends PluginSettingTab {
 	private connectionSettings: ConnectionSettingsComponent;
 	private generalSettings: GeneralSettingsComponent;
 	private fieldMappingsSettings: FieldMappingsComponent;
-	private rawIssueViewer: RawIssueViewerComponent;
+	private fetchIssue: FetchIssueComponent;
 	private testFieldMappings: TestFieldMappingsComponent;
 	private timekeepSettings: TimekeepSettingsComponent;
 
@@ -40,9 +40,9 @@ export class JiraSettingTab extends PluginSettingTab {
 		this.connectionSettings = new ConnectionSettingsComponent(componentProps);
 		this.generalSettings = new GeneralSettingsComponent(componentProps);
 		this.fieldMappingsSettings = new FieldMappingsComponent(componentProps);
-		this.rawIssueViewer = new RawIssueViewerComponent(componentProps);
-		this.testFieldMappings = new TestFieldMappingsComponent({ ...componentProps, getCurrentIssue: () => this.rawIssueViewer.getCurrentIssue() });
-		this.rawIssueViewer.onIssueDataChange = () => this.testFieldMappings.setCurrentIssue(this.rawIssueViewer.getCurrentIssue());
+		this.fetchIssue = new FetchIssueComponent(componentProps);
+		this.testFieldMappings = new TestFieldMappingsComponent({ ...componentProps, getCurrentIssue: () => this.fetchIssue.getCurrentIssue() });
+		this.fetchIssue.onIssueDataChange = () => this.testFieldMappings.setCurrentIssue(this.fetchIssue.getCurrentIssue());
 		this.timekeepSettings = new TimekeepSettingsComponent(componentProps);
 	}
 
@@ -74,8 +74,8 @@ export class JiraSettingTab extends PluginSettingTab {
 		new CollapsibleSection(this.plugin, containerEl, this.fieldMappingsSettings, t("fm.title"),
 			this.plugin.settings.collapsedSections.fieldMappings, "fieldMappings").getContentContainer();
 
-		new CollapsibleSection(this.plugin, containerEl, this.rawIssueViewer, t("issue_view.title"),
-			this.plugin.settings.collapsedSections.rawIssueViewer, "rawIssueViewer").getContentContainer();
+		new CollapsibleSection(this.plugin, containerEl, this.fetchIssue, t("fetch_issue.title"),
+			this.plugin.settings.collapsedSections.fetchIssue, "fetchIssue").getContentContainer();
 
 		new CollapsibleSection(this.plugin, containerEl, this.testFieldMappings, t("tfm.title"),
 			this.plugin.settings.collapsedSections.testFieldMappings, "testFieldMappings").getContentContainer();
@@ -92,8 +92,8 @@ export class JiraSettingTab extends PluginSettingTab {
 		if (this.fieldMappingsSettings.hide) {
 			this.fieldMappingsSettings.hide();
 		}
-		if (this.rawIssueViewer.hide) {
-			this.rawIssueViewer.hide();
+		if (this.fetchIssue.hide) {
+			this.fetchIssue.hide();
 		}
 		if (this.testFieldMappings.hide) {
 			this.testFieldMappings.hide();

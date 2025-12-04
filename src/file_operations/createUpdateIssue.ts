@@ -14,7 +14,7 @@ export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Prom
 		throw new Error("No issue key found in frontmatter");
 	}
 
-	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
+	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
 	await updateJiraIssue(plugin, issueKey, fields);
 	return issueKey;
 }
@@ -27,7 +27,7 @@ export async function createIssueFromFile(
 	if (!fields) {
 		fields = await prepareJiraFieldsFromFile(plugin, file);
 	}
-	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
+	fields = localToJiraFields(fields, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
 	// Create the issue
 	const issueData = await createJiraIssue(plugin, fields);
 	const issueKey = issueData.key;

@@ -13,16 +13,16 @@ export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 		}
 
 		const response = await requestUrl({
-			url: `${plugin.settings.jiraUrl}/rest/auth/1/session`,
+			url: `${plugin.settings.connection.jiraUrl}/rest/auth/1/session`,
 			method: "post",
 			body: JSON.stringify({
-				username: plugin.settings.username,
-				password: plugin.settings.password,
+				username: plugin.settings.connection.username,
+				password: plugin.settings.connection.password,
 			}),
 			contentType: "application/json",
 			headers: {
 				"Content-type": "application/json",
-				Origin: plugin.settings.jiraUrl,
+				Origin: plugin.settings.connection.jiraUrl,
 			},
 		});
 
@@ -38,11 +38,11 @@ export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 }
 
 export function validateSettings(plugin: JiraPlugin): boolean {
-	if (!plugin.settings.jiraUrl) {
+	if (!plugin.settings.connection.jiraUrl) {
 		new Notice("Please configure Jira URL in plugin settings");
 		return false;
 	}
-	if ((!plugin.settings.username || !plugin.settings.password) && !plugin.settings.apiToken) {
+	if ((!plugin.settings.connection.username || !plugin.settings.connection.password) && !plugin.settings.connection.apiToken) {
 		new Notice("Please configure Jira username and password or PAT API token in plugin settings");
 		return false;
 	}
@@ -61,14 +61,14 @@ export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string,
 	// Common headers
 	const commonHeaders = {
 		"Content-type": "application/json",
-		Origin: plugin.settings.jiraUrl,
+		Origin: plugin.settings.connection.jiraUrl,
 	};
 
 	// Personal Access Token
-	const pat = plugin.settings.apiToken?.trim() || "";
+	const pat = plugin.settings.connection.apiToken?.trim() || "";
 
 	// Option 1: Bearer token (PAT)
-	if (plugin.settings.authMethod === "bearer" || !plugin.settings.authMethod) {
+	if (plugin.settings.connection.authMethod === "bearer" || !plugin.settings.connection.authMethod) {
 		return {
 			...commonHeaders,
 			Authorization: `Bearer ${pat}`,
@@ -76,14 +76,14 @@ export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string,
 	}
 
 	// Option 2: Basic Auth with API token
-	else if (plugin.settings.authMethod === "basic") {
+	else if (plugin.settings.connection.authMethod === "basic") {
 		return {
 			...commonHeaders,
-			Authorization: createBasicAuthHeader(plugin.settings.email || "", pat),
+			Authorization: createBasicAuthHeader(plugin.settings.connection.email || "", pat),
 		};
 	}
 
-	else if (plugin.settings.authMethod === "session") {
+	else if (plugin.settings.connection.authMethod === "session") {
 		// Option 3: Session cookie
 		let cookie = localStorage.getItem(getSessionCookieKey(plugin));
 		if (!cookie) {

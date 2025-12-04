@@ -16,7 +16,7 @@ export async function baseRequest(
 		? "?" + new URLSearchParams(params).toString()
 		: "";
 
-	const url = `${plugin.settings.jiraUrl}/rest/api/${plugin.settings.apiVersion}${additional_url_path}${queryString}`;
+	const url = `${plugin.settings.connection.jiraUrl}/rest/api/${plugin.settings.connection.apiVersion}${additional_url_path}${queryString}`;
 	const requestParams = {
 		url,
 		method: method,

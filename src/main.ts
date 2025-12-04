@@ -1,6 +1,6 @@
 import {Plugin } from "obsidian";
 import { JiraSettingTab } from "./settings/JiraSettingTab";
-import {DEFAULT_SETTINGS, JiraSettings} from "./settings/default";
+import {DEFAULT_SETTINGS, JiraSettingsInterface} from "./settings/default";
 import {
 	registerUpdateIssueCommand, registerUpdateWorkLogManuallyCommand,
 	registerGetCurrentIssueCommand, registerUpdateWorkLogBatchCommand,
@@ -11,16 +11,17 @@ import {transform_string_to_functions_mappings} from "./tools/convertFunctionStr
 import {createJiraSyncExtension} from "./postprocessing/livePreview";
 import {hideJiraPointersReading} from "./postprocessing/reading";
 import { buildCacheFromFilesystem, validateCache } from "./tools/cacheUtils";
+import {checkMigrateSettings} from "./tools/migrateSettings";
 
 export default class JiraPlugin extends Plugin {
-	settings: JiraSettings;
-	
+	settings: JiraSettingsInterface;
+
 	// In-memory cache for instant access during synchronization
 	private issueKeyToFilePathCache: Map<string, string> = new Map();
 
 	async onload() {
 		await this.loadSettings();
-		
+
 		// validate cache from settings
 		this.initializeCache();
 		await validateCache(this);
@@ -51,8 +52,12 @@ export default class JiraPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.settings.fieldMappings = await transform_string_to_functions_mappings(this.settings.fieldMappingsStrings);
+		const old_data = await this.loadData();
+		// TODO: Cancel and delete migration check in future (approximately 2026-2027)
+		const new_data = checkMigrateSettings(old_data, this.saveSettings);
+
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, new_data);
+		this.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(this.settings.fieldMapping.fieldMappingsStrings);
 	}
 
 	async saveSettings() {

@@ -1,19 +1,19 @@
-import { Setting, Notice } from "obsidian";
-import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
-import { fetchIssue } from "../../api";
+import {Notice, Setting} from "obsidian";
+import {SettingsComponent, SettingsComponentProps} from "../../interfaces/settingsTypes";
+import {fetchIssue} from "../../api";
 import debounce from "lodash/debounce";
 import hljs from "highlight.js";
 import {useTranslations} from "../../localization/translator";
+import {setupArrayTextSetting} from "../tools/setupArrayTextString";
 
-const t = useTranslations("settings.issue_view").t;
-/**
- * Component for viewing raw Jira issue data
- */
-export class RawIssueViewerComponent implements SettingsComponent {
+
+const t = useTranslations("settings.fetch_issue").t;
+export class FetchIssueComponent implements SettingsComponent {
     private props: SettingsComponentProps;
     private issueDataContainer: HTMLElement | null = null;
     private debouncedFetch: ReturnType<typeof debounce>;
     private currentIssueData: any = null;
+	private currentIssueKey: string = "";
 	public onIssueDataChange?: () => void;
 
     constructor(props: SettingsComponentProps) {
@@ -21,7 +21,63 @@ export class RawIssueViewerComponent implements SettingsComponent {
         this.debouncedFetch = debounce(this.fetchIssueData.bind(this), 500);
     }
 
+
     render(containerEl: HTMLElement): void {
+		const link = this.props.plugin.settings.connection.apiVersion === "3" ? "https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-jql-post" : "https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-search/#api-rest-api-2-search-jql-post"
+
+		const securityNote = containerEl.createEl("p");
+		securityNote.createEl("strong", {
+			text: t("note.desc0")
+		});
+		securityNote.createSpan({
+			text: t("note.desc1")
+		});
+		securityNote.createEl("br");
+		securityNote.createEl("br");
+		securityNote.createSpan({
+			text: t("note.desc2")
+		})
+		securityNote.createEl("a", {
+			text: t("note.link_label"),
+			href: link,
+			cls: "external-link"
+		})
+		securityNote.createSpan({
+			text: t("note.desc3")
+		});
+
+		new Setting(containerEl)
+			.setName(t("fields.name"))
+			.setDesc(t("fields.desc"))
+			.addText((text) => {
+				text.setPlaceholder(t("fields.def"))
+				setupArrayTextSetting(
+					text,
+					this.props.plugin.settings.fetchIssue.fields,
+					async (array) => {
+						this.props.plugin.settings.fetchIssue.fields = array;
+						this.rerenderIssueData();
+						await this.props.plugin.saveSettings();
+					}
+				);
+			});
+
+		new Setting(containerEl)
+			.setName(t("expand.name"))
+			.setDesc(t("expand.desc"))
+			.addText((text) => {
+				text.setPlaceholder(t("expand.def"))
+				setupArrayTextSetting(
+					text,
+					this.props.plugin.settings.fetchIssue.expand,
+					async (array) => {
+						this.props.plugin.settings.fetchIssue.expand = array;
+						this.rerenderIssueData();
+						await this.props.plugin.saveSettings();
+					}
+				);
+			});
+
         // Add input field for issue key
         new Setting(containerEl)
             .setName(t("key.name"))
@@ -30,11 +86,8 @@ export class RawIssueViewerComponent implements SettingsComponent {
                 text
                     .setPlaceholder("PROJ-123")
                     .onChange((value) => {
-                        if (value) {
-                            this.debouncedFetch(value);
-                        } else {
-                            this.clearIssueData();
-                        }
+                        this.currentIssueKey = value;
+						this.rerenderIssueData();
                     })
             );
 
@@ -43,6 +96,14 @@ export class RawIssueViewerComponent implements SettingsComponent {
             cls: "jira-raw-issue-container"
         });
     }
+
+	private rerenderIssueData() {
+		if (this.currentIssueKey) {
+			this.debouncedFetch(this.currentIssueKey);
+		} else {
+			this.clearIssueData();
+		}
+	}
 
     public getCurrentIssue(): any {
         return this.currentIssueData;
@@ -91,4 +152,4 @@ export class RawIssueViewerComponent implements SettingsComponent {
         this.clearIssueData();
         this.debouncedFetch.cancel();
     }
-} 
+}

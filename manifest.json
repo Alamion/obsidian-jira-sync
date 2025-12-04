@@ -1,8 +1,8 @@
 {
 	"id": "jira-sync",
 	"name": "Jira Issue Manager",
-	"version": "1.3.4",
-	"minAppVersion": "1.7.7",
+	"version": "1.3.5",
+	"minAppVersion": "1.10.1",
 	"description": "Get Jira issues, create and update them. Issue status and worklog management.",
 	"author": "Alamion",
 	"isDesktopOnly": false

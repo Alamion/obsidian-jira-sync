@@ -10,7 +10,7 @@ import { TFile, TFolder } from "obsidian";
  * This is useful for initial cache population or cache rebuilding
  */
 export async function buildCacheFromFilesystem(plugin: JiraPlugin): Promise<void> {
-	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.issuesFolder);
+	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.global.issuesFolder);
 	
 	if (!issuesFolder || !(issuesFolder instanceof TFolder)) {
 		return;

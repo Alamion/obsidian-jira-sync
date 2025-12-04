@@ -16,7 +16,7 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 	constructor(props: SettingsComponentProps) {
 		this.props = props;
-		this.currentAuthMethod = props.plugin.settings.authMethod || "bearer";
+		this.currentAuthMethod = props.plugin.settings.connection.authMethod || "bearer";
 	}
 
 	render(containerEl: HTMLElement): void {
@@ -29,9 +29,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 			.addText((text) =>
 				text
 					.setPlaceholder(t("url.def"))
-					.setValue(plugin.settings.jiraUrl)
+					.setValue(plugin.settings.connection.jiraUrl)
 					.onChange(async (value) => {
-						plugin.settings.jiraUrl = value;
+						plugin.settings.connection.jiraUrl = value;
 						await plugin.saveSettings();
 					})
 			);
@@ -43,9 +43,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 				cb
 					.addOption("2", t("api_version.options.2"))
 					.addOption("3", t("api_version.options.3"))
-					.setValue(plugin.settings.apiVersion)
+					.setValue(plugin.settings.connection.apiVersion)
 					.onChange(async (value: "2" | "3") => {
-						plugin.settings.apiVersion = value;
+						plugin.settings.connection.apiVersion = value;
 						await plugin.saveSettings();
 					})
 			)
@@ -61,7 +61,7 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 					.addOption("session", t("auth.options.session"))
 					.setValue(this.currentAuthMethod)
 					.onChange(async (value: "bearer" | "basic" | "session") => {
-						plugin.settings.authMethod = value;
+						plugin.settings.connection.authMethod = value;
 						await plugin.saveSettings();
 						this.currentAuthMethod = value;
 						this.updateVisibility();
@@ -79,9 +79,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 				text.inputEl.type = "password";
 				text
 					.setPlaceholder(t("pat.def"))
-					.setValue(plugin.settings.apiToken)
+					.setValue(plugin.settings.connection.apiToken)
 					.onChange(async (value) => {
-						plugin.settings.apiToken = value;
+						plugin.settings.connection.apiToken = value;
 						await plugin.saveSettings();
 					});
 			});
@@ -94,9 +94,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 			.addText((text) =>
 				text
 					.setPlaceholder(t("username.def"))
-					.setValue(plugin.settings.username)
+					.setValue(plugin.settings.connection.username)
 					.onChange(async (value) => {
-						plugin.settings.username = value;
+						plugin.settings.connection.username = value;
 						await plugin.saveSettings();
 					})
 			);
@@ -109,9 +109,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 			.addText((text) =>
 				text
 					.setPlaceholder(t("username.def"))
-					.setValue(plugin.settings.email)
+					.setValue(plugin.settings.connection.email)
 					.onChange(async (value) => {
-						plugin.settings.email = value;
+						plugin.settings.connection.email = value;
 						await plugin.saveSettings();
 					})
 			);
@@ -125,9 +125,9 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 				text.inputEl.type = "password";
 				text
 					.setPlaceholder(t("password.def"))
-					.setValue(plugin.settings.password)
+					.setValue(plugin.settings.connection.password)
 					.onChange(async (value) => {
-						plugin.settings.password = value;
+						plugin.settings.connection.password = value;
 						await plugin.saveSettings();
 					});
 			});

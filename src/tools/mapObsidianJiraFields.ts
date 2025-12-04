@@ -51,7 +51,7 @@ export async function updateJiraToLocal(
 	// First, update the frontmatter using processFrontMatter
 	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
 		// Update frontmatter with Jira data
-		applyJiraDataToLocal(frontmatter, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
+		applyJiraDataToLocal(frontmatter, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
 	});
 
 	// Then, process the file content to update sync sections
@@ -60,7 +60,7 @@ export async function updateJiraToLocal(
 		const syncSections = extractAllJiraSyncValuesFromContent(fileContent);
 
 		// Update sync sections with Jira data
-		applyJiraDataToLocal(syncSections, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMappings});
+		applyJiraDataToLocal(syncSections, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
 
 		// Update content sections from Jira fields
 		let updatedContent = fileContent;

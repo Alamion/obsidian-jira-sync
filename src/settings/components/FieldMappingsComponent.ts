@@ -40,9 +40,9 @@ export class FieldMappingsComponent implements SettingsComponent {
 			.setName(t("fv.name"))
 			.setDesc(t("fv.desc"))
 			.addToggle(toggle => toggle
-				.setValue(plugin.settings.enableFieldValidation)
+				.setValue(plugin.settings.fieldMapping.enableFieldValidation)
 				.onChange(async (value) => {
-					plugin.settings.enableFieldValidation = value;
+					plugin.settings.fieldMapping.enableFieldValidation = value;
 					await plugin.saveSettings();
 
 					// Update validation for all mapping items
@@ -85,8 +85,8 @@ export class FieldMappingsComponent implements SettingsComponent {
 			);
 
 			if (confirmed) {
-				plugin.settings.fieldMappings = {};
-				plugin.settings.fieldMappingsStrings = {};
+				plugin.settings.fieldMapping.fieldMappings = {};
+				plugin.settings.fieldMapping.fieldMappingsStrings = {};
 				await this.loadExistingMappings();
 				await plugin.saveSettings();
 			}
@@ -107,7 +107,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 			);
 
 			if (confirmed) {
-				plugin.settings.fieldMappings = obsidianJiraFieldMappings;
+				plugin.settings.fieldMapping.fieldMappings = obsidianJiraFieldMappings;
 
 				// Also reset the string representations with default values
 				const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
@@ -117,7 +117,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 						fromJira: jiraFunctionToString(mapping.fromJira, true)
 					};
 				}
-				plugin.settings.fieldMappingsStrings = defaultMappingsStrings;
+				plugin.settings.fieldMapping.fieldMappingsStrings = defaultMappingsStrings;
 
 				await this.loadExistingMappings();
 				await plugin.saveSettings();
@@ -179,7 +179,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 			fieldName,
 			toJira,
 			fromJira,
-			enableValidation: this.props.plugin.settings.enableFieldValidation,
+			enableValidation: this.props.plugin.settings.fieldMapping.enableFieldValidation,
 			onRemove: () => {
 				// Remove from array when item is removed
 				const index = this.mappingItems.indexOf(item);
@@ -206,11 +206,11 @@ export class FieldMappingsComponent implements SettingsComponent {
 		debugLog(`Loading mapping settings`);
 
 		// If we have string representations stored, use those
-		if (plugin.settings.fieldMappingsStrings &&
-			Object.keys(plugin.settings.fieldMappingsStrings).length > 0) {
-			debugLog('Current mapping (string) is: ', plugin.settings.fieldMappingsStrings);
+		if (plugin.settings.fieldMapping.fieldMappingsStrings &&
+			Object.keys(plugin.settings.fieldMapping.fieldMappingsStrings).length > 0) {
+			debugLog('Current mapping (string) is: ', plugin.settings.fieldMapping.fieldMappingsStrings);
 
-			const savedMappings = plugin.settings.fieldMappingsStrings;
+			const savedMappings = plugin.settings.fieldMapping.fieldMappingsStrings;
 			for (const [fieldName, mapping] of Object.entries(savedMappings)) {
 				if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 					this.addFieldMapping(
@@ -220,17 +220,17 @@ export class FieldMappingsComponent implements SettingsComponent {
 					);
 				}
 			}
-			plugin.settings.fieldMappings = await transform_string_to_functions_mappings(
-				plugin.settings.fieldMappingsStrings,
-				plugin.settings.enableFieldValidation
+			plugin.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
+				plugin.settings.fieldMapping.fieldMappingsStrings,
+				plugin.settings.fieldMapping.enableFieldValidation
 			);
 		}
 		// Otherwise, try to use the function mappings and convert them to strings
-		else if (plugin.settings.fieldMappings &&
-			Object.keys(plugin.settings.fieldMappings).length > 0) {
-			debugLog('Current mapping is: ', plugin.settings.fieldMappings);
+		else if (plugin.settings.fieldMapping.fieldMappings &&
+			Object.keys(plugin.settings.fieldMapping.fieldMappings).length > 0) {
+			debugLog('Current mapping is: ', plugin.settings.fieldMapping.fieldMappings);
 
-			const existingMappings = plugin.settings.fieldMappings;
+			const existingMappings = plugin.settings.fieldMapping.fieldMappings;
 			for (const [fieldName, mapping] of Object.entries(existingMappings)) {
 				if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 					this.addFieldMapping(
@@ -252,7 +252,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 	async saveFieldMappings(): Promise<void> {
 		const { plugin } = this.props;
 
-		debugLog(`From strings ${JSON.stringify(plugin.settings.fieldMappingsStrings)}\nand funcs ${JSON.stringify(plugin.settings.fieldMappings)}`);
+		debugLog(`From strings ${JSON.stringify(plugin.settings.fieldMapping.fieldMappingsStrings)}\nand funcs ${JSON.stringify(plugin.settings.fieldMapping.fieldMappings)}`);
 
 		// Collect mappings from UI
 		const stringMappings = await collectFieldMappingsFromUI(this.fieldsList);
@@ -260,15 +260,15 @@ export class FieldMappingsComponent implements SettingsComponent {
 		// Process mappings
 		const { stringMappings: newStringMappings, functionMappings } = await processMappings(
 			stringMappings,
-			plugin.settings.enableFieldValidation
+			plugin.settings.fieldMapping.enableFieldValidation
 		);
 
 		// Update settings
-		plugin.settings.fieldMappingsStrings = newStringMappings;
-		plugin.settings.fieldMappings = functionMappings;
+		plugin.settings.fieldMapping.fieldMappingsStrings = newStringMappings;
+		plugin.settings.fieldMapping.fieldMappings = functionMappings;
 
-		debugLog(`To strings ${JSON.stringify(plugin.settings.fieldMappingsStrings).substring(0, 100)}\n
-		and funcs ${JSON.stringify(plugin.settings.fieldMappings).substring(0, 100)}`);
+		debugLog(`To strings ${JSON.stringify(plugin.settings.fieldMapping.fieldMappingsStrings).substring(0, 100)}\n
+		and funcs ${JSON.stringify(plugin.settings.fieldMapping.fieldMappings).substring(0, 100)}`);
 		await plugin.saveSettings();
 	}
 

@@ -28,7 +28,7 @@ pat:
 
 username:
     title: Jira username
-    desc: Your Jira username
+    desc: Your Jira username (or email)
     def: admin
 
 email:

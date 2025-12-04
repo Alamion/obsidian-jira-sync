@@ -1,0 +1,24 @@
+title: Fetch issue settings
+
+note:
+    desc0: Important!
+    desc1: " The following 'fields' and 'expand' fields will be used across most of the Jira Manager requests related with issues. Make sure you know what you're doing."
+    desc2: "For more info, go to official "
+    link_label: "docs"
+    desc3: ". While filling, list these params with ',' separator. Example: \"summary, description\""
+
+key:
+    name: View raw issue data
+    desc: Enter a Jira issue key to view its raw data from API
+
+fields:
+    name: Issue fields ('fields')
+    desc: "Main Jira fields"
+    def: "*all, -comment"
+
+expand:
+    name: Expand fields ('expand')
+    desc: "Extra Jira fields"
+    def: "renderedFields, changelog"
+
+
