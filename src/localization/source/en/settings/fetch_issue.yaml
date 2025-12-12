@@ -22,3 +22,8 @@ expand:
     def: "renderedFields, changelog"
 
 
+filenameTemplate:
+    name: Filename template
+    desc: |
+        Template for created issue filenames. Use {summary} for issue summary and {key} for issue key
+    placeholder: "{summary} ({key})"

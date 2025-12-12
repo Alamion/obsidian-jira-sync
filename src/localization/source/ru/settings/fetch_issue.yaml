@@ -16,3 +16,8 @@ expand:
     name: Расширенные поля ('expand')
     desc: "Дополнительные поля Jira"
     def: "renderedFields, changelog"
+filenameTemplate:
+    name: Шаблон названия файла
+    desc: |
+        Шаблон для названий файлов созданных задач. Используйте {summary} для названия задачи и {key} для ключа задачи
+    placeholder: "{summary} ({key})"

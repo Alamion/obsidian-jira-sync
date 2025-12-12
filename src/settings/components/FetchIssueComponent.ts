@@ -23,7 +23,25 @@ export class FetchIssueComponent implements SettingsComponent {
 
 
     render(containerEl: HTMLElement): void {
-		const link = this.props.plugin.settings.connection.apiVersion === "3" ? "https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-jql-post" : "https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-search/#api-rest-api-2-search-jql-post"
+		const { plugin } = this.props;
+
+		// Filename template setting
+		const filenameTemplateSetting = new Setting(containerEl)
+			.setName(t("filenameTemplate.name"))
+			.setDesc(t("filenameTemplate.desc"));
+
+		filenameTemplateSetting.addText((text) => {
+			text
+				.setPlaceholder(t("filenameTemplate.placeholder"))
+				.setValue(plugin.settings.fetchIssue.filenameTemplate || "")
+				.onChange(async (value) => {
+					plugin.settings.fetchIssue.filenameTemplate = value;
+					await plugin.saveSettings();
+				});
+		});
+
+
+		const link = plugin.settings.connection.apiVersion === "3" ? "https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-jql-post" : "https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-search/#api-rest-api-2-search-jql-post"
 
 		const securityNote = containerEl.createEl("p");
 		securityNote.createEl("strong", {
@@ -53,11 +71,11 @@ export class FetchIssueComponent implements SettingsComponent {
 				text.setPlaceholder(t("fields.def"))
 				setupArrayTextSetting(
 					text,
-					this.props.plugin.settings.fetchIssue.fields,
+					plugin.settings.fetchIssue.fields,
 					async (array) => {
-						this.props.plugin.settings.fetchIssue.fields = array;
+						plugin.settings.fetchIssue.fields = array;
 						this.rerenderIssueData();
-						await this.props.plugin.saveSettings();
+						await plugin.saveSettings();
 					}
 				);
 			});
@@ -69,11 +87,11 @@ export class FetchIssueComponent implements SettingsComponent {
 				text.setPlaceholder(t("expand.def"))
 				setupArrayTextSetting(
 					text,
-					this.props.plugin.settings.fetchIssue.expand,
+					plugin.settings.fetchIssue.expand,
 					async (array) => {
-						this.props.plugin.settings.fetchIssue.expand = array;
+						plugin.settings.fetchIssue.expand = array;
 						this.rerenderIssueData();
-						await this.props.plugin.saveSettings();
+						await plugin.saveSettings();
 					}
 				);
 			});

@@ -12,7 +12,6 @@ export class JQLPreview {
 	private containerEl: HTMLElement;
 	private limit: number;
 	private loadingEl?: HTMLElement;
-	private contentEl?: HTMLElement;
 	private show_header = true;
 
 	constructor(plugin: JiraPlugin, containerEl: HTMLElement, limit: number = 5, show_header = true) {
@@ -92,53 +91,53 @@ export class JQLPreview {
 		if (issues.length > 0) {
 			const tableWrapperEl = this.containerEl.createDiv({ cls: "jql-preview-table-wrapper" });
 			const tableEl = tableWrapperEl.createEl("table", { cls: "jql-preview-table" });
-			
+
 			// Table header
 			const theadEl = tableEl.createEl("thead");
 			const headerRowEl = theadEl.createEl("tr");
-			
+
 			// Header columns
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-key", 
-				text: "Key" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-key",
+				text: "Key"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-summary", 
-				text: "Summary" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-summary",
+				text: "Summary"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-icon", 
-				text: "T" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-icon",
+				text: "T"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-date", 
-				text: "Created" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-date",
+				text: "Created"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-date", 
-				text: "Updated" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-date",
+				text: "Updated"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-icon", 
-				text: "R" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-icon",
+				text: "R"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-icon", 
-				text: "A" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-icon",
+				text: "A"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-icon", 
-				text: "P" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-icon",
+				text: "P"
 			});
-			headerRowEl.createEl("th", { 
-				cls: "jql-preview-th-status", 
-				text: "Status" 
+			headerRowEl.createEl("th", {
+				cls: "jql-preview-th-status",
+				text: "Status"
 			});
 
 			// Table body
 			const tbodyEl = tableEl.createEl("tbody");
 
-			issues.forEach((issue, index) => {
+			issues.forEach((issue, _) => {
 				const rowEl = tbodyEl.createEl("tr", { cls: "jql-preview-row" });
 
 				// Key column
@@ -146,7 +145,7 @@ export class JQLPreview {
 				const keyLinkEl = keyCellEl.createEl("a", {
 					cls: "jql-preview-key-link",
 					text: issue.key || "N/A",
-					attr: { 
+					attr: {
 						href: `${this.plugin.settings.connection.jiraUrl}/browse/${issue.key}`,
 						target: "_blank",
 						rel: "noopener noreferrer"
@@ -179,10 +178,10 @@ export class JQLPreview {
 				const createdDate = issue.fields?.created;
 				if (createdDate) {
 					const date = new Date(createdDate);
-					createdCellEl.setText(date.toLocaleDateString("en-US", { 
-						month: "numeric", 
-						day: "numeric", 
-						year: "numeric" 
+					createdCellEl.setText(date.toLocaleDateString("en-US", {
+						month: "numeric",
+						day: "numeric",
+						year: "numeric"
 					}));
 				} else {
 					createdCellEl.setText("N/A");
@@ -193,10 +192,10 @@ export class JQLPreview {
 				const updatedDate = issue.fields?.updated;
 				if (updatedDate) {
 					const date = new Date(updatedDate);
-					updatedCellEl.setText(date.toLocaleDateString("en-US", { 
-						month: "numeric", 
-						day: "numeric", 
-						year: "numeric" 
+					updatedCellEl.setText(date.toLocaleDateString("en-US", {
+						month: "numeric",
+						day: "numeric",
+						year: "numeric"
 					}));
 				} else {
 					updatedCellEl.setText("N/A");
@@ -207,7 +206,7 @@ export class JQLPreview {
 				const reporter = issue.fields?.reporter;
 				if (reporter) {
 					const reporterLinkEl = reporterCellEl.createEl("a", {
-						attr: { 
+						attr: {
 							href: `${this.plugin.settings.connection.jiraUrl}/secure/ViewProfile.jspa?name=${reporter.name}`,
 							target: "_blank",
 							rel: "noopener noreferrer",
@@ -236,7 +235,7 @@ export class JQLPreview {
 				const assignee = issue.fields?.assignee;
 				if (assignee) {
 					const assigneeLinkEl = assigneeCellEl.createEl("a", {
-						attr: { 
+						attr: {
 							href: `${this.plugin.settings.connection.jiraUrl}/secure/ViewProfile.jspa?name=${assignee.name}`,
 							target: "_blank",
 							rel: "noopener noreferrer",

@@ -23,6 +23,7 @@ export interface FieldMappingSettingsInterface {
 }
 
 export interface FetchIssueInterface {
+	filenameTemplate: string;
 	fields: string[];
 	expand: string[];
 }
@@ -88,6 +89,7 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 	},
 
 	fetchIssue: {
+		filenameTemplate: "{summary} ({key})",
 		fields: ["*all"],
 		expand: [],
 	},

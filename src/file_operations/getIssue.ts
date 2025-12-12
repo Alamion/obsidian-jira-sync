@@ -7,6 +7,36 @@ import {Notice, TFile, TFolder} from "obsidian";
 import {defaultTemplate} from "../default/defaultTemplate";
 import { debugLog } from "src/tools/debugLogging";
 
+function generateFilenameFromTemplate(template: string, issue: JiraIssue): string {
+	let filename = template;
+
+	// Replace {summary} with sanitized summary
+	const summary = issue.fields?.summary || "";
+	const sanitizedSummary = sanitizeFileName(summary);
+	filename = filename.replace(/\{summary\}/g, sanitizedSummary);
+
+	// Replace {key} with issue key
+	const key = issue.key || "";
+	filename = filename.replace(/\{key\}/g, key);
+
+	// Sanitize the entire filename to remove any prohibited characters
+	filename = sanitizeFileName(filename);
+
+	// Fallback if the result is empty or only whitespace
+	if (!filename || filename.trim() === "") {
+		// Use key if available, otherwise use a default
+		if (key) {
+			filename = key;
+		} else if (sanitizedSummary) {
+			filename = sanitizedSummary;
+		} else {
+			filename = "jira-issue";
+		}
+	}
+
+	return filename.trim();
+}
+
 export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIssue, filePath?: string): Promise<void> {
 	try {
 		await ensureIssuesFolder(plugin);
@@ -44,8 +74,9 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 
 			// If still not found, create new file
 			if (!targetFile) {
-				const sanitizedSummary = sanitizeFileName(issue.fields.summary);
-				targetPath = `${plugin.settings.global.issuesFolder}/${sanitizedSummary} [${issue.key}].md`;
+				const template = plugin.settings.fetchIssue.filenameTemplate || "{summary} ({key})";
+				const filename = generateFilenameFromTemplate(template, issue);
+				targetPath = `${plugin.settings.global.issuesFolder}/${filename}.md`;
 				debugLog(`Issue ${issue.key} not found in cache or filesystem, creating new file: ${targetPath}`);
 			}
 		}
