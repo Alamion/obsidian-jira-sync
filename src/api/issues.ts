@@ -114,14 +114,20 @@ export async function fetchIssuesByJQLRaw(
 	startAt?: number,
 	nextPageToken?: string,
 ): Promise<any> {
-	const body = JSON.stringify(sanitizeObject({
+	const requestBody: any = {
 		jql,
 		maxResults,
 		startAt,
 		nextPageToken,
 		fields: fields && fields.length > 0 ? fields : plugin.settings.fetchIssue.fields || [],
 		expand: plugin.settings.fetchIssue.expand.join(",") || "",
-	}));
+	};
+	if (plugin.settings.connection.apiVersion === "3") {
+		requestBody.nextPageToken = nextPageToken;
+	} else {
+		requestBody.startAt = startAt;
+	}
+	const body = JSON.stringify(sanitizeObject(requestBody));
 	return await baseRequest(plugin, 'post', `/search${plugin.settings.connection.apiVersion === "3" ? "/jql" : ""}`, body);
 }
 
