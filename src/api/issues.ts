@@ -120,12 +120,13 @@ export async function fetchIssuesByJQLRaw(
 		startAt,
 		nextPageToken,
 		fields: fields && fields.length > 0 ? fields : plugin.settings.fetchIssue.fields || [],
-		expand: plugin.settings.fetchIssue.expand.join(",") || "",
 	};
 	if (plugin.settings.connection.apiVersion === "3") {
 		requestBody.nextPageToken = nextPageToken;
+		requestBody.expand = plugin.settings.fetchIssue.expand.join(",") || "";
 	} else {
 		requestBody.startAt = startAt;
+		requestBody.expand = plugin.settings.fetchIssue.expand || [];
 	}
 	const body = JSON.stringify(sanitizeObject(requestBody));
 	return await baseRequest(plugin, 'post', `/search${plugin.settings.connection.apiVersion === "3" ? "/jql" : ""}`, body);
