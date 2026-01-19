@@ -4,10 +4,26 @@ import { parse } from "acorn";
 import {debugLog} from "./debugLogging";
 import {FieldMapping} from "../default/obsidianJiraFieldsMapping";
 import {defaultIssue} from "../default/defaultIssue";
+import {jiraToMarkdown, markdownToJira} from "./markdownHtml";
 
 // Constants for validation and error messages
-const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout"]; // Prevent unsafe code execution
+const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout", "globalThis"];
 const SYNTAX_KEYWORDS = ["return", "if", "else", "for", "while", "switch", "try", "catch"];
+const SAFE_GLOBALS = {
+	jiraToMarkdown,
+	markdownToJira,
+	JSON: {
+		parse: JSON.parse,
+		stringify: JSON.stringify
+	},
+	Math: Math,
+	Date: Date,
+	String: String,
+	Number: Number,
+	Boolean: Boolean,
+	Array: Array,
+	Object: Object
+};
 
 export function validateFunctionStringBrowser(fnString: string, approved_vars: string[] = []): Promise<{ isValid: boolean; errorMessage?: string }> {
 	return new Promise((resolve) => {
@@ -23,14 +39,49 @@ export function validateFunctionStringBrowser(fnString: string, approved_vars: s
 		const iframeWindow = iframe.contentWindow as Window;
 
 		try {
+			let testFnString = fnString;
+
 			if (isSimpleExpression(fnString) || (fnString.startsWith("{") && fnString.endsWith("}") && !fnString.includes("return"))) {
-				fnString = `(${approved_vars.map(varName => varName==='issue'?`${varName} = ${JSON.stringify(defaultIssue)}`:`${varName} = {}`).join(', ')}) => ${fnString}`;
+				const varDeclarations = approved_vars.map(varName => {
+					if (varName === 'issue') return `${varName} = ${JSON.stringify(defaultIssue)}`;
+					if (varName === 'value') return `${varName} = "test value"`;
+					if (varName === 'data_source') return `${varName} = {}`;
+					return `${varName} = {}`;
+				}).join(', ');
+
+				testFnString = `(${varDeclarations}) => ${fnString}`;
 			}
-			debugLog(`checking function: ${fnString.substring(0, 100)}`);
-			let func = (iframeWindow as any).eval(fnString);
-			if (typeof func === 'function') {
-				func(); // Execute the function to catch runtime errors
-			}
+			debugLog(`checking function: ${testFnString.substring(0, 100)}`);
+
+			const context: Record<string, any> = {};
+			Object.keys(SAFE_GLOBALS).forEach(key => {
+				context[key] = (SAFE_GLOBALS as any)[key];
+			});
+
+			const safeBuiltIns = ['Infinity', 'NaN', 'undefined', 'isFinite', 'isNaN',
+				'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent',
+				'encodeURI', 'encodeURIComponent'];
+			safeBuiltIns.forEach(key => {
+				context[key] = (iframeWindow as any)[key];
+			});
+
+			const testArgs = approved_vars.map(varName => {
+				if (varName === 'issue') return defaultIssue;
+				if (varName === 'value') return "test value";
+				if (varName === 'data_source') return {};
+				return {};
+			});
+
+			const contextKeys = Object.keys(context);
+			const contextValues = contextKeys.map(key => context[key]);
+
+			const func = new Function(
+				...approved_vars,
+				...contextKeys,
+				`return (${fnString});`
+			);
+
+			func(...testArgs, ...contextValues);
 			resolve({ isValid: true });
 		} catch (error) {
 			debugLog('Not valid')
@@ -121,37 +172,50 @@ export async function safeStringToFunction(
 			body = `{ return ${body.slice(1, -1)} }`;
 		}
 
+		const context = {
+			jiraToMarkdown,
+			markdownToJira,
+			JSON,
+			Math,
+			Date,
+			String,
+			Number,
+			Boolean,
+			Array,
+			Object
+		};
+
 		if (type === 'toJira') {
 			return function(value: any) {
-				const context = {
-				};
 
-				const fn = new Function('value', `
-                    try {
-                        ${body}
-                    } catch (e) {
-                        console.error("Error in toJira function:", e);
-                        return null;
-                    }
+				const fn = new Function('value', 'context', `
+                    with (context) {
+						try {
+						    ${body}
+						} catch (e) {
+						    console.error("Error in toJira function:", e);
+						    return null;
+						}
+					}
                 `);
 
-				return fn.apply(context, [value]);
+				return fn.call(context, value, context);
 			};
 		} else { // fromJira
 			return function(issue: JiraIssue, data_source: Record<string, any> | null) {
-				const context = {
-				};
 
-				const fn = new Function('issue', 'data_source', `
-                    try {
-                        ${body}
-                    } catch (e) {
-                        console.error("Error in fromJira function:", e);
-                        return null;
+				const fn = new Function('issue', 'data_source', 'context', `
+                    with (context) {
+						try {
+							${body}
+						} catch (e) {
+							console.error("Error in fromJira function:", e);
+							return null;
+						}
                     }
                 `);
 
-				return fn.apply(context, [issue, data_source]);
+				return fn.call(context, issue, data_source, context);
 			};
 		}
 	} catch (error) {

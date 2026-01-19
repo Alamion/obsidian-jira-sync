@@ -49,33 +49,28 @@ In the settings, you can configure custom mapping for any additional fields rece
 
 Similarly, you can configure the `progressPercentage` shown in the example. This field does not exist in the response, but it can be "assembled" from the existing `progress` field: `issue.fields.progress.total ? 100 * issue.fields.progress.progress / issue.fields.progress.total : 0`. As seen in the syntax, mapping uses a simplified TypeScript format.
 
-It will look something like this:
+Additionally, you can use some of the built-in functions:
+- `jiraToMarkdown` - converts Jira markup to Markdown.
+- `markdownToJira` - converts Markdown to Jira markup.
+- `JSON.parse` - converts a JSON string to an object.
+- `JSON.stringify` - converts an object to a JSON string.
 
-![](images/progressPercentageExample.png)
+and modules: (original Javascript syntax)
+- `Math` - provides access to mathematical functions, such as `Math.round()`.
+- `Date` - provides access to date functions, such as `Date.now()`.
+- `String` - provides access to string functions, such as `String.fromCharCode()`.
+- `Number` - provides access to number functions, such as `Number.isNaN()`.
+- `Boolean` - provides access to boolean functions, such as `Boolean(true)`.
+- `Array` - provides access to array functions, such as `Array.isArray()`.
+- `Object` - provides access to object functions, such as `Object.keys()`.
+
+Field mapping can like this:
+
+![](images/fieldMappingExample.png)
 
 #### Statistics
 Statistics are now integrated into the plugin and can be accessed through the plugin settings in the "Timekeep work log statistics" section. This feature provides a dynamically generated table (or series of tables) showing work statistics and allowing you to send work logs to Jira. You can conveniently select time periods for calculation and transfer work log information to Jira directly from the settings interface.
 
-With Obsidian themes disabled, the table looks like this:
+The table looks like this:
 
 ![](images/statisticsExample.png)
-
-### Plugin Settings
-
-#### Connection Settings
-This section allows you to select the authentication method and enter corresponding credentials. The plugin supports three authentication methods: Bearer Token (PAT), Basic Auth (Username + PAT), and Session Cookie (Username + Password). If using Personal Access Token authentication, ensure the `write:jira-work` and `read:jira-work` scopes are enabled for proper functionality.
-
-#### General Settings
-This section allows you to select the folder where new issues created using commands will be stored. This folder is also used for searching issues in the Timekeep work log statistics section.
-
-#### Field Mapping
-This section provides non-standard mappings (in JavaScript format) of information from Jira to Obsidian and vice versa. You can configure custom field transformations and mappings for any additional fields received from Jira.
-
-#### Raw Issue Viewer
-This section displays raw API output for entered issues, which should help with writing field mappings. This data is not saved and is provided for debugging and development purposes.
-
-#### Test Field Mapping
-This section provides a preview of mapping results for issues from the raw issue viewer. This feature helps with testing and refining field mappings. The data is not saved and is provided for convenience when working with mappings.
-
-#### Timekeep Work Log Statistics
-This section provides a dynamically generated table (or series of tables, see image) showing work statistics and providing the ability to send work logs to Jira. You can select time periods for calculation and transfer work log information to Jira directly from this interface.
