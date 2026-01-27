@@ -8,4 +8,13 @@ tags:
 description: 
 ---
 
+### Time spend
+\`\`\`timekeep
+{"entries":[]}  
+\`\`\`
+
+### Description
+\`jira-sync-section-description\`
+
+### Other info
 `;

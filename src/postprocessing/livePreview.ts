@@ -39,8 +39,8 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 				for (const match of text.matchAll(/`(jira-sync-[^`]+)`/g)) {
 					const start = from + match.index!;
 					const end   = start + match[0].length;
-					const contentStart = start + 1; // без первой `
-					const contentEnd   = end - 1;   // без последней `
+					const contentStart = start; // без первой `
+					const contentEnd   = end;   // без последней `
 
 					// Find code blocks to ignore
 					if (this.isInsideCodeBlock(contentStart, contentEnd, codeBlocks)) {

@@ -17,16 +17,57 @@ Without a template, such a page will be completely empty except for its title, s
 
 #### Template
 The template can consist of several different parts:
-1. **formatter** - meta-information at the top of the screen. When specifying keys for it and using any `Get issues from Jira` variant, they will be populated with corresponding fields from the response data.
-2. **body** - the main content of the page. When using indicators like `jira-sync-section-*`, `jira-sync-line-*`, or `jira-sync-inline-start-*`, they will be filled with the corresponding fields from the response data. The difference between these options is as follows: `line` reads and writes values from the current line, separating the indicator and value with a space. `section` reads values from multiple lines after the indicator, stopping only at another indicator or a heading. `inline` allows indicators to be placed anywhere in the text, not strictly at the beginning of lines. All indicators are invisible until highlighted with the mouse, providing a cleaner editing experience.
+
+##### Frontmatter
+Meta-information at the top of the screen. When specifying keys for it and using any `Get issues from Jira` variant, they will be populated with corresponding fields from the response data.
+
+##### Body
+The main content of the page. When using indicators like `jira-sync-"type"-*`, they will be filled with the corresponding fields from the response data. 
+
+The difference between these options is as follows: 
+
+- `line` reads and writes values from the current line. 
+
+Example:
+```md
+The responsible person for this task is `jira-sync-line-assignee` Bob
+The description is `jira-sync-line-description` Some description
+```
+- `section` reads values from multiple lines after the indicator, stopping only at any other indicator or a heading.
+
+Example:
+```md
+### Responsible `jira-sync-section-assignee`
+Bob
+### Description `jira-sync-section-description`
+Some description
+`jira-sync-section-customfield_10842`
+...
+```
+- `inline` allows indicator of start and end to be placed anywhere in the text. Must have an ending part of indicator (`jira-sync-end`).
+
+Example:
+```md
+The responsible person for this task is `jira-sync-inline-start-assignee`Bob`jira-sync-end`, and the description is `jira-sync-inline-start-description`Some description`jira-sync-end`.
+```
+- `block` is basically the same as `inline`, but with line break before and after indicators.
+
+Example:
+```md
+The responsible person for this task is `jira-sync-block-assignee`
+Bob
+`jira-sync-end`, and the description is `jira-sync-block-description`
+Some description
+`jira-sync-end`.
+```
 
 An example can be found in [[docs/template_example]].
 
-It is highly recommended to specify basic values in the template's formatter: `key` - the Jira task ID used for updates, `summary` - the Jira task title, and `status` - the current status of the task in Jira.
+It is highly recommended to specify the following basic values in the template's formatter: `key` - the Jira task ID used for updates, `summary` - the Jira task title, and `status` - the current status of the task in Jira.
 
 The formatter takes priority and will overwrite file content values when updating a task in Jira if a field's value is present in both as formatter saves initial format of value and when putting it in body we parse it to string.
 
-Not all fields are predefined, and some may need adjustments. For example, the template provided in [[docs/template_example]] will not correctly retrieve `progressPercent` and `creator` from Jira, even though these fields exist. To fix this, refer to the advanced usage section below.
+Not all fields are predefined, and some may need adjustments. To add any custom nonusual fields, features of their representation in .md format and how to update their info in Jira, refer to the advanced usage section below.
 
 ### Commands
 
