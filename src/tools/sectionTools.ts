@@ -1,6 +1,6 @@
 import { debugLog } from "./debugLogging";
 
-const UNIFIED_REGEX = /`jira-sync-(section|line|inline-start|block-start)-([\w-]+)`([\s\S]*?)(?:`jira-sync-?[^-]*-end`|(?=`jira-sync-|\z))/g; // TODO: delete deprecated endings in a year
+const UNIFIED_REGEX = /`jira-sync-(section|line|inline-start|block-start)-([\w-]+)`([\s\S]*?)(?:`jira-sync-?[^-]*-end`|(?=`jira-sync-|$))/g; // TODO: delete deprecated endings in a year
 
 interface ParsedBlock {
 	type: "section" | "line" | "inline" | "block";
