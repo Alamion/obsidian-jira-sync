@@ -1,6 +1,3 @@
-import {Notice} from "obsidian";
-
-
 /**
  * Convert Jira markup to Markdown
  * @param str The Jira markup string

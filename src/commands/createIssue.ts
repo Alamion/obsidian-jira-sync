@@ -11,75 +11,74 @@ import {IssueAddSummaryModal} from "../modals/IssueAddSummaryModal";
 
 const t = useTranslations("commands.create_issue").t;
 
-/**
- * Register the create issue command
- */
+
 export function registerCreateIssueCommand(plugin: JiraPlugin): void {
 	plugin.addCommand({
 		id: "create-issue-jira",
 		name: t("name"),
 		checkCallback: (checking: boolean) => {
-			return checkCommandCallback(plugin, checking, checkProjects, []);
+			return checkCommandCallback(plugin, checking, createIssue, []);
 		},
 	});
 }
 
-/**
- * Create a new issue in Jira from the current note
- */
-export async function checkProjects(plugin: JiraPlugin, file: TFile): Promise<void> {
+export async function createIssue(plugin: JiraPlugin, file: TFile): Promise<void> {
 	try {
 		const fields = await readJiraFieldsFromFile(plugin, file);
-
-		const projects = await fetchProjects(plugin);
-
-		if (!fields.project || !projects.map((project: any) => project.key).includes(fields.project)) {
-			new ProjectModal(plugin.app,
-				projects.map((project: any) => ({
-					id: project.key,
-					name: project.name,
-				})) as JiraProject[],
-				async (projectKey: string) => {
-				fields.project = projectKey;
-				await checkIssueTypes(plugin, file, fields)
-			}).open();
-		} else {
-			await checkIssueTypes(plugin, file, fields);
-		}
-
+		await checkProjects(plugin, fields);
+		await checkIssueTypes(plugin, fields);
+		await checkSummary(plugin, fields);
+		const issueKey = await createIssueFromFile(plugin, file, fields);
+		new Notice(t('success', {issueKey}));
 	} catch (error) {
 		new Notice(t('error') + ": " + (error.message || "Unknown error"), 3000);
 		console.error(error);
 	}
 }
 
-async function checkIssueTypes(plugin: JiraPlugin, file: TFile, fields: any): Promise<void> {
-	const issueTypes = await fetchIssueTypes(plugin, fields.project);
+export async function checkProjects(plugin: JiraPlugin, fields: any): Promise<void> {
+	const projects = await fetchProjects(plugin);
+	if (!fields.project || !projects.map((project: any) => project.key).includes(fields.project)) {
+		await new Promise<void>((resolve) => {
+			new ProjectModal(plugin.app,
+				projects.map((project: any) => ({
+					id: project.key,
+					name: project.name,
+				})) as JiraProject[],
+				async (projectKey: string) => {
+					fields.project = projectKey;
+					resolve();
+				}).open();
+		});
+	}
+}
 
-	if (!fields.issuetype || !issueTypes.values.map((issueType: any) => issueType.name).includes(fields.issuetype)) {
-		new IssueTypeModal(plugin.app,
-			issueTypes.values.map((type: any) => ({
-				name: type.name,
-			})) as JiraIssueType[],
-			async (issueType: string) => {
-				fields.issuetype = issueType;
-				await checkSummary(plugin, file, fields);
-			}).open();
-	} else {
-		await checkSummary(plugin, file, fields);
+async function checkIssueTypes(plugin: JiraPlugin, fields: any): Promise<void> {
+	const issueTypesResponse = await fetchIssueTypes(plugin, fields.project);
+	const issueTypes = plugin.settings.connection.apiVersion === "3" ? issueTypesResponse.issueTypes : issueTypesResponse.values;
+	if (!fields.issuetype || !issueTypes.map((issueType: any) => issueType.name).includes(fields.issuetype)) {
+		await new Promise<void>((resolve) => {
+			new IssueTypeModal(plugin.app,
+				issueTypes.map((type: any) => ({
+					name: type.name,
+				})) as JiraIssueType[],
+				async (issueType: string) => {
+					fields.issuetype = issueType;
+					resolve();
+				}).open();
+		});
 	}
 
 }
 
-async function checkSummary(plugin: JiraPlugin, file: TFile, fields: any): Promise<void> {
+async function checkSummary(plugin: JiraPlugin, fields: any): Promise<void> {
 	if (!fields.summary) {
-		new IssueAddSummaryModal(plugin.app,
-			async (summary: string) => {
-				fields.summary = summary;
-				const issueKey = await createIssueFromFile(plugin, file, fields);
-				new Notice(t('success', {issueKey}));
-		}).open();
-	} else {
-		await createIssueFromFile(plugin, file, fields);
+		await new Promise<void>((resolve) => {
+			new IssueAddSummaryModal(plugin.app,
+				async (summary: string) => {
+					fields.summary = summary;
+					resolve();
+				}).open();
+		});
 	}
 }
