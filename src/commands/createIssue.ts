@@ -7,6 +7,7 @@ import {checkCommandCallback} from "../tools/checkCommandCallback";
 import {useTranslations} from "../localization/translator";
 import {readJiraFieldsFromFile} from "../file_operations/commonPrepareData";
 import {JiraIssueType, JiraProject} from "../interfaces";
+import {obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
 import {IssueAddSummaryModal} from "../modals/IssueAddSummaryModal";
 
 const t = useTranslations("commands.create_issue").t;
@@ -72,11 +73,16 @@ async function checkIssueTypes(plugin: JiraPlugin, fields: any): Promise<void> {
 }
 
 async function checkSummary(plugin: JiraPlugin, fields: any): Promise<void> {
-	if (!fields.summary) {
+	const mergedMappings = {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings};
+	const summarySourceField = Object.entries(mergedMappings).find(
+		([key, mapping]) => (mapping.jiraKey || key) === "summary" && mapping.toJira(fields[key]) !== null
+	)?.[0] ?? "summary";
+
+	if (!fields[summarySourceField]) {
 		await new Promise<void>((resolve) => {
 			new IssueAddSummaryModal(plugin.app,
 				async (summary: string) => {
-					fields.summary = summary;
+					fields[summarySourceField] = summary;
 					resolve();
 				}).open();
 		});

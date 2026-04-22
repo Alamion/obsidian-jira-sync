@@ -300,10 +300,10 @@ export function functionToExpressionString(fn: Function): string {
 }
 
 export async function transform_string_to_functions_mappings  (
-	mappings: Record<string, { toJira: string; fromJira: string }>, extraValidate: boolean = true)  {
+	mappings: Record<string, { toJira: string; fromJira: string; jiraKey?: string }>, extraValidate: boolean = true)  {
 	// Also convert to functions for runtime use
 	const transformedMappings: Record<string, FieldMapping> = {};
-	for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
+	for (const [fieldName, { toJira, fromJira, jiraKey }] of Object.entries(mappings)) {
 		const toJiraFn = safeStringToFunction(toJira, 'toJira', extraValidate);
 		const fromJiraFn = safeStringToFunction(fromJira, 'fromJira', extraValidate);
 
@@ -311,6 +311,7 @@ export async function transform_string_to_functions_mappings  (
 			transformedMappings[fieldName] = {
 				toJira: await toJiraFn as (value: any) => any,
 				fromJira: await fromJiraFn as (issue: JiraIssue, data_source: Record<string, any>) => any,
+				...(jiraKey ? { jiraKey } : {}),
 			};
 		} else {
 			console.warn(`Invalid function in field: ${fieldName}`);

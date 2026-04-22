@@ -12,6 +12,7 @@ export type JiraFieldMappingFunction = (...args: any[]) => any;
 export interface JiraFieldMapping {
 	toJira: JiraFieldMappingFunction;
 	fromJira: JiraFieldMappingFunction;
+	jiraKey?: string;
 }
 
 /**
@@ -20,6 +21,7 @@ export interface JiraFieldMapping {
 export interface JiraFieldMappingString {
 	toJira: string;
 	fromJira: string;
+	jiraKey?: string;
 }
 
 /**

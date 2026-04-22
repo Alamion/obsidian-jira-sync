@@ -27,7 +27,8 @@ export function localToJiraFields(
 				// Skip fields that shouldn't be sent to Jira
 				if (mapping.toJira(value) === null) continue;
 
-				jiraFields[key] = mapping.toJira(value);
+				const jiraKey = mapping.jiraKey || key;
+				jiraFields[jiraKey] = mapping.toJira(value);
 			} catch (e) {
 				console.error(`Error mapping for ${key}: ${e}`);
 				new Notice(`Error mapping for ${key}: ${e}`);

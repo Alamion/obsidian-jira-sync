@@ -3,6 +3,7 @@ import {JiraIssue} from "../interfaces";
 export interface FieldMapping {
 	toJira: (value: any) => any;
 	fromJira: (issue: JiraIssue, data_source: Record<string, any> | null) => any;
+	jiraKey?: string;
 }
 
 export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {

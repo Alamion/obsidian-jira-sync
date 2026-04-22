@@ -18,7 +18,8 @@ export function convertFunctionMappingsToStrings(
 		if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 			result[fieldName] = {
 				toJira: jiraFunctionToString(mapping.toJira, false),
-				fromJira: jiraFunctionToString(mapping.fromJira, true)
+				fromJira: jiraFunctionToString(mapping.fromJira, true),
+				...(mapping.jiraKey ? { jiraKey: mapping.jiraKey } : {}),
 			};
 		}
 	}
@@ -51,9 +52,12 @@ export async function collectFieldMappingsFromUI(
 
 		// Only save valid mappings with field name filled
 		if (fieldName) {
+			const jiraKeyInput = item.querySelector(".jira-key-input");
+			const jiraKey = jiraKeyInput ? (jiraKeyInput as HTMLInputElement).value.trim() : undefined;
 			mappings[fieldName] = {
 				toJira: toJira,
-				fromJira: fromJira
+				fromJira: fromJira,
+				...(jiraKey ? { jiraKey } : {}),
 			};
 		}
 	});
