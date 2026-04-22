@@ -953,6 +953,28 @@ code.hljs {
 	padding: 0 !important;
 }
 
+/* Highlighted sync section markers */
+.jira-sync-marker {
+	background: var(--tag-background);
+	color: var(--tag-color);
+	border-radius: var(--tag-radius, 4px);
+	padding: var(--tag-padding-y, 1px) var(--tag-padding-x, 6px);
+	font-size: var(--tag-size, 0.8em);
+	font-weight: 500;
+	box-shadow: none;
+}
+
+.jira-sync-marker.jira-sync-active {
+	outline: 1px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+/* Block content highlight — subtle left border between block-start and block-end */
+.jira-sync-block-content {
+	border-left: 2px solid var(--interactive-accent) !important;
+	padding-left: 8px !important;
+}
+
 /* JQL Preview Container */
 .jql-preview-container {
 	margin-top: 1rem;
