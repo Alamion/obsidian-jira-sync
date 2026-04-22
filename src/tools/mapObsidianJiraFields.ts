@@ -1,5 +1,4 @@
 import {JiraIssue} from "../interfaces";
-import {jiraToMarkdown} from "./markdownHtml";
 import {Notice, TFile} from "obsidian";
 import JiraPlugin from "../main";
 import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
@@ -66,7 +65,7 @@ export async function updateJiraToLocal(
 		let updatedContent = fileContent;
 		let updatesDict: Record<string, string> = {};
 		for (const [fieldName, fieldValue] of Object.entries(syncSections)) {
-			updatesDict[fieldName] = jiraToMarkdown(fieldValue);
+			updatesDict[fieldName] = fieldValue;
 		}
 
 		debugLog(`Updating sync sections: ${JSON.stringify(updatesDict)}`);

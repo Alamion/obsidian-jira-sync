@@ -1,4 +1,5 @@
 import {JiraIssue} from "../interfaces";
+import {jiraToMarkdown} from "../tools/markdownHtml";
 
 export interface FieldMapping {
 	toJira: (value: any) => any;
@@ -12,7 +13,7 @@ export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 	},
 	"description": {
 		toJira: () => null,
-		fromJira: (issue) => issue.fields.description,
+		fromJira: (issue) => jiraToMarkdown(issue.fields.description),
 	},
 	"key": {
 		toJira: () => null,
