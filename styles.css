@@ -953,26 +953,20 @@ code.hljs {
 	padding: 0 !important;
 }
 
-/* Highlighted sync section markers */
-.jira-sync-marker {
-	background: var(--tag-background);
-	color: var(--tag-color);
-	border-radius: var(--tag-radius, 4px);
-	padding: var(--tag-padding-y, 1px) var(--tag-padding-x, 6px);
-	font-size: var(--tag-size, 0.8em);
-	font-weight: 500;
-	box-shadow: none;
-}
-
-.jira-sync-marker.jira-sync-active {
-	outline: 1px solid var(--interactive-accent);
+/* Inline / line synced content highlight */
+.jira-sync-content {
+	background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+	border-radius: 3px;
+	padding: 0 2px;
+	outline: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, transparent);
 	outline-offset: 1px;
 }
 
-/* Block content highlight — subtle left border between block-start and block-end */
+/* Block content lines — left accent border */
 .jira-sync-block-content {
-	border-left: 2px solid var(--interactive-accent) !important;
+	border-left: 3px solid var(--interactive-accent) !important;
 	padding-left: 8px !important;
+	background: color-mix(in srgb, var(--interactive-accent) 5%, transparent) !important;
 }
 
 /* JQL Preview Container */
