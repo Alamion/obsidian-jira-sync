@@ -964,8 +964,7 @@ code.hljs {
 
 /* Block content lines — left accent border */
 .jira-sync-block-content {
-	border-left: 3px solid var(--interactive-accent) !important;
-	padding-left: 8px !important;
+	box-shadow: inset 3px 0 0 var(--interactive-accent) !important;
 	background: color-mix(in srgb, var(--interactive-accent) 5%, transparent) !important;
 }
 
