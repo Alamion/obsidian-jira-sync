@@ -1,5 +1,6 @@
 import {JiraIssue} from "../interfaces";
 import {jiraToMarkdown} from "../tools/markdownHtml";
+import {adfToMarkdown} from "../tools/markdownToAdf";
 
 export interface FieldMapping {
 	toJira: (value: any) => any;
@@ -76,5 +77,18 @@ export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 	"progress": {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.aggregateprogress.percent+'%',
+	},
+	"comment": {
+		toJira: () => null,
+		fromJira: (issue) => {
+			const comments = issue.fields.comment?.comments;
+			if (!comments?.length) return '';
+			return comments.map((c: any) => {
+				const author = c.author?.displayName ?? 'Unknown';
+				const date = c.created ? c.created.replace('T', ' ').substring(0, 19) : '';
+				const body = adfToMarkdown(c.body) ?? '';
+				return `### ${author} — ${date}\n\n${body}`;
+			}).join('\n\n---\n\n');
+		},
 	},
 };
