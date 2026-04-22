@@ -197,3 +197,59 @@ export function markdownToAdf(markdown: string): AdfDoc | null {
 
 	return content.length > 0 ? { version: 1, type: 'doc', content } : null;
 }
+
+function adfInlineToMarkdown(nodes: any[]): string {
+	if (!nodes) return '';
+	return nodes.map(node => {
+		if (node.type === 'hardBreak') return '\n';
+		if (node.type !== 'text') return '';
+		const text = node.text || '';
+		const marks: string[] = (node.marks || []).map((m: any) => m.type);
+		let result = text;
+		if (marks.includes('code')) return `\`${result}\``;
+		if (marks.includes('strong')) result = `**${result}**`;
+		if (marks.includes('em')) result = `*${result}*`;
+		return result;
+	}).join('');
+}
+
+function adfBlockToMarkdown(node: any): string {
+	if (!node) return '';
+
+	switch (node.type) {
+		case 'heading': {
+			const level = node.attrs?.level || 1;
+			const text = adfInlineToMarkdown(node.content || []);
+			return `${'#'.repeat(level)} ${text}`;
+		}
+		case 'paragraph': {
+			const text = adfInlineToMarkdown(node.content || []);
+			return text;
+		}
+		case 'codeBlock': {
+			const lang = node.attrs?.language || '';
+			const code = (node.content || []).map((n: any) => n.text || '').join('');
+			return `\`\`\`${lang}\n${code}\n\`\`\``;
+		}
+		case 'bulletList': {
+			return (node.content || []).map((item: any) =>
+				`- ${(item.content || []).map((block: any) => adfBlockToMarkdown(block)).join('\n')}`
+			).join('\n');
+		}
+		case 'orderedList': {
+			return (node.content || []).map((item: any, i: number) =>
+				`${i + 1}. ${(item.content || []).map((block: any) => adfBlockToMarkdown(block)).join('\n')}`
+			).join('\n');
+		}
+		case 'rule':
+			return '---';
+		default:
+			return (node.content || []).map((n: any) => adfBlockToMarkdown(n)).join('\n');
+	}
+}
+
+export function adfToMarkdown(adf: any): string {
+	if (!adf || typeof adf !== 'object') return '';
+	const blocks: string[] = (adf.content || []).map((node: any) => adfBlockToMarkdown(node));
+	return blocks.filter(b => b !== '').join('\n\n');
+}

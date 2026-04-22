@@ -5,7 +5,7 @@ import {debugLog} from "./debugLogging";
 import {FieldMapping} from "../default/obsidianJiraFieldsMapping";
 import {defaultIssue} from "../default/defaultIssue";
 import {jiraToMarkdown, markdownToJira} from "./markdownHtml";
-import {markdownToAdf} from "./markdownToAdf";
+import {markdownToAdf, adfToMarkdown} from "./markdownToAdf";
 
 // Constants for validation and error messages
 const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout", "globalThis"];
@@ -14,6 +14,7 @@ const SAFE_GLOBALS = {
 	jiraToMarkdown,
 	markdownToJira,
 	markdownToAdf,
+	adfToMarkdown,
 	JSON: {
 		parse: JSON.parse,
 		stringify: JSON.stringify
@@ -178,6 +179,7 @@ export async function safeStringToFunction(
 			jiraToMarkdown,
 			markdownToJira,
 			markdownToAdf,
+			adfToMarkdown,
 			JSON,
 			Math,
 			Date,
