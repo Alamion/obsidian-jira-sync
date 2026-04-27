@@ -202,13 +202,19 @@ function adfInlineToMarkdown(nodes: any[]): string {
 	if (!nodes) return '';
 	return nodes.map(node => {
 		if (node.type === 'hardBreak') return '\n';
+		if (node.type === 'mention') return node.attrs?.text || node.attrs?.displayName || '';
+		if (node.type === 'emoji') return node.attrs?.text || node.attrs?.shortName || '';
+		if (node.type === 'inlineCard') return node.attrs?.url || '';
 		if (node.type !== 'text') return '';
 		const text = node.text || '';
 		const marks: string[] = (node.marks || []).map((m: any) => m.type);
+		const linkMark = (node.marks || []).find((m: any) => m.type === 'link');
 		let result = text;
 		if (marks.includes('code')) return `\`${result}\``;
+		if (marks.includes('strike')) result = `~~${result}~~`;
 		if (marks.includes('strong')) result = `**${result}**`;
 		if (marks.includes('em')) result = `*${result}*`;
+		if (linkMark) result = `[${result}](${linkMark.attrs?.href || ''})`;
 		return result;
 	}).join('');
 }
@@ -243,6 +249,27 @@ function adfBlockToMarkdown(node: any): string {
 		}
 		case 'rule':
 			return '---';
+		case 'blockquote': {
+			const inner = (node.content || []).map((n: any) => adfBlockToMarkdown(n)).join('\n');
+			return inner.split('\n').map((line: string) => `> ${line}`).join('\n');
+		}
+		case 'table': {
+			const rows: any[] = node.content || [];
+			const mdRows = rows.map((row: any) => {
+				const cells = (row.content || []).map((cell: any) =>
+					(cell.content || []).map((n: any) => adfBlockToMarkdown(n)).join(' ').replace(/\|/g, '\\|')
+				);
+				return `| ${cells.join(' | ')} |`;
+			});
+			if (mdRows.length === 0) return '';
+			const sep = `| ${rows[0].content.map(() => '---').join(' | ')} |`;
+			return [mdRows[0], sep, ...mdRows.slice(1)].join('\n');
+		}
+		case 'panel':
+		case 'expand':
+		case 'layoutSection':
+		case 'layoutColumn':
+			return (node.content || []).map((n: any) => adfBlockToMarkdown(n)).join('\n\n');
 		default:
 			return (node.content || []).map((n: any) => adfBlockToMarkdown(n)).join('\n');
 	}
