@@ -1,4 +1,4 @@
-import {App, Modal, Notice, Setting} from "obsidian";
+import {App, Modal, Notice, Setting, TextAreaComponent} from "obsidian";
 import {useTranslations} from "../localization/translator";
 
 const t = useTranslations("modals.comment").t;
@@ -20,31 +20,37 @@ export class IssueCommentModal extends Modal {
 	onOpen() {
 		new Setting(this.contentEl).setName(t("name")).setHeading();
 
-		new Setting(this.contentEl)
-			.setName(t("body.name"))
-			.addTextArea((text) => {
-				text
-					.setValue(this.commentText)
-					.onChange((value) => {
-						this.commentText = value;
-					});
-				text.inputEl.rows = 10;
-				text.inputEl.style.width = "100%";
+		const textarea = new TextAreaComponent(this.contentEl)
+			.setPlaceholder(t("body.placeholder"))
+			.setValue(this.commentText)
+			.onChange((value) => {
+				this.commentText = value;
 			});
+		textarea.inputEl.rows = 10;
+		textarea.inputEl.style.width = "100%";
+		textarea.inputEl.style.marginBottom = "0.75em";
+		textarea.inputEl.addEventListener("keydown", (e) => {
+			if (e.ctrlKey && e.key === "Enter") {
+				e.preventDefault();
+				this.submit();
+			}
+		});
 
 		new Setting(this.contentEl)
 			.addButton((btn) =>
 				btn
 					.setButtonText(t("submit"))
 					.setCta()
-					.onClick(() => {
-						if (!this.commentText.trim()) {
-							new Notice(t("warns.empty"));
-							return;
-						}
-						this.close();
-						this.onSubmit(this.commentText);
-					})
+					.onClick(() => this.submit())
 			);
+	}
+
+	private submit() {
+		if (!this.commentText.trim()) {
+			new Notice(t("warns.empty"));
+			return;
+		}
+		this.close();
+		this.onSubmit(this.commentText);
 	}
 }
