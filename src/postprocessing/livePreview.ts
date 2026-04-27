@@ -36,6 +36,9 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 
 			const allDecs: Array<{ from: number; to: number; dec: Decoration }> = [];
 
+			// Scan full document for block pairs so long blocks work when scrolled
+			const blockRanges = isHighlight ? this.findBlockRanges(view) : [];
+
 			for (const { from, to } of view.visibleRanges) {
 				const text = view.state.doc.sliceString(from, to);
 				const codeBlocks = this.findCodeBlocks(text, from);
@@ -78,16 +81,13 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 					}
 				}
 
-				// Block content: lines between `jira-sync-block-start-*` and `jira-sync-end`
-				for (let i = 0; i < markers.length; i++) {
-					const m = markers[i];
-					if (!m.name.startsWith('jira-sync-block-start-')) continue;
-					const endMarker = markers.find((em, j) => j > i && em.name === 'jira-sync-end');
-					if (!endMarker) continue;
-					const startLine = view.state.doc.lineAt(m.end);
-					const endLine = view.state.doc.lineAt(endMarker.start);
-					for (let lineNum = startLine.number + 1; lineNum < endLine.number; lineNum++) {
-						if (lineNum > view.state.doc.lines) break;
+				// Block content: decorate visible lines that fall within a full-document block range
+				const firstVisLine = view.state.doc.lineAt(from).number;
+				const lastVisLine = view.state.doc.lineAt(to).number;
+				for (const { startLine, endLine } of blockRanges) {
+					const decorStart = Math.max(startLine + 1, firstVisLine);
+					const decorEnd = Math.min(endLine - 1, lastVisLine);
+					for (let lineNum = decorStart; lineNum <= decorEnd; lineNum++) {
 						const line = view.state.doc.line(lineNum);
 						allDecs.push({ from: line.from, to: line.from, dec: Decoration.line({ class: "jira-sync-block-content" }) });
 					}
@@ -101,6 +101,30 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 			}
 
 			return builder.finish();
+		}
+
+		findBlockRanges(view: EditorView): Array<{ startLine: number; endLine: number }> {
+			const fullText = view.state.doc.toString();
+			const codeBlocks = this.findCodeBlocks(fullText, 0);
+			const ranges: Array<{ startLine: number; endLine: number }> = [];
+			const blockStarts: Array<{ pos: number }> = [];
+
+			for (const match of fullText.matchAll(/`(jira-sync-[^`]+)`/g)) {
+				const start = match.index!;
+				const end = start + match[0].length;
+				if (this.isInsideCodeBlock(start, end, codeBlocks)) continue;
+				const name = match[1];
+				if (name.startsWith('jira-sync-block-start-')) {
+					blockStarts.push({ pos: end });
+				} else if (name === 'jira-sync-end' && blockStarts.length > 0) {
+					const bs = blockStarts.pop()!;
+					const startLine = view.state.doc.lineAt(bs.pos).number;
+					const endLine = view.state.doc.lineAt(start).number;
+					ranges.push({ startLine, endLine });
+				}
+			}
+
+			return ranges;
 		}
 
 		findCodeBlocks(text: string, offset: number) {
