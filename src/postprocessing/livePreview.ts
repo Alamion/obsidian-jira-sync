@@ -45,7 +45,7 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 
 				// Collect all jira-sync marker positions
 				const markers: Array<{ start: number; end: number; name: string }> = [];
-				for (const match of text.matchAll(/`(jira-sync-(?:(?:inline-start|block-start|line|section)-[\w-]+|end))`/g)) {
+				for (const match of text.matchAll(/`(jira-sync-[^`]+)`/g)) {
 					const start = from + match.index!;
 					const end = start + match[0].length;
 					if (this.isInsideCodeBlock(start, end, codeBlocks)) continue;
@@ -109,7 +109,7 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 			const ranges: Array<{ startLine: number; endLine: number }> = [];
 			const blockStarts: Array<{ pos: number }> = [];
 
-			for (const match of fullText.matchAll(/`(jira-sync-(?:(?:inline-start|block-start|line|section)-[\w-]+|end))`/g)) {
+			for (const match of fullText.matchAll(/`(jira-sync-[^`]+)`/g)) {
 				const start = match.index!;
 				const end = start + match[0].length;
 				if (this.isInsideCodeBlock(start, end, codeBlocks)) continue;
