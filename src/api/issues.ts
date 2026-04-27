@@ -3,6 +3,7 @@ import {JiraIssue, JiraTransitionType} from "../interfaces";
 import {baseRequest, sanitizeObject} from "./base";
 import {Notice} from "obsidian";
 import {chunkArray, createLimiter} from "../tools/asyncLimiter";
+import {markdownToAdf} from "../tools/markdownToAdf";
 
 
 /**
@@ -253,6 +254,27 @@ export async function addWorkLog(
 		new Notice(`Work log added successfully to ${issueKey}`);
 	}
 
+	return response;
+}
+
+
+/**
+ * Add a comment to a Jira issue
+ */
+export async function addComment(
+	plugin: JiraPlugin,
+	issueKey: string,
+	markdownText: string
+): Promise<any> {
+	let body: any;
+	if (plugin.settings.connection.apiVersion === "3") {
+		body = markdownToAdf(markdownText);
+	} else {
+		body = markdownText;
+	}
+	const payload = JSON.stringify({ body });
+	const response = await baseRequest(plugin, 'post', `/issue/${issueKey}/comment`, payload);
+	new Notice(`Comment added to ${issueKey}`);
 	return response;
 }
 

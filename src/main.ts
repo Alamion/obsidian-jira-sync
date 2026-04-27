@@ -5,7 +5,7 @@ import {
 	registerUpdateIssueCommand, registerUpdateWorkLogManuallyCommand,
 	registerGetCurrentIssueCommand, registerUpdateWorkLogBatchCommand,
 	registerCreateIssueCommand, registerGetIssueCommandWithCustomKey, registerUpdateIssueStatusCommand,
-	registerBatchFetchIssuesCommand
+	registerBatchFetchIssuesCommand, registerAddCommentCommand
 } from "./commands";
 import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
 import {createJiraSyncExtension} from "./postprocessing/livePreview";
@@ -36,6 +36,7 @@ export default class JiraPlugin extends Plugin {
 
 		registerUpdateWorkLogManuallyCommand(this);
 		registerUpdateWorkLogBatchCommand(this);
+		registerAddCommentCommand(this);
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));
