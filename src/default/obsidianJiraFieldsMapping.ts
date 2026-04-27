@@ -87,8 +87,9 @@ export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 				const author = c.author?.displayName ?? 'Unknown';
 				const date = c.created ? c.created.replace('T', ' ').substring(0, 19) : '';
 				const body = adfToMarkdown(c.body) ?? '';
-				return `### ${author} — ${date}\n\n${body}`;
-			}).join('\n\n---\n\n');
+				const calloutBody = body.split('\n').map((l: string) => l === '' ? '>' : `> ${l}`).join('\n');
+				return `> [!note]+ ${author} — ${date}\n> \n${calloutBody}`;
+			}).join('\n\n');
 		},
 	},
 };
