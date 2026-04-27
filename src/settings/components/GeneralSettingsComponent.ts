@@ -40,6 +40,17 @@ export class GeneralSettingsComponent implements SettingsComponent {
 			new FolderSuggest(plugin.app, search.inputEl, onChange);
 		});
 
+		// Highlight sync sections toggle
+		new Setting(containerEl)
+			.setName("Highlight sync sections")
+			.setDesc("Show jira-sync markers as visible labels instead of hiding them. Reload open notes after toggling.")
+			.addToggle(toggle => toggle
+				.setValue(plugin.settings.global.highlightSyncSections)
+				.onChange(async (value) => {
+					plugin.settings.global.highlightSyncSections = value;
+					await plugin.saveSettings();
+				}));
+
 		// Template path setting with native search
 		const templateInfo = this.detectTemplatePlugins(plugin.app);
 
