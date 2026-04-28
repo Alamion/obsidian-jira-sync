@@ -66,7 +66,7 @@ interface AdfDoc {
 
 function parseInline(text: string): AdfInlineContent[] {
 	const nodes: AdfInlineContent[] = [];
-	const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/g;
+	const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\[\[[^\]]+\]\])/g;
 	let lastIndex = 0;
 	let match: RegExpExecArray | null;
 
@@ -75,11 +75,20 @@ function parseInline(text: string): AdfInlineContent[] {
 			nodes.push({ type: 'text', text: text.slice(lastIndex, match.index) });
 		}
 		if (match[2] !== undefined) {
+			// **bold**
 			nodes.push({ type: 'text', text: match[2], marks: [{ type: 'strong' }] });
 		} else if (match[3] !== undefined) {
+			// *italic*
 			nodes.push({ type: 'text', text: match[3], marks: [{ type: 'em' }] });
 		} else if (match[4] !== undefined) {
+			// `code`
 			nodes.push({ type: 'text', text: match[4], marks: [{ type: 'code' }] });
+		} else if (match[5] !== undefined) {
+			// [text](url) — convert to ADF link mark
+			nodes.push({ type: 'text', text: match[5], marks: [{ type: 'link', attrs: { href: match[6] } }] });
+		} else {
+			// [[wikilink]] — preserve as plain text so round-trip survives
+			nodes.push({ type: 'text', text: match[0] });
 		}
 		lastIndex = match.index + match[0].length;
 	}
@@ -138,15 +147,55 @@ export function markdownToAdf(markdown: string): AdfDoc | null {
 			continue;
 		}
 
+		// Task list (checkboxes) — must be checked before bullet list
+		if (line.match(/^[-*+]\s+\[[ xX]\]\s*/)) {
+			const items: any[] = [];
+			let taskCounter = 0;
+			while (i < lines.length && lines[i].match(/^[-*+]\s+\[[ xX]\]\s*/)) {
+				const checkMatch = lines[i].match(/^[-*+]\s+\[([ xX])\]\s*(.*)/);
+				if (checkMatch) {
+					const state = checkMatch[1].toLowerCase() === 'x' ? 'DONE' : 'TODO';
+					// taskItem only allows inline nodes — flatten sub-items as hardBreak + inline
+					const inlineContent: AdfInlineContent[] = parseInline(checkMatch[2]);
+					i++;
+					while (i < lines.length && lines[i].match(/^\s+[-*+]\s+/)) {
+						inlineContent.push({ type: 'hardBreak' });
+						inlineContent.push(...parseInline('- ' + lines[i].replace(/^\s+[-*+]\s+/, '')));
+						i++;
+					}
+					items.push({
+						type: 'taskItem',
+						attrs: { localId: `task-${Date.now()}-${taskCounter++}`, state },
+						content: inlineContent,
+					});
+				} else {
+					i++;
+				}
+			}
+			content.push({ type: 'taskList', attrs: { localId: `tasklist-${Date.now()}` }, content: items });
+			continue;
+		}
+
 		// Bullet list
 		if (line.match(/^[-*+]\s+/)) {
 			const items: AdfListItemNode[] = [];
 			while (i < lines.length && lines[i].match(/^[-*+]\s+/)) {
-				items.push({
-					type: 'listItem',
-					content: [{ type: 'paragraph', content: parseInline(lines[i].replace(/^[-*+]\s+/, '')) }],
-				});
+				const itemContent: any[] = [
+					{ type: 'paragraph', content: parseInline(lines[i].replace(/^[-*+]\s+/, '')) }
+				];
 				i++;
+				const subItems: AdfListItemNode[] = [];
+				while (i < lines.length && lines[i].match(/^\s+[-*+]\s+/)) {
+					subItems.push({
+						type: 'listItem',
+						content: [{ type: 'paragraph', content: parseInline(lines[i].replace(/^\s+[-*+]\s+/, '')) }],
+					});
+					i++;
+				}
+				if (subItems.length > 0) {
+					itemContent.push({ type: 'bulletList', content: subItems });
+				}
+				items.push({ type: 'listItem', content: itemContent as [AdfParagraphNode] });
 			}
 			content.push({ type: 'bulletList', content: items });
 			continue;
@@ -156,11 +205,22 @@ export function markdownToAdf(markdown: string): AdfDoc | null {
 		if (line.match(/^\d+\.\s+/)) {
 			const items: AdfListItemNode[] = [];
 			while (i < lines.length && lines[i].match(/^\d+\.\s+/)) {
-				items.push({
-					type: 'listItem',
-					content: [{ type: 'paragraph', content: parseInline(lines[i].replace(/^\d+\.\s+/, '')) }],
-				});
+				const itemContent: any[] = [
+					{ type: 'paragraph', content: parseInline(lines[i].replace(/^\d+\.\s+/, '')) }
+				];
 				i++;
+				const subItems: AdfListItemNode[] = [];
+				while (i < lines.length && lines[i].match(/^\s+[-*+]\s+/)) {
+					subItems.push({
+						type: 'listItem',
+						content: [{ type: 'paragraph', content: parseInline(lines[i].replace(/^\s+[-*+]\s+/, '')) }],
+					});
+					i++;
+				}
+				if (subItems.length > 0) {
+					itemContent.push({ type: 'bulletList', content: subItems });
+				}
+				items.push({ type: 'listItem', content: itemContent as [AdfParagraphNode] });
 			}
 			content.push({ type: 'orderedList', content: items });
 			continue;
@@ -178,6 +238,7 @@ export function markdownToAdf(markdown: string): AdfDoc | null {
 			i < lines.length &&
 			lines[i].trim() !== '' &&
 			!lines[i].match(/^#{1,6}\s/) &&
+			!lines[i].match(/^[-*+]\s+\[[ xX]\]\s*/) &&
 			!lines[i].match(/^[-*+]\s/) &&
 			!lines[i].match(/^\d+\.\s/) &&
 			!lines[i].startsWith('```') &&
@@ -204,7 +265,7 @@ function adfInlineToMarkdown(nodes: any[]): string {
 		if (node.type === 'hardBreak') return '\n';
 		if (node.type === 'mention') return node.attrs?.text || node.attrs?.displayName || '';
 		if (node.type === 'emoji') return node.attrs?.text || node.attrs?.shortName || '';
-		if (node.type === 'inlineCard') return node.attrs?.url || '';
+		if (node.type === 'inlineCard') { const url = node.attrs?.url || ''; return url ? `[${url}](${url})` : ''; }
 		if (node.type !== 'text') return '';
 		const text = node.text || '';
 		const marks: string[] = (node.marks || []).map((m: any) => m.type);
@@ -238,14 +299,43 @@ function adfBlockToMarkdown(node: any): string {
 			return `\`\`\`${lang}\n${code}\n\`\`\``;
 		}
 		case 'bulletList': {
-			return (node.content || []).map((item: any) =>
-				`- ${(item.content || []).map((block: any) => adfBlockToMarkdown(block)).join('\n')}`
-			).join('\n');
+			return (node.content || []).map((item: any) => {
+				const blocks: any[] = item.content || [];
+				const first = blocks[0];
+				const rest = blocks.slice(1);
+				const mainText = first ? adfBlockToMarkdown(first) : '';
+				const nested = rest.map((b: any) =>
+					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
+				).join('\n');
+				return `- ${mainText}${nested ? '\n' + nested : ''}`;
+			}).join('\n');
 		}
 		case 'orderedList': {
-			return (node.content || []).map((item: any, i: number) =>
-				`${i + 1}. ${(item.content || []).map((block: any) => adfBlockToMarkdown(block)).join('\n')}`
-			).join('\n');
+			return (node.content || []).map((item: any, idx: number) => {
+				const blocks: any[] = item.content || [];
+				const first = blocks[0];
+				const rest = blocks.slice(1);
+				const mainText = first ? adfBlockToMarkdown(first) : '';
+				const nested = rest.map((b: any) =>
+					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
+				).join('\n');
+				return `${idx + 1}. ${mainText}${nested ? '\n' + nested : ''}`;
+			}).join('\n');
+		}
+		case 'taskList': {
+			return (node.content || []).map((item: any) => {
+				const checked = item.attrs?.state === 'DONE';
+				const blocks: any[] = item.content || [];
+				const first = blocks[0];
+				const rest = blocks.slice(1);
+				const mainText = first?.type === 'paragraph'
+					? adfInlineToMarkdown(first.content || [])
+					: adfInlineToMarkdown(blocks);
+				const nested = rest.map((b: any) =>
+					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
+				).join('\n');
+				return `- [${checked ? 'x' : ' '}] ${mainText}${nested ? '\n' + nested : ''}`;
+			}).join('\n');
 		}
 		case 'rule':
 			return '---';
