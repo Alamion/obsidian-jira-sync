@@ -304,9 +304,11 @@ function adfBlockToMarkdown(node: any): string {
 				const first = blocks[0];
 				const rest = blocks.slice(1);
 				const mainText = first ? adfBlockToMarkdown(first) : '';
-				const nested = rest.map((b: any) =>
-					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
-				).join('\n');
+				const nested = rest
+					.map((b: any) => adfBlockToMarkdown(b))
+					.filter((s: string) => s.trim() !== '')
+					.map((s: string) => s.split('\n').map((l: string) => '  ' + l).join('\n'))
+					.join('\n');
 				return `- ${mainText}${nested ? '\n' + nested : ''}`;
 			}).join('\n');
 		}
@@ -316,9 +318,11 @@ function adfBlockToMarkdown(node: any): string {
 				const first = blocks[0];
 				const rest = blocks.slice(1);
 				const mainText = first ? adfBlockToMarkdown(first) : '';
-				const nested = rest.map((b: any) =>
-					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
-				).join('\n');
+				const nested = rest
+					.map((b: any) => adfBlockToMarkdown(b))
+					.filter((s: string) => s.trim() !== '')
+					.map((s: string) => s.split('\n').map((l: string) => '  ' + l).join('\n'))
+					.join('\n');
 				return `${idx + 1}. ${mainText}${nested ? '\n' + nested : ''}`;
 			}).join('\n');
 		}
@@ -328,13 +332,20 @@ function adfBlockToMarkdown(node: any): string {
 				const blocks: any[] = item.content || [];
 				const first = blocks[0];
 				const rest = blocks.slice(1);
-				const mainText = first?.type === 'paragraph'
+				const rawText = first?.type === 'paragraph'
 					? adfInlineToMarkdown(first.content || [])
 					: adfInlineToMarkdown(blocks);
-				const nested = rest.map((b: any) =>
-					adfBlockToMarkdown(b).split('\n').map((l: string) => '  ' + l).join('\n')
-				).join('\n');
-				return `- [${checked ? 'x' : ' '}] ${mainText}${nested ? '\n' + nested : ''}`;
+				// Indent continuation lines (e.g. hardBreak + sub-item text)
+				const textLines = rawText.split('\n');
+				const fullText = textLines[0] + (textLines.slice(1).length
+					? '\n' + textLines.slice(1).map((l: string) => '  ' + l).join('\n')
+					: '');
+				const nested = rest
+					.map((b: any) => adfBlockToMarkdown(b))
+					.filter((s: string) => s.trim() !== '')
+					.map((s: string) => s.split('\n').map((l: string) => '  ' + l).join('\n'))
+					.join('\n');
+				return `- [${checked ? 'x' : ' '}] ${fullText}${nested ? '\n' + nested : ''}`;
 			}).join('\n');
 		}
 		case 'rule':
