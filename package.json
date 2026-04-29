@@ -1,6 +1,7 @@
 {
 	"name": "obsidian-sample-plugin",
-	"version": "1.4.4",
+	"version": "1.5.0",
+	"packageManager": "yarn@1.22.22",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
@@ -11,7 +12,10 @@
 		"dev": "concurrently --kill-others-on-fail \"node esbuild.config.mjs\" \"yarn run compile_locale\"",
 		"build": "yarn run compile_locale_once && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"prepare": "husky"
+		"prepare": "husky",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write ."
 	},
 	"keywords": [],
 	"author": "",
@@ -21,18 +25,22 @@
 		"@codemirror/language": "^6.11.3",
 		"@codemirror/state": "^6.5.2",
 		"@codemirror/view": "^6.38.1",
+		"@eslint/js": "^10.0.1",
 		"@types/lodash": "^4.17.16",
 		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
+		"@typescript-eslint/eslint-plugin": "^8.59.1",
+		"@typescript-eslint/parser": "^8.59.1",
 		"builtin-modules": "3.3.0",
 		"concurrently": "^9.2.1",
 		"esbuild": "0.25.0",
+		"eslint": "^10.2.1",
+		"globals": "^17.5.0",
 		"husky": "^9.1.7",
 		"lodash": "^4.17.23",
 		"obsidian": "latest",
+		"prettier": "^3.8.3",
 		"tslib": "2.4.0",
-		"typescript": "4.7.4"
+		"typescript": "^6.0.3"
 	},
 	"dependencies": {
 		"acorn": "^8.14.1",

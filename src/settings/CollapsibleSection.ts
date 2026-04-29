@@ -1,8 +1,8 @@
-import {setIcon} from "obsidian";
-import JiraPlugin from "../main";
-import { SettingsComponent } from "../interfaces/settingsTypes";
-import { debugLog } from "../tools/debugLogging";
-import {CollapsedSections} from "./default";
+import { setIcon } from 'obsidian';
+import JiraPlugin from '../main';
+import { SettingsComponent } from '../interfaces/settingsTypes';
+import { debugLog } from '../tools/debugLogging';
+import { CollapsedSections } from './default';
 
 export class CollapsibleSection {
 	private containerEl: HTMLDivElement;
@@ -19,7 +19,7 @@ export class CollapsibleSection {
 		child: SettingsComponent,
 		headerText: string,
 		isOpenByDefault = false,
-		saveStateKey?: string
+		saveStateKey?: string,
 	) {
 		this.plugin = plugin;
 		this.child = child;
@@ -29,37 +29,37 @@ export class CollapsibleSection {
 
 		// Create the container div for the entire collapsible section
 		this.containerEl = parentEl.createDiv({
-			cls: "jira-collapsible-section",
+			cls: 'jira-collapsible-section',
 		});
 
 		// Create the header element
 		const headerEl = this.containerEl.createDiv({
-			cls: "jira-collapsible-header",
+			cls: 'jira-collapsible-header',
 			text: headerText,
 		});
-		headerEl.style.cursor = "pointer";
-		headerEl.addEventListener("click", async () => {
+		headerEl.style.cursor = 'pointer';
+		headerEl.addEventListener('click', async () => {
 			await this.toggle();
 		});
 
 		const chevron = headerEl.createEl('span', {
 			cls: 'jira-collapse-icon',
 		});
-		setIcon(chevron, "chevron-down");
+		setIcon(chevron, 'chevron-down');
 
 		// Content wrapper
 		this.contentEl = this.containerEl.createDiv({
-			cls: "jira-collapsible-content",
+			cls: 'jira-collapsible-content',
 		});
 
 		this.child.render(this.contentEl);
 
 		if (!this.isOpen) {
 			this.contentEl.hide();
-			this.containerEl.addClass("collapsed");
+			this.containerEl.addClass('collapsed');
 		}
 
-		debugLog("Rendered", this.saveStateKey || this.headerText, "as", this.isOpen);
+		debugLog('Rendered', this.saveStateKey || this.headerText, 'as', this.isOpen);
 	}
 
 	public getContentContainer(): HTMLElement {
@@ -68,17 +68,17 @@ export class CollapsibleSection {
 
 	private async toggle() {
 		this.isOpen = !this.isOpen;
-		debugLog("Toggled", this.saveStateKey || this.headerText, "to", this.isOpen);
+		debugLog('Toggled', this.saveStateKey || this.headerText, 'to', this.isOpen);
 
 		// Rebuild or update the toggle button if needed
 		// Or store a reference to the button and just update its properties
 
 		if (this.isOpen) {
 			this.contentEl.show();
-			this.containerEl.removeClass("collapsed");
+			this.containerEl.removeClass('collapsed');
 		} else {
 			this.contentEl.hide();
-			this.containerEl.addClass("collapsed");
+			this.containerEl.addClass('collapsed');
 		}
 
 		if (this.saveStateKey && this.plugin) {

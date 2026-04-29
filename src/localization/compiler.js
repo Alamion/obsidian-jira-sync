@@ -53,9 +53,8 @@ async function compileLocale(locale) {
 						const data = yaml.parse(content);
 						const fileNameWithoutExt = path.basename(item, '.yaml');
 
-						const targetKeys = fileNameWithoutExt === 'index'
-							? parentKeys
-							: [...parentKeys, fileNameWithoutExt];
+						const targetKeys =
+							fileNameWithoutExt === 'index' ? parentKeys : [...parentKeys, fileNameWithoutExt];
 
 						let target = result;
 						for (const key of targetKeys.slice(0, -1)) {
@@ -90,7 +89,6 @@ function deepMerge(target, source) {
 	return Object.assign(target || {}, source);
 }
 
-
 // Watch mode
 if (process.argv.includes('--watch')) {
 	console.log('👀 Watching for changes...');
@@ -105,18 +103,20 @@ if (process.argv.includes('--watch')) {
 	}, debounceDelay);
 
 	// Watch for changes in the compiled directory
-	chokidar.watch(SOURCE_DIR, {
-		ignoreInitial: true,
-		ignored: /.*~$/, // Игнорировать скрытые файлы
-	}).on('all', (event, path) => {
-		if (event === 'change' || event === 'add' || event === 'unlink') {
-			clearTimeout(debounceTimer);
-			debounceTimer = setTimeout(() => {
-				console.log(`🔁 Detected changes in ${path} (${event}), recompiling...`);
-				main();
-			}, debounceDelay);
-		}
-	});
+	chokidar
+		.watch(SOURCE_DIR, {
+			ignoreInitial: true,
+			ignored: /.*~$/, // Игнорировать скрытые файлы
+		})
+		.on('all', (event, path) => {
+			if (event === 'change' || event === 'add' || event === 'unlink') {
+				clearTimeout(debounceTimer);
+				debounceTimer = setTimeout(() => {
+					console.log(`🔁 Detected changes in ${path} (${event}), recompiling...`);
+					main();
+				}, debounceDelay);
+			}
+		});
 } else {
 	// Run once
 	main();

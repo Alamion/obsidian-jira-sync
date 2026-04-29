@@ -1,16 +1,16 @@
-import { JiraFieldMapping, JiraFieldMappingString } from "../../interfaces/settingsTypes";
+import { JiraFieldMapping, JiraFieldMappingString } from '../../interfaces/settingsTypes';
 import {
 	jiraFunctionToString,
 	transform_string_to_functions_mappings,
 	// validateFunctionString
-} from "../../tools/convertFunctionString";
-import { debugLog } from "../../tools/debugLogging";
+} from '../../tools/convertFunctionString';
+import { debugLog } from '../../tools/debugLogging';
 
 /**
  * Convert function mappings to their string representation
  */
 export function convertFunctionMappingsToStrings(
-	mappings: Record<string, JiraFieldMapping>
+	mappings: Record<string, JiraFieldMapping>,
 ): Record<string, JiraFieldMappingString> {
 	const result: Record<string, JiraFieldMappingString> = {};
 
@@ -18,7 +18,7 @@ export function convertFunctionMappingsToStrings(
 		if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
 			result[fieldName] = {
 				toJira: jiraFunctionToString(mapping.toJira, false),
-				fromJira: jiraFunctionToString(mapping.fromJira, true)
+				fromJira: jiraFunctionToString(mapping.fromJira, true),
 			};
 		}
 	}
@@ -34,12 +34,12 @@ export async function collectFieldMappingsFromUI(
 	// enableValidation: boolean
 ): Promise<Record<string, JiraFieldMappingString>> {
 	const mappings: Record<string, JiraFieldMappingString> = {};
-	const fieldItems = element.querySelectorAll(".field-mapping-item");
+	const fieldItems = element.querySelectorAll('.field-mapping-item');
 
-	fieldItems.forEach(item => {
-		const fieldNameInput = item.querySelector(".field-name-input");
-		const toJiraInput = item.querySelector(".to-jira-input");
-		const fromJiraInput = item.querySelector(".from-jira-input");
+	fieldItems.forEach((item) => {
+		const fieldNameInput = item.querySelector('.field-name-input');
+		const toJiraInput = item.querySelector('.to-jira-input');
+		const fromJiraInput = item.querySelector('.from-jira-input');
 
 		if (!fieldNameInput || !toJiraInput || !fromJiraInput) {
 			return;
@@ -53,7 +53,7 @@ export async function collectFieldMappingsFromUI(
 		if (fieldName) {
 			mappings[fieldName] = {
 				toJira: toJira,
-				fromJira: fromJira
+				fromJira: fromJira,
 			};
 		}
 	});
@@ -67,19 +67,16 @@ export async function collectFieldMappingsFromUI(
  */
 export async function processMappings(
 	stringMappings: Record<string, JiraFieldMappingString>,
-	enableValidation: boolean
+	enableValidation: boolean,
 ): Promise<{
-	stringMappings: Record<string, JiraFieldMappingString>,
-	functionMappings: Record<string, JiraFieldMapping>
+	stringMappings: Record<string, JiraFieldMappingString>;
+	functionMappings: Record<string, JiraFieldMapping>;
 }> {
 	// Convert string mappings to function mappings
-	const functionMappings = await transform_string_to_functions_mappings(
-		stringMappings,
-		enableValidation
-	);
+	const functionMappings = await transform_string_to_functions_mappings(stringMappings, enableValidation);
 
 	return {
 		stringMappings,
-		functionMappings
+		functionMappings,
 	};
 }

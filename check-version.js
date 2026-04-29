@@ -2,15 +2,14 @@
 
 const { execSync } = require('child_process');
 
-const stagedFiles = execSync('git diff --cached --name-only', { encoding: 'utf-8' })
+const stagedFiles = execSync('git diff --cached --name-only', {
+	encoding: 'utf-8',
+})
 	.trim()
 	.split('\n')
 	.filter(Boolean);
 
-const hasCodeChanges = stagedFiles.some(file =>
-	file.endsWith('.ts') ||
-	file.endsWith('.tsx')
-);
+const hasCodeChanges = stagedFiles.some((file) => file.endsWith('.ts') || file.endsWith('.tsx'));
 
 const manifestChanged = stagedFiles.includes('manifest.json');
 
@@ -26,7 +25,9 @@ if (hasCodeChanges && !manifestChanged) {
 
 if (manifestChanged && hasCodeChanges) {
 	try {
-		const manifestDiff = execSync('git diff --cached manifest.json', { encoding: 'utf-8' });
+		const manifestDiff = execSync('git diff --cached manifest.json', {
+			encoding: 'utf-8',
+		});
 
 		if (!manifestDiff.includes('"version"')) {
 			console.error('\x1b[33m⚠️  manifest.json has been modified, but the version has not been updated!\x1b[0m');
@@ -36,8 +37,7 @@ if (manifestChanged && hasCodeChanges) {
 			console.error('');
 			process.exit(1);
 		}
-	} catch (error) {
-	}
+	} catch (error) {}
 }
 
 console.log('\x1b[32m✓ Version check passed\x1b[0m');

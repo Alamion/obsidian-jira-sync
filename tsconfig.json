@@ -1,26 +1,18 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "module": "node16",
-    "target": "ES2018",
-    "allowJs": true,
-    "resolveJsonModule": true,
-	"esModuleInterop": true,
-    "noImplicitAny": true,
-    "moduleResolution": "node16",
-    "importHelpers": true,
-    "isolatedModules": false,
-    "strictNullChecks": true,
-    "lib": [
-      "DOM",
-      "ES5",
-      "ES6",
-      "ES7"
-    ]
-  },
-  "include": [
-    "**/*.ts"
-  ]
+	"compilerOptions": {
+		"inlineSourceMap": true,
+		"inlineSources": true,
+		"module": "node16",
+		"target": "ES2018",
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"noImplicitAny": true,
+		"importHelpers": true,
+		"isolatedModules": false,
+		"strictNullChecks": true,
+		"lib": ["DOM", "ES2017", "ES2018", "ES2019", "ES2020"],
+		"types": ["node"]
+	},
+	"include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
 }

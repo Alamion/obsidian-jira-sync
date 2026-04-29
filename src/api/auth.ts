@@ -1,8 +1,8 @@
-import { Notice, requestUrl } from "obsidian";
-import JiraPlugin from "../main";
+import { Notice, requestUrl } from 'obsidian';
+import JiraPlugin from '../main';
 
 export function getSessionCookieKey(plugin: JiraPlugin): string {
-	return "jira-issue-managing-session-cookie-" + (plugin.app as any).appId;
+	return 'jira-issue-managing-session-cookie-' + (plugin.app as any).appId;
 }
 
 // Session cookie only
@@ -12,38 +12,39 @@ export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 			return false;
 		}
 
+		const conn = plugin.getCurrentConnection();
+		if (!conn) return false;
+
 		const response = await requestUrl({
-			url: `${plugin.settings.connection.jiraUrl}/rest/auth/1/session`,
-			method: "post",
+			url: `${conn.jiraUrl}/rest/auth/1/session`,
+			method: 'post',
 			body: JSON.stringify({
-				username: plugin.settings.connection.username,
-				password: plugin.settings.connection.password,
+				username: conn.username,
+				password: conn.password,
 			}),
-			contentType: "application/json",
+			contentType: 'application/json',
 			headers: {
-				"Content-type": "application/json",
-				Origin: plugin.settings.connection.jiraUrl,
+				'Content-type': 'application/json',
+				Origin: conn.jiraUrl,
 			},
 		});
 
-		localStorage.setItem(
-			getSessionCookieKey(plugin),
-			response.json.session.value
-		);
+		localStorage.setItem(getSessionCookieKey(plugin), response.json.session.value);
 		return true;
-	} catch (error) {
-		new Notice("Authentication failed: " + (error.message || "Unknown error"));
+	} catch (error: unknown) {
+		new Notice('Authentication failed: ' + ((error as Error).message || 'Unknown error'));
 		return false;
 	}
 }
 
 export function validateSettings(plugin: JiraPlugin): boolean {
-	if (!plugin.settings.connection.jiraUrl) {
-		new Notice("Please configure Jira URL in plugin settings");
+	const conn = plugin.getCurrentConnection();
+	if (!conn || !conn.jiraUrl) {
+		new Notice('Please configure Jira URL in plugin settings');
 		return false;
 	}
-	if ((!plugin.settings.connection.username || !plugin.settings.connection.password) && !plugin.settings.connection.apiToken) {
-		new Notice("Please configure Jira username and password or PAT API token in plugin settings");
+	if ((!conn.username || !conn.password) && !conn.apiToken) {
+		new Notice('Please configure Jira username and password or PAT API token in plugin settings');
 		return false;
 	}
 	return true;
@@ -58,17 +59,20 @@ function createBasicAuthHeader(email: string, token: string): string {
 }
 
 export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string, string>> {
+	const conn = plugin.getCurrentConnection();
+	if (!conn) throw new Error('No connection configured');
+
 	// Common headers
 	const commonHeaders = {
-		"Content-type": "application/json",
-		Origin: plugin.settings.connection.jiraUrl,
+		'Content-type': 'application/json',
+		Origin: conn.jiraUrl,
 	};
 
 	// Personal Access Token
-	const pat = plugin.settings.connection.apiToken?.trim() || "";
+	const pat = conn.apiToken?.trim() || '';
 
 	// Option 1: Bearer token (PAT)
-	if (plugin.settings.connection.authMethod === "bearer" || !plugin.settings.connection.authMethod) {
+	if (conn.authMethod === 'bearer' || !conn.authMethod) {
 		return {
 			...commonHeaders,
 			Authorization: `Bearer ${pat}`,
@@ -76,14 +80,12 @@ export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string,
 	}
 
 	// Option 2: Basic Auth with API token
-	else if (plugin.settings.connection.authMethod === "basic") {
+	else if (conn.authMethod === 'basic') {
 		return {
 			...commonHeaders,
-			Authorization: createBasicAuthHeader(plugin.settings.connection.email || "", pat),
+			Authorization: createBasicAuthHeader(conn.email || '', pat),
 		};
-	}
-
-	else if (plugin.settings.connection.authMethod === "session") {
+	} else if (conn.authMethod === 'session') {
 		// Option 3: Session cookie
 		let cookie = localStorage.getItem(getSessionCookieKey(plugin));
 		if (!cookie) {
@@ -100,5 +102,5 @@ export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string,
 	}
 
 	// No valid auth method found
-	throw new Error("No valid authentication method available");
+	throw new Error('No valid authentication method available');
 }

@@ -1,4 +1,4 @@
-import {JiraIssue} from "../interfaces";
+import { JiraIssue } from '../interfaces';
 
 export interface FieldMapping {
 	toJira: (value: any) => any;
@@ -6,74 +6,72 @@ export interface FieldMapping {
 }
 
 export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
-	"summary": {
+	summary: {
 		toJira: (value) => value,
 		fromJira: (issue) => issue.fields.summary,
 	},
-	"description": {
+	description: {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.description,
 	},
-	"key": {
+	key: {
 		toJira: () => null,
 		fromJira: (issue) => issue.key,
 	},
-	"self": {
+	self: {
 		toJira: () => null,
 		fromJira: (issue) => issue.self,
 	},
-	"project": {
+	project: {
 		toJira: (value) => ({ key: value }),
-		fromJira: (issue) =>
-			issue.fields.project ?issue.fields.project.key :"",
+		fromJira: (issue) => (issue.fields.project ? issue.fields.project.key : ''),
 	},
-	"issuetype": {
+	issuetype: {
 		toJira: (value) => ({ name: value }),
-		fromJira: (issue) =>
-			issue.fields.issuetype ?issue.fields.issuetype.name :"",
+		fromJira: (issue) => (issue.fields.issuetype ? issue.fields.issuetype.name : ''),
 	},
-	"priority": {
+	priority: {
 		toJira: (value) => ({ name: value }),
-		fromJira: (issue) =>issue.fields.priority ?issue.fields.priority.name :"",
+		fromJira: (issue) => (issue.fields.priority ? issue.fields.priority.name : ''),
 	},
-	"status": {
+	status: {
 		toJira: () => null,
-		fromJira: (issue) =>issue.fields.status ?issue.fields.status.name :"",
+		fromJira: (issue) => (issue.fields.status ? issue.fields.status.name : ''),
 	},
-	"assignee": {
+	assignee: {
 		toJira: (value) => ({ name: value }),
-		fromJira: (issue) =>issue.fields.assignee ?issue.fields.assignee.name :"",
+		fromJira: (issue) => (issue.fields.assignee ? issue.fields.assignee.name : ''),
 	},
-	"reporter": {
+	reporter: {
 		toJira: (value) => ({ name: value }),
-		fromJira: (issue) =>issue.fields.reporter ?issue.fields.reporter.name :"",
+		fromJira: (issue) => (issue.fields.reporter ? issue.fields.reporter.name : ''),
 	},
-	"creator": {
+	creator: {
 		toJira: () => null,
-		fromJira: (issue) =>issue.fields.creator ?issue.fields.creator.name :"",
+		fromJira: (issue) => (issue.fields.creator ? issue.fields.creator.name : ''),
 	},
-	"lastViewed": {
+	lastViewed: {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.lastViewed,
 	},
-	"updated": {
+	updated: {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.updated,
 	},
-	"created": {
+	created: {
 		toJira: () => null,
 		fromJira: (issue) => issue.fields.created,
 	},
-	"link": {
+	link: {
 		toJira: () => null,
 		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `$1/browse/${issue.key}`),
 	},
-	"openLink": {
+	openLink: {
 		toJira: () => null,
-		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `[Open in Jira]($1/browse/${issue.key})`),
+		fromJira: (issue) => issue.self.replace(/(\w+:\/\/\S+?)\/.*/, `[${issue.key}]($1/browse/${issue.key})`),
 	},
-	"progress": {
+	progress: {
 		toJira: () => null,
-		fromJira: (issue) => issue.fields.aggregateprogress.percent+'%',
+		fromJira: (issue) => issue.fields.aggregateprogress.percent + '%',
 	},
 };

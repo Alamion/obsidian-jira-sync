@@ -12,6 +12,7 @@ link: http://jira.local:8000/browse/JIR-1234
 This is a comprehensive test file for the jira-sync parser.
 
 ## Summary `jira-sync-section-summary`
+
 Complete API standardization and consolidation across all microservices to improve developer experience and reduce integration complexity.
 
 This section continues here with more details.
@@ -20,7 +21,9 @@ Multiple paragraphs are supported.
 ## Details Section
 
 ### Customer Impact `jira-sync-section-customfield_10842`
+
 The current API structure is too fragmented and requires standardization. Customers are experiencing difficulties integrating with our services due to:
+
 - Inconsistent authentication methods
 - Different response formats
 - Lack of versioning strategy
@@ -28,6 +31,7 @@ The current API structure is too fragmented and requires standardization. Custom
 This impacts approximately 2,300 enterprise customers.
 
 ### Next Heading Should Stop Section
+
 This content should NOT be part of customfield_10842.
 
 ## Assignment Info
@@ -45,6 +49,7 @@ Actual time logged so far: `jira-sync-line-timeSpent`2d 4h
 Remaining estimate: `jira-sync-line-remainingEstimate`5d
 
 ## Acceptance Criteria `jira-sync-section-customfield_10100`
+
 1. All endpoints follow RESTful conventions
 2. API versioning implemented via headers
 3. Consistent error handling across services
@@ -54,6 +59,7 @@ Remaining estimate: `jira-sync-line-remainingEstimate`5d
 All criteria must be met before moving to Done.
 
 ### Technical Requirements
+
 This is a separate section that shouldn't be included above.
 
 ## Code Block Examples
@@ -80,20 +86,21 @@ ssl: true
 ## Edge Cases Testing
 
 ### Empty Inline
+
 Status indicator: `jira-sync-inline-start-status_indicator``jira-sync-end`
 
 ### Whitespace Heavy Section `jira-sync-section-whitespace_test`
 
-
     This section has leading and trailing whitespace    
-
 
 Should be trimmed properly before sending to Jira.
 
 ### Single Line Section `jira-sync-section-oneliner`
+
 Just one line here.
 
 ## Multi-line Inline Test
-Complex description: `jira-sync-inline-start-description`   This is a description
+
+Complex description: `jira-sync-inline-start-description` This is a description
 that spans multiple lines
-with various formatting   `jira-sync-inline-end` and continues here.
+with various formatting `jira-sync-inline-end` and continues here.

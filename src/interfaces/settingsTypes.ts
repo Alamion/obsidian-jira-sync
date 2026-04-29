@@ -1,5 +1,5 @@
-import { App } from "obsidian";
-import JiraPlugin from "../main";
+import { App } from 'obsidian';
+import JiraPlugin from '../main';
 
 /**
  * Function type for field mappings
@@ -46,4 +46,3 @@ export interface ValidationResult {
 	isValid: boolean;
 	errorMessage?: string;
 }
-

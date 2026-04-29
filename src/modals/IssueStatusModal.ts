@@ -1,8 +1,8 @@
-import {App, SuggestModal} from "obsidian";
-import {JiraTransitionType} from "../interfaces";
-import {useTranslations} from "../localization/translator";
+import { App, SuggestModal } from 'obsidian';
+import { JiraTransitionType } from '../interfaces';
+import { useTranslations } from '../localization/translator';
 
-const t = useTranslations("modals.status").t;
+const t = useTranslations('modals.status').t;
 
 /**
  * Modal for selecting an issue status
@@ -15,18 +15,19 @@ export class IssueStatusModal extends SuggestModal<JiraTransitionType> {
 		super(app);
 		this.onSubmit = onSubmit;
 		this.issueTransitions = issueTransitions;
-		this.setPlaceholder(t("placeholder"));
+		this.setPlaceholder(t('placeholder'));
 	}
 
 	getSuggestions(query: string): JiraTransitionType[] {
-		return this.issueTransitions.filter((transition) =>
-			transition.status && transition.status.toLowerCase().includes(query.toLowerCase()) ||
-			transition.action && transition.action.toLowerCase().includes(query.toLowerCase())
+		return this.issueTransitions.filter(
+			(transition) =>
+				(transition.status && transition.status.toLowerCase().includes(query.toLowerCase())) ||
+				(transition.action && transition.action.toLowerCase().includes(query.toLowerCase())),
 		);
 	}
 
 	renderSuggestion(type: JiraTransitionType, el: HTMLElement) {
-		let result = "";
+		let result = '';
 		if (type.action && type.status) {
 			if (type.action === type.status) {
 				result = type.action;
@@ -38,7 +39,7 @@ export class IssueStatusModal extends SuggestModal<JiraTransitionType> {
 		} else if (type.status) {
 			result = type.status;
 		}
-		el.createEl("div", {text: result});
+		el.createEl('div', { text: result });
 	}
 
 	onChooseSuggestion(type: JiraTransitionType) {

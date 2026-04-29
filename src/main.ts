@@ -1,20 +1,24 @@
-import {Plugin } from "obsidian";
-import { JiraSettingTab } from "./settings/JiraSettingTab";
-import {DEFAULT_SETTINGS, JiraSettingsInterface} from "./settings/default";
+import { Plugin } from 'obsidian';
+import { JiraSettingTab } from './settings/JiraSettingTab';
+import { ConnectionSettingsInterface, DEFAULT_SETTINGS, JiraSettingsInterface } from './settings/default';
 import {
-	registerUpdateIssueCommand, registerUpdateWorkLogManuallyCommand,
-	registerGetCurrentIssueCommand, registerUpdateWorkLogBatchCommand,
-	registerCreateIssueCommand, registerGetIssueCommandWithCustomKey, registerUpdateIssueStatusCommand,
-	registerBatchFetchIssuesCommand
-} from "./commands";
-import {transform_string_to_functions_mappings} from "./tools/convertFunctionString";
-import {createJiraSyncExtension} from "./postprocessing/livePreview";
-import {hideJiraPointersReading} from "./postprocessing/reading";
-import { buildCacheFromFilesystem, validateCache } from "./tools/cacheUtils";
-import {checkMigrateSettings} from "./tools/migrateSettings";
+	registerUpdateIssueCommand,
+	registerUpdateWorkLogManuallyCommand,
+	registerGetCurrentIssueCommand,
+	registerUpdateWorkLogBatchCommand,
+	registerCreateIssueCommand,
+	registerGetIssueCommandWithCustomKey,
+	registerUpdateIssueStatusCommand,
+	registerBatchFetchIssuesCommand,
+} from './commands';
+import { transform_string_to_functions_mappings } from './tools/convertFunctionString';
+import { createJiraSyncExtension } from './postprocessing/livePreview';
+import { hideJiraPointersReading } from './postprocessing/reading';
+import { buildCacheFromFilesystem, validateCache } from './tools/cacheUtils';
+import { checkMigrateSettings } from './tools/migrateSettings';
 
 export default class JiraPlugin extends Plugin {
-	settings: JiraSettingsInterface;
+	settings!: JiraSettingsInterface;
 
 	// In-memory cache for instant access during synchronization
 	private issueKeyToFilePathCache: Map<string, string> = new Map();
@@ -48,7 +52,6 @@ export default class JiraPlugin extends Plugin {
 
 		// Register vault event listeners for cache maintenance
 		this.registerVaultEventListeners();
-
 	}
 
 	async loadSettings() {
@@ -57,7 +60,9 @@ export default class JiraPlugin extends Plugin {
 		const new_data = checkMigrateSettings(old_data, this.saveSettings);
 
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, new_data);
-		this.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(this.settings.fieldMapping.fieldMappingsStrings);
+		this.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
+			this.settings.fieldMapping.fieldMappingsStrings,
+		);
 	}
 
 	async saveSettings() {
@@ -72,11 +77,18 @@ export default class JiraPlugin extends Plugin {
 	}
 
 	getAllIssueKeysMap(): Map<string, string> {
-		return this.issueKeyToFilePathCache
+		return this.issueKeyToFilePathCache;
 	}
 
 	getFilePathForIssueKey(issueKey: string): string | undefined {
 		return this.issueKeyToFilePathCache.get(issueKey);
+	}
+
+	getCurrentConnection(): ConnectionSettingsInterface | null {
+		if (!this.settings.connections || this.settings.connections.length === 0) {
+			return null;
+		}
+		return this.settings.connections[this.settings.currentConnectionIndex];
 	}
 
 	setFilePathForIssueKey(issueKey: string, filePath: string) {
@@ -103,7 +115,6 @@ export default class JiraPlugin extends Plugin {
 	}
 
 	private registerVaultEventListeners() {
-
 		// Handle file renames
 		this.registerEvent(
 			this.app.vault.on('rename', (file, oldPath) => {
@@ -113,7 +124,7 @@ export default class JiraPlugin extends Plugin {
 						break;
 					}
 				}
-			})
+			}),
 		);
 
 		// Handle file deletions
@@ -125,7 +136,7 @@ export default class JiraPlugin extends Plugin {
 						break;
 					}
 				}
-			})
+			}),
 		);
 	}
 }

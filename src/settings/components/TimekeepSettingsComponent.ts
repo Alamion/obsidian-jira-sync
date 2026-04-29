@@ -1,8 +1,15 @@
-import {Setting, Notice, setIcon, DropdownComponent, ButtonComponent} from 'obsidian';
+import { Setting, Notice, setIcon, DropdownComponent, ButtonComponent } from 'obsidian';
 import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
-import { processWorkLogBatch } from "../../commands";
-import {useTranslations} from "../../localization/translator";
-import {debugLog} from "../../tools/debugLogging";
+import { processWorkLogBatch } from '../../commands';
+import { useTranslations } from '../../localization/translator';
+import { debugLog } from '../../tools/debugLogging';
+import {
+	parseTimeBlocks,
+	processTimeEntries,
+	ProcessedEntry,
+	GroupedEntries,
+	TimeTrackerEntry,
+} from '../../tools/timeTracker';
 
 type TimeRangeType = 'days' | 'weeks' | 'months' | 'custom';
 type SendComment = 'no' | 'last_block' | 'block_path';
@@ -12,40 +19,7 @@ interface Option {
 	label: string;
 }
 
-interface Entry {
-	name: string;
-	startTime?: string;
-	endTime?: string;
-	subEntries?: Entry[];
-}
-
-interface TimekeepData {
-	entries: Entry[];
-}
-
-interface TimekeepBlock {
-	file: string;
-	path: string;
-	issueKey?: string;
-	data: TimekeepData;
-}
-
-interface ProcessedEntry {
-	file: string;
-	issueKey?: string;
-	blockPath: string;
-	lastBlockName: string;
-	startTime: string;
-	endTime: string;
-	duration: string;
-	timestamp: number; // For easier sorting and filtering
-}
-
-interface GroupedEntries {
-	[periodKey: string]: ProcessedEntry[];
-}
-
-const t = useTranslations("settings.statistics").t;
+const t = useTranslations('settings.statistics').t;
 
 export class TimekeepSettingsComponent implements SettingsComponent {
 	private props: SettingsComponentProps;
@@ -81,30 +55,30 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		const settingsContainer = containerEl.createDiv('timekeep-settings');
 
 		new Setting(settingsContainer)
-			.setName(t("settings.send_comments.name"))
-			.setDesc(t("settings.send_comments.description"))
-			.addDropdown(dropdown => {
-				dropdown.addOption('no', t("settings.send_comments.options.no"));
-				dropdown.addOption('last_block', t("settings.send_comments.options.last_block"));
-				dropdown.addOption('block_path', t("settings.send_comments.options.block_path"));
+			.setName(t('settings.send_comments.name'))
+			.setDesc(t('settings.send_comments.description'))
+			.addDropdown((dropdown) => {
+				dropdown.addOption('no', t('settings.send_comments.options.no'));
+				dropdown.addOption('last_block', t('settings.send_comments.options.last_block'));
+				dropdown.addOption('block_path', t('settings.send_comments.options.block_path'));
 				dropdown.setValue(this.props.plugin.settings.timekeep.sendComments);
-				dropdown.onChange(async (value: SendComment) => {
-					this.props.plugin.settings.timekeep.sendComments = value;
+				dropdown.onChange(async (value: string) => {
+					this.props.plugin.settings.timekeep.sendComments = value as SendComment;
 				});
 			});
 
 		// Time range selector
 		new Setting(settingsContainer)
-			.setName(t("settings.time_range.name"))
-			.setDesc(t("settings.time_range.description"))
-			.addDropdown(dropdown => {
-				dropdown.addOption('days', t("settings.time_range.options.days"));
-				dropdown.addOption('weeks', t("settings.time_range.options.weeks"));
-				dropdown.addOption('months', t("settings.time_range.options.months"));
-				dropdown.addOption('custom', t("settings.time_range.options.custom"));
+			.setName(t('settings.time_range.name'))
+			.setDesc(t('settings.time_range.description'))
+			.addDropdown((dropdown) => {
+				dropdown.addOption('days', t('settings.time_range.options.days'));
+				dropdown.addOption('weeks', t('settings.time_range.options.weeks'));
+				dropdown.addOption('months', t('settings.time_range.options.months'));
+				dropdown.addOption('custom', t('settings.time_range.options.custom'));
 				dropdown.setValue(this.props.plugin.settings.timekeep.statisticsTimeType);
-				dropdown.onChange(async (value: TimeRangeType) => {
-					this.props.plugin.settings.timekeep.statisticsTimeType = value;
+				dropdown.onChange(async (value: string) => {
+					this.props.plugin.settings.timekeep.statisticsTimeType = value as TimeRangeType;
 					this.toggleCustomDateInputs();
 					await this.refreshData();
 				});
@@ -112,10 +86,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		// Max items slider (hidden for custom range)
 		this.maxItemsSetting = new Setting(settingsContainer)
-			.setName(t("settings.max_items.name"))
-			.setDesc(t("settings.max_items.description"))
-			.addSlider(slider => {
-				slider.setLimits(1, 20, 1)
+			.setName(t('settings.max_items.name'))
+			.setDesc(t('settings.max_items.description'))
+			.addSlider((slider) => {
+				slider
+					.setLimits(1, 20, 1)
 					.setValue(this.props.plugin.settings.timekeep.maxItemsToShow)
 					.setDynamicTooltip()
 					.onChange(async (value) => {
@@ -128,56 +103,59 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		this.customDatesContainer = settingsContainer.createDiv('custom-dates-container');
 
 		new Setting(this.customDatesContainer)
-			.setName(t("settings.date_from.name"))
-			.setDesc(t("settings.date_from.description"))
-			.addText(text => {
-				text.setPlaceholder(t("settings.date_from.placeholder"));
+			.setName(t('settings.date_from.name'))
+			.setDesc(t('settings.date_from.description'))
+			.addText((text) => {
+				text.setPlaceholder(t('settings.date_from.placeholder'));
 				text.setValue(this.props.plugin.settings.timekeep.customDateRange.start);
 				text.onChange(async (value) => {
 					this.props.plugin.settings.timekeep.customDateRange.start = value;
-					if (this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' && this.props.plugin.settings.timekeep.customDateRange.end) {
+					if (
+						this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' &&
+						this.props.plugin.settings.timekeep.customDateRange.end
+					) {
 						await this.refreshData();
 					}
 				});
 			});
 
 		new Setting(this.customDatesContainer)
-			.setName(t("settings.date_to.name"))
-			.setDesc(t("settings.date_to.description"))
-			.addText(text => {
-				text.setPlaceholder(t("settings.date_to.placeholder"));
+			.setName(t('settings.date_to.name'))
+			.setDesc(t('settings.date_to.description'))
+			.addText((text) => {
+				text.setPlaceholder(t('settings.date_to.placeholder'));
 				text.setValue(this.props.plugin.settings.timekeep.customDateRange.end);
 				text.onChange(async (value) => {
 					this.props.plugin.settings.timekeep.customDateRange.end = value;
-					if (this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' && this.props.plugin.settings.timekeep.customDateRange.start) {
+					if (
+						this.props.plugin.settings.timekeep.statisticsTimeType === 'custom' &&
+						this.props.plugin.settings.timekeep.customDateRange.start
+					) {
 						await this.refreshData();
 					}
 				});
 			});
 
-
 		new Setting(settingsContainer)
-			.setName(t("display.select_period"))
+			.setName(t('display.select_period'))
 			.setClass('period-selector')
-			.addDropdown(dropdown => {
+			.addDropdown((dropdown) => {
 				this.periodDropdown = dropdown;
 				this.populateTimeRangeOptions(dropdown, []);
-				dropdown
-					.setValue(this.props.plugin.settings.timekeep.sendComments)
-					.onChange(async (selectedPeriod) => {
-						this.selectedPeriodData = this.groupedByPeriod[selectedPeriod] || [];
-						this.sendButton? this.sendButton.setDisabled(false) : null;
-					});
+				dropdown.setValue(this.props.plugin.settings.timekeep.sendComments).onChange(async (selectedPeriod) => {
+					this.selectedPeriodData = this.groupedByPeriod[selectedPeriod] || [];
+					if (this.sendButton) {
+						this.sendButton.setDisabled(false);
+					}
+				});
 			})
-			.addButton(
-				button => {
-					this.sendButton = button;
-					button.setDisabled(true);
-					button.setButtonText(t("actions.send_to_jira"));
-					button.onClick(() => this.sendWorkLogToJira());
-					button.setClass('timekeep-btn');
-				}
-			);
+			.addButton((button) => {
+				this.sendButton = button;
+				button.setDisabled(true);
+				button.setButtonText(t('actions.send_to_jira'));
+				button.onClick(() => this.sendWorkLogToJira());
+				button.setClass('timekeep-btn');
+			});
 	}
 
 	private toggleCustomDateInputs(): void {
@@ -186,7 +164,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		const isCustom = this.props.plugin.settings.timekeep.statisticsTimeType === 'custom';
 
 		if (isCustom) {
-			this.maxItemsSetting.settingEl.hide()
+			this.maxItemsSetting.settingEl.hide();
 			this.customDatesContainer.show();
 		} else {
 			this.maxItemsSetting.settingEl.show();
@@ -203,10 +181,14 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		try {
 			await this.processFiles();
 			this.updateDisplay();
-			if (!disableNotification) new Notice(t("messages.refresh_success"));
-		} catch (error) {
+			if (!disableNotification) new Notice(t('messages.refresh_success'));
+		} catch (error: unknown) {
 			console.error('Error refreshing timekeep data:', error);
-			new Notice(t("messages.refresh_error", { error: error.message }));
+			new Notice(
+				t('messages.refresh_error', {
+					error: (error as Error).message,
+				}),
+			);
 		} finally {
 			// Убираем индикатор загрузки
 			this.containerEl.removeClass('timekeep-loading');
@@ -222,8 +204,8 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 		if (Object.keys(this.groupedByPeriod).length === 0) {
 			this.containerEl.createEl('div', {
-				text: t("display.no_entries"),
-				cls: 'timekeep-no-data'
+				text: t('display.no_entries'),
+				cls: 'timekeep-no-data',
 			});
 			return;
 		}
@@ -234,8 +216,8 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	private renderAllPeriodsDisplay(container: HTMLElement): void {
 		const display = container.createDiv('all-periods-display jira-copyable timekeep-fade-in');
 		display.createEl('h3', {
-			text: t("display.all_periods"),
-			cls: 'timekeep-section-title'
+			text: t('display.all_periods'),
+			cls: 'timekeep-section-title',
 		});
 
 		const sortedPeriods = Object.keys(this.groupedByPeriod).sort().reverse();
@@ -253,25 +235,25 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 			const headerContainer = periodDiv.createDiv('timekeep-period-header');
 			headerContainer.createEl('h4', {
 				text: this.formatPeriodLabel(period),
-				cls: 'timekeep-period-title'
+				cls: 'timekeep-period-title',
 			});
 			headerContainer.createEl('span', {
 				text: this.parseMsToDuration(totalMs),
-				cls: 'timekeep-period-total'
+				cls: 'timekeep-period-total',
 			});
 
 			this.createEntriesTable(periodDiv, this.groupedByPeriod[period]);
 		});
 	}
 
-	private groupAndSummarizeEntries(entries: ProcessedEntry[]):
-		Record<string, Record<string, { entries: ProcessedEntry[], totalMs: number }>>
-	{
+	private groupAndSummarizeEntries(
+		entries: ProcessedEntry[],
+	): Record<string, Record<string, { entries: ProcessedEntry[]; totalMs: number }>> {
 		const grouped: ReturnType<typeof this.groupAndSummarizeEntries> = {};
 
-		entries.forEach(entry => {
+		entries.forEach((entry) => {
 			const file = entry.file;
-			const issueKey = entry.issueKey || "no-issue";
+			const issueKey = entry.issueKey || 'no-issue';
 
 			if (!grouped[file]) grouped[file] = {};
 			if (!grouped[file][issueKey]) {
@@ -311,37 +293,43 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				});
 
 				// Group title
-				const groupTitle = groupHeader.createEl('div', { cls: 'timekeep-group-title' });
+				const groupTitle = groupHeader.createEl('div', {
+					cls: 'timekeep-group-title',
+				});
 				groupTitle.createEl('span', { text: file });
 
 				// Group meta (issue key and duration)
-				const groupMeta = groupHeader.createEl('div', { cls: 'timekeep-group-meta' });
+				const groupMeta = groupHeader.createEl('div', {
+					cls: 'timekeep-group-meta',
+				});
 
+				const conn = this.props.plugin.getCurrentConnection();
+				const jiraUrl = conn?.jiraUrl || '';
 				if (issueKey && issueKey !== 'no-issue') {
 					const issueKeySpan = groupMeta.createEl('a', {
 						text: issueKey,
 						cls: 'timekeep-group-issue-key',
 						attr: {
-							href: `${this.props.plugin.settings.connection.jiraUrl}/browse/${issueKey}`,
-							target: "_blank",
-							rel: "noopener noreferrer"
-						}
+							href: `${jiraUrl}/browse/${issueKey}`,
+							target: '_blank',
+							rel: 'noopener noreferrer',
+						},
 					});
 					issueKeySpan.addEventListener('click', (e) => {
 						e.stopPropagation();
 					});
-					debugLog(`${this.props.plugin.settings.connection.jiraUrl}/browse/${issueKey}`)
+					debugLog(`${jiraUrl}/browse/${issueKey}`);
 				}
 				groupMeta.createEl('span', {
 					text: this.parseMsToDuration(group.totalMs),
-					cls: 'timekeep-group-duration'
+					cls: 'timekeep-group-duration',
 				});
 
 				// Collapse icon
 				const chevron = groupMeta.createEl('span', {
 					cls: 'jira-collapse-icon',
 				});
-				setIcon(chevron, "chevron-down");
+				setIcon(chevron, 'chevron-down');
 
 				// Create entries container
 				const entriesContainer = groupCard.createDiv('timekeep-entries-container');
@@ -350,16 +338,16 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				if (group.entries.length > 0) {
 					const labelsDiv = entriesContainer.createDiv('timekeep-entry-labels');
 					labelsDiv.createEl('div', {
-						text: t("display.table.task"),
-						cls: 'timekeep-entry-label-task'
+						text: t('display.table.task'),
+						cls: 'timekeep-entry-label-task',
 					});
 					labelsDiv.createEl('div', {
-						text: t("display.table.start_time"),
-						cls: 'timekeep-entry-label-start'
+						text: t('display.table.start_time'),
+						cls: 'timekeep-entry-label-start',
 					});
 					labelsDiv.createEl('div', {
-						text: t("display.table.duration"),
-						cls: 'timekeep-entry-label-duration'
+						text: t('display.table.duration'),
+						cls: 'timekeep-entry-label-duration',
 					});
 				}
 
@@ -371,21 +359,21 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 					entryDiv.createEl('div', {
 						text: entry.blockPath,
 						cls: 'timekeep-entry-block-path',
-						title: entry.blockPath
+						title: entry.blockPath,
 					});
 
 					// Start time
 					entryDiv.createEl('div', {
 						text: entry.startTime,
 						cls: 'timekeep-entry-start-time',
-						title: entry.startTime
+						title: entry.startTime,
 					});
 
 					// Duration
 					entryDiv.createEl('div', {
 						text: entry.duration,
 						cls: 'timekeep-entry-duration',
-						title: entry.duration
+						title: entry.duration,
 					});
 				});
 			});
@@ -398,7 +386,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 	private async sendWorkLogToJira(): Promise<void> {
 		if (this.selectedPeriodData.length === 0) {
-			new Notice(t("messages.select_period_first"));
+			new Notice(t('messages.select_period_first'));
 			return;
 		}
 
@@ -408,13 +396,13 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				case 'last_block':
 					data_to_send = this.selectedPeriodData.map((entry) => ({
 						...entry,
-						comment: entry.lastBlockName
+						comment: entry.lastBlockName,
 					}));
 					break;
 				case 'block_path':
 					data_to_send = this.selectedPeriodData.map((entry) => ({
 						...entry,
-						comment: entry.blockPath
+						comment: entry.blockPath,
 					}));
 					break;
 				default:
@@ -422,15 +410,17 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 					break;
 			}
 			await processWorkLogBatch(this.props.plugin, data_to_send);
-			new Notice(t("messages.send_success"));
-		} catch (error) {
+			new Notice(t('messages.send_success'));
+		} catch (error: unknown) {
 			console.error('Error sending work log to Jira:', error);
-			new Notice(t("messages.send_error", { error: error.message }));
+			new Notice(t('messages.send_error', { error: (error as Error).message }));
 		}
 	}
 
 	private formatPeriodLabel(periodKey: string): string {
-		return t("display.period_of", { date: this.formatPeriodDate(periodKey) });
+		return t('display.period_of', {
+			date: this.formatPeriodDate(periodKey),
+		});
 	}
 
 	private formatPeriodDate(periodKey: string): string {
@@ -453,7 +443,10 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 				return `${date.toISOString().split('T')[0]} – ${weekEnd.toISOString().split('T')[0]}`;
 			}
 			case 'months':
-				return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+				return date.toLocaleDateString(undefined, {
+					year: 'numeric',
+					month: 'long',
+				});
 			default:
 				return date.toISOString().split('T')[0];
 		}
@@ -463,9 +456,10 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		switch (this.props.plugin.settings.timekeep.statisticsTimeType) {
 			case 'days':
 				return date.toISOString().split('T')[0];
-			case 'weeks':
+			case 'weeks': {
 				const weekStart = this.getWeekStartDate(date);
 				return `week-${weekStart.toISOString().split('T')[0]}`;
+			}
 			case 'months':
 				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 			case 'custom':
@@ -478,7 +472,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	private isDateInRange(date: Date): boolean {
 		if (this.props.plugin.settings.timekeep.statisticsTimeType !== 'custom') return true;
 
-		if (!this.props.plugin.settings.timekeep.customDateRange.start || !this.props.plugin.settings.timekeep.customDateRange.end) return false;
+		if (
+			!this.props.plugin.settings.timekeep.customDateRange.start ||
+			!this.props.plugin.settings.timekeep.customDateRange.end
+		)
+			return false;
 
 		const from = new Date(this.props.plugin.settings.timekeep.customDateRange.start);
 		const to = new Date(this.props.plugin.settings.timekeep.customDateRange.end);
@@ -490,8 +488,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	private validateCustomRange(): boolean {
 		if (this.props.plugin.settings.timekeep.statisticsTimeType !== 'custom') return true;
 
-		if (!this.props.plugin.settings.timekeep.customDateRange.start || !this.props.plugin.settings.timekeep.customDateRange.end) {
-			new Notice(t("messages.custom_range_required"));
+		if (
+			!this.props.plugin.settings.timekeep.customDateRange.start ||
+			!this.props.plugin.settings.timekeep.customDateRange.end
+		) {
+			new Notice(t('messages.custom_range_required'));
 			return false;
 		}
 
@@ -499,7 +500,7 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		const to = new Date(this.props.plugin.settings.timekeep.customDateRange.end);
 
 		if (from > to) {
-			new Notice(t("messages.invalid_date_range"));
+			new Notice(t('messages.invalid_date_range'));
 			return false;
 		}
 
@@ -517,11 +518,11 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 
 	private parseMsToDuration(ms: number): string {
 		const units: { label: string; ms: number }[] = [
-			{ label: "w", ms: 1000 * 60 * 60 * 24 * 7 },
-			{ label: "d", ms: 1000 * 60 * 60 * 24 },
-			{ label: "h", ms: 1000 * 60 * 60 },
-			{ label: "m", ms: 1000 * 60 },
-			{ label: "s", ms: 1000 }
+			{ label: 'w', ms: 1000 * 60 * 60 * 24 * 7 },
+			{ label: 'd', ms: 1000 * 60 * 60 * 24 },
+			{ label: 'h', ms: 1000 * 60 * 60 },
+			{ label: 'm', ms: 1000 * 60 },
+			{ label: 's', ms: 1000 },
 		];
 
 		let remainingMs = ms;
@@ -535,18 +536,18 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 			}
 		}
 
-		return result.length > 0 ? result.join(" ") : "0s";
+		return result.length > 0 ? result.join(' ') : '0s';
 	}
 
 	private parseDurationToMs(duration: string): number {
 		if (duration === 'ongoing') return 0;
 
 		const units: { label: string; ms: number }[] = [
-			{ label: "w", ms: 1000 * 60 * 60 * 24 * 7 },
-			{ label: "d", ms: 1000 * 60 * 60 * 24 },
-			{ label: "h", ms: 1000 * 60 * 60 },
-			{ label: "m", ms: 1000 * 60 },
-			{ label: "s", ms: 1000 }
+			{ label: 'w', ms: 1000 * 60 * 60 * 24 * 7 },
+			{ label: 'd', ms: 1000 * 60 * 60 * 24 },
+			{ label: 'h', ms: 1000 * 60 * 60 },
+			{ label: 'm', ms: 1000 * 60 },
+			{ label: 's', ms: 1000 },
 		];
 
 		let ms = 0;
@@ -576,108 +577,65 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 	}
 
 	private processEntries(
-		entries: Entry[] | undefined,
+		entries: TimeTrackerEntry[] | undefined,
 		fileName: string,
 		issueKey: string | undefined,
 		parentPath: string,
-		groupedEntries: GroupedEntries
+		groupedEntries: GroupedEntries,
 	): void {
-		if (!entries || !Array.isArray(entries)) return;
-
-		for (const entry of entries) {
-			const currentPath = parentPath ? `${parentPath} > ${entry.name}` : entry.name;
-
-			if (entry.startTime) {
-				const startTime = new Date(entry.startTime);
-
-				// Check if date is in range for custom range
-				if (!this.isDateInRange(startTime)) continue;
-
-				const periodKey = this.getPeriodKey(startTime);
-				if (!groupedEntries[periodKey]) groupedEntries[periodKey] = [];
-
-				let duration: string;
-				let endTime: Date;
-
-				if (entry.endTime) {
-					endTime = new Date(entry.endTime);
-					duration = this.parseMsToDuration(endTime.getTime() - startTime.getTime());
-				} else {
-					endTime = new Date();
-					duration = "ongoing";
-				}
-
-				groupedEntries[periodKey].push({
-					file: fileName.replace(".md", ""),
-					issueKey: issueKey,
-					blockPath: currentPath,
-					lastBlockName: entry.name,
-					startTime: this.toLocalIso(startTime),
-					endTime: entry.endTime ? this.toLocalIso(endTime) : "ongoing",
-					duration: duration,
-					timestamp: startTime.getTime()
-				});
-			}
-
-			// Process sub-entries recursively
-			if (entry.subEntries && Array.isArray(entry.subEntries)) {
-				this.processEntries(entry.subEntries, fileName, issueKey, currentPath, groupedEntries);
-			}
-		}
+		processTimeEntries(
+			entries,
+			fileName,
+			issueKey,
+			parentPath,
+			groupedEntries,
+			(date) => this.isDateInRange(date),
+			(date) => this.getPeriodKey(date),
+		);
 	}
 
 	private async processFiles(): Promise<void> {
 		if (!this.validateCustomRange()) return;
 
-		const timekeepBlocks: TimekeepBlock[] = [];
-		const files = this.props.app.vault.getMarkdownFiles().filter(
-			file => file.path.startsWith(`${this.props.plugin.settings.global.issuesFolder}/`)
+		const allBlocks: ReturnType<typeof parseTimeBlocks> = [];
+		const files = this.props.app.vault
+			.getMarkdownFiles()
+			.filter((file) => file.path.startsWith(`${this.props.plugin.settings.global.issuesFolder}/`));
+
+		await Promise.all(
+			files.map(async (file) => {
+				const content = await this.props.app.vault.read(file);
+				if (!content.includes('```timekeep') && !content.includes('```simple-time-tracker')) return;
+
+				const metadata = this.props.app.metadataCache.getFileCache(file);
+				const issueKey = metadata?.frontmatter?.key;
+
+				const blocks = parseTimeBlocks(content, file, issueKey);
+				allBlocks.push(...blocks);
+			}),
 		);
-
-		await Promise.all(files.map(async file => {
-			const content = await this.props.app.vault.read(file);
-			if (!content.includes("```timekeep")) return;
-
-			const metadata = this.props.app.metadataCache.getFileCache(file);
-			const issueKey = metadata?.frontmatter?.key;
-
-			const timekeepMatches = content.match(/```timekeep([\s\S]*?)```/g);
-			timekeepMatches?.forEach(block => {
-				try {
-					const jsonContent = block.slice(11, -3).trim();
-					const data = JSON.parse(jsonContent);
-
-					timekeepBlocks.push({
-						file: file.name,
-						path: file.path,
-						issueKey,
-						data
-					});
-				} catch (error) {
-					console.error(`Error parsing timekeep block in ${file.name}:`, error);
-				}
-			});
-		}));
 
 		this.groupedByPeriod = {};
 
-		timekeepBlocks.forEach(block => {
-			this.processEntries(block.data.entries, block.file, block.issueKey, "", this.groupedByPeriod);
+		allBlocks.forEach((block) => {
+			this.processEntries(block.data.entries, block.file, block.issueKey, '', this.groupedByPeriod);
 		});
 
-		debugLog("grouped entries", this.groupedByPeriod);
+		debugLog('grouped entries', this.groupedByPeriod);
 
 		this.trimOldEntries(this.groupedByPeriod);
 
 		const sortedPeriods = Object.keys(this.groupedByPeriod).sort().reverse(); // Most recent first
-		const options = sortedPeriods.map(period => ({
+		const options = sortedPeriods.map((period) => ({
 			value: period,
-			label: this.formatPeriodLabel(period)
+			label: this.formatPeriodLabel(period),
 		}));
 
 		this.populateTimeRangeOptions(this.periodDropdown, options);
-		this.periodDropdown?.setValue("");
-		this.sendButton ? this.sendButton.disabled = true : null;
+		this.periodDropdown?.setValue('');
+		if (this.sendButton) {
+			this.sendButton.disabled = true;
+		}
 	}
 
 	private populateTimeRangeOptions(dropdown: DropdownComponent | null, options: Option[]): void {
@@ -687,16 +645,17 @@ export class TimekeepSettingsComponent implements SettingsComponent {
 		dropdown.selectEl.empty();
 
 		// Add new options based on current state
-		const record_options = options.reduce((acc, curr) => {
-			acc[curr.value] = curr.label;
-			return acc;
-		}, {} as Record<string, string>);
+		const record_options = options.reduce(
+			(acc, curr) => {
+				acc[curr.value] = curr.label;
+				return acc;
+			},
+			{} as Record<string, string>,
+		);
 		dropdown.addOptions(record_options);
 	}
 
-
 	private toLocalIso(date: Date): string {
-		return date.toISOString().slice(0, 19).replace("T", " ");
+		return date.toISOString().slice(0, 19).replace('T', ' ');
 	}
-
 }

@@ -1,5 +1,5 @@
-import { App, AbstractInputSuggest, TFolder } from "obsidian";
-import {debugLog} from "../../tools/debugLogging";
+import { App, AbstractInputSuggest, TFolder } from 'obsidian';
+import { debugLog } from '../../tools/debugLogging';
 
 interface FolderOption {
 	path: string;
@@ -27,7 +27,7 @@ export class FolderSuggest extends AbstractInputSuggest<FolderOption> {
 		if (this.cacheValid) return;
 
 		this.allFolders = [];
-		this.scanFolderForFolders(this.app.vault.getRoot(), "");
+		this.scanFolderForFolders(this.app.vault.getRoot(), '');
 
 		// Sort by display name
 		this.allFolders.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -39,10 +39,10 @@ export class FolderSuggest extends AbstractInputSuggest<FolderOption> {
 	 */
 	private scanFolderForFolders(folder: TFolder, prefix: string): void {
 		// Add root folder
-		if (prefix === "") {
+		if (prefix === '') {
 			this.allFolders.push({
-				path: "",
-				displayName: "/ (root)"
+				path: '',
+				displayName: '/ (root)',
 			});
 		}
 
@@ -51,7 +51,7 @@ export class FolderSuggest extends AbstractInputSuggest<FolderOption> {
 				const displayName = prefix ? `${prefix}/${child.name}` : child.name;
 				this.allFolders.push({
 					path: child.path,
-					displayName: displayName
+					displayName: displayName,
 				});
 				// Recursively scan subfolders
 				this.scanFolderForFolders(child, displayName);
@@ -82,22 +82,22 @@ export class FolderSuggest extends AbstractInputSuggest<FolderOption> {
 		}
 
 		// Fast filtering - match both display name and path
-		return this.allFolders.filter(option =>
-			option.displayName.toLowerCase().includes(query) ||
-			option.path.toLowerCase().includes(query)
+		return this.allFolders.filter(
+			(option) => option.displayName.toLowerCase().includes(query) || option.path.toLowerCase().includes(query),
 		);
 	}
 
 	renderSuggestion(folder: FolderOption, el: HTMLElement): void {
 		el.setText(folder.displayName);
-		el.setAttr("title", folder.path || "Root folder");
+		el.setAttr('title', folder.path || 'Root folder');
 	}
 
 	selectSuggestion(folder: FolderOption): void {
-		debugLog("selected Issues Folder", folder);
+		debugLog('selected Issues Folder', folder);
 		this.setValue(folder.path);
-		this.onChange && this.onChange(folder.path);
+		if (this.onChange) {
+			this.onChange(folder.path);
+		}
 		this.close();
 	}
 }
-

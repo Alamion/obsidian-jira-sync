@@ -18,7 +18,7 @@ auth:
     desc: Choose how to authenticate with Jira
     options:
         bearer: Bearer Token (PAT)
-        basic: Basic Auth (Username + PAT)
+        basic: Basic Auth (email + PAT)
         session: Session Cookie (Username + Password)
 
 pat:
@@ -45,3 +45,12 @@ ping:
     title: Ping Jira
     desc: Check your connection to Jira
     button: Ping Jira
+
+name:
+    title: Connection name
+    desc: A friendly name for this connection
+    def: My Jira Connection
+
+select_connection: Select connection
+add_connection: Add connection
+no_connection: No connection

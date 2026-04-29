@@ -1,4 +1,4 @@
-import JiraPlugin from "../main";
+import JiraPlugin from '../main';
 
 /**
  * Ensure the issues folder exists

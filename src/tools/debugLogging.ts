@@ -1,4 +1,3 @@
-// Create a debug utility module (debug.ts)
 export const DEBUG_MODE = process.env.NODE_ENV !== 'production';
 
 export function debugLog(...args: any[]): void {

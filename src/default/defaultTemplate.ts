@@ -1,5 +1,4 @@
-export const defaultTemplate =
-`---
+export const defaultTemplate = `---
 key: 
 summary: 
 status: 

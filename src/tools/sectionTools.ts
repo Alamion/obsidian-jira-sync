@@ -1,9 +1,10 @@
-import { debugLog } from "./debugLogging";
+import { debugLog } from './debugLogging';
 
-const UNIFIED_REGEX = /`jira-sync-(section|line|inline-start|block-start)-([\w-]+)`([\s\S]*?)(?:`jira-sync-?[^-]*-end`|(?=`jira-sync-|$))/g; // TODO: delete deprecated endings in a year
+const UNIFIED_REGEX =
+	/`jira-sync-(section|line|inline-start|block-start)-([\w-]+)`([\s\S]*?)(?:`jira-sync-?[^-]*-end`|(?=`jira-sync-|$))/g; // TODO: delete deprecated endings in a year
 
 interface ParsedBlock {
-	type: "section" | "line" | "inline" | "block";
+	type: 'section' | 'line' | 'inline' | 'block';
 	name: string;
 	content: string;
 	startIndex: number;
@@ -20,37 +21,37 @@ export function parseFileContent(fileContent: string): ParsedBlock[] {
 
 	while ((match = UNIFIED_REGEX.exec(fileContent)) !== null) {
 		const [fullMatch, typeRaw, name, rawContent] = match;
-		let type: ParsedBlock["type"];
+		let type: ParsedBlock['type'];
 		let extractedContent: string;
 		let actualEndIndex: number;
 
 		// Determine actual type and extract content
-		if (typeRaw === "section") {
-			type = "section";
+		if (typeRaw === 'section') {
+			type = 'section';
 			// Cut at first heading or another jira-sync-*
 			const headingMatch = rawContent.match(/\n#+? /);
 			const contentBeforeHeading = headingMatch
-				? rawContent.substring(0, (headingMatch.index||0)+1)
+				? rawContent.substring(0, (headingMatch.index || 0) + 1)
 				: rawContent;
 			actualEndIndex = match.index + fullMatch.length - (rawContent.length - contentBeforeHeading.length);
 			extractedContent = contentBeforeHeading.trim();
-		} else if (typeRaw === "line") {
-			type = "line";
+		} else if (typeRaw === 'line') {
+			type = 'line';
 			// Content is on the same line only
-			const firstLine = rawContent.split("\n")[0];
+			const firstLine = rawContent.split('\n')[0];
 			actualEndIndex = match.index + fullMatch.length - (rawContent.length - firstLine.length);
 			extractedContent = firstLine.trim();
-		} else if (typeRaw === "inline-start") {
-			type = "inline";
+		} else if (typeRaw === 'inline-start') {
+			type = 'inline';
 			// Content between inline-start and inline-end (markers included in fullMatch)
 			actualEndIndex = match.index + fullMatch.length;
 			extractedContent = rawContent.trim();
-		} else if (typeRaw === "block-start") {
-			type = "block";
+		} else if (typeRaw === 'block-start') {
+			type = 'block';
 			// Content between block-start and block-end
-			const lines = rawContent.split("\n");
-			const contentLines = lines.slice(lines[0] === "" ? 1 : 0, -1);
-			const joinedContent = contentLines.join("\n");
+			const lines = rawContent.split('\n');
+			const contentLines = lines.slice(lines[0] === '' ? 1 : 0, -1);
+			const joinedContent = contentLines.join('\n');
 			actualEndIndex = match.index + fullMatch.length;
 			extractedContent = joinedContent.trim();
 		} else {
@@ -64,16 +65,14 @@ export function parseFileContent(fileContent: string): ParsedBlock[] {
 			startIndex: match.index,
 			endIndex: actualEndIndex,
 			// indexesContent: fileContent.substring(match.index, actualEndIndex),
-			fullMatch
+			fullMatch,
 		});
 	}
 
 	return blocks;
 }
 
-export function extractAllJiraSyncValuesFromContent(
-	fileContent: string
-): Record<string, string> {
+export function extractAllJiraSyncValuesFromContent(fileContent: string): Record<string, string> {
 	const blocks = parseFileContent(fileContent);
 	const result: Record<string, string> = {};
 
@@ -85,10 +84,7 @@ export function extractAllJiraSyncValuesFromContent(
 	return result;
 }
 
-export function updateJiraSyncContent(
-	fileContent: string,
-	updates: Record<string, string>
-): string {
+export function updateJiraSyncContent(fileContent: string, updates: Record<string, string>): string {
 	const blocks = parseFileContent(fileContent);
 
 	// Sort blocks in reverse order to replace from end to start
@@ -106,16 +102,16 @@ export function updateJiraSyncContent(
 		let newBlock: string;
 
 		switch (block.type) {
-			case "section":
+			case 'section':
 				newBlock = `\`jira-sync-section-${block.name}\`\n${newContent}\n`;
 				break;
-			case "line":
-				newBlock = `\`jira-sync-line-${block.name}\`${newContent.split("\n")[0]}`;
+			case 'line':
+				newBlock = `\`jira-sync-line-${block.name}\`${newContent.split('\n')[0]}`;
 				break;
-			case "inline":
+			case 'inline':
 				newBlock = `\`jira-sync-inline-start-${block.name}\`${newContent}\`jira-sync-end\``;
 				break;
-			case "block":
+			case 'block':
 				newBlock = `\`jira-sync-block-start-${block.name}\`\n${newContent}\n\`jira-sync-end\``;
 				break;
 		}

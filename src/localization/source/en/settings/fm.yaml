@@ -4,7 +4,7 @@ fv:
     name: Enable field validation
     desc: Check fields before saving based on the standard API response (validation does not account for custom fields)
 secNote:
-    name: "⚠️ Note: "
+    name: '⚠️ Note: '
     desc: Field mapping uses JavaScript lambda functions.
 example:
     name: Example field mapping
@@ -13,6 +13,7 @@ example:
 from_jira: From Jira
 to_jira: To Jira
 field_name: Field name
+field_name_placeholder: Enter field name
 
 add_mapping: Add mapping
 add_mapping_tooltip: Add new field mapping
@@ -20,6 +21,7 @@ reset: Reset
 reset_tooltip: Reset
 reset_confirm_title: Reset field mapping
 reset_confirm_text: Field mapping will be cleaned up. Are you sure?
+remove_field: Remove field
 reload_defaults_tooltip: Reload
 reload_confirm_title: Reload default field mapping
 reload_confirm_text: Current field mappings will be overwritten with the default mappings. Are you sure?

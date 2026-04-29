@@ -13,8 +13,8 @@ maxResults:
 submit: Найти задачи
 
 preview:
-    total: "{total} задач найдено"
-    showing: " (показаны первые {limit} задач)"
-    error: "{error}"
+    total: '{total} задач найдено'
+    showing: ' (показаны первые {limit} задач)'
+    error: '{error}'
     loading: Загрузка...
     empty_input: Введите JQL запрос для просмотра превью задач

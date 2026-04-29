@@ -1,14 +1,14 @@
-import {JiraIssue} from "../interfaces";
-import {jiraToMarkdown} from "./markdownHtml";
-import {Notice, TFile} from "obsidian";
-import JiraPlugin from "../main";
-import {extractAllJiraSyncValuesFromContent, updateJiraSyncContent} from "./sectionTools";
-import {FieldMapping, obsidianJiraFieldMappings} from "../default/obsidianJiraFieldsMapping";
-import {debugLog} from "./debugLogging";
-
+import { JiraIssue } from '../interfaces';
+import { jiraToMarkdown } from './markdownHtml';
+import { Notice, TFile } from 'obsidian';
+import JiraPlugin from '../main';
+import { extractAllJiraSyncValuesFromContent, updateJiraSyncContent } from './sectionTools';
+import { FieldMapping, obsidianJiraFieldMappings } from '../default/obsidianJiraFieldsMapping';
+import { debugLog } from './debugLogging';
 
 export function localToJiraFields(
-	data_source: Record<string, any>, customFieldMappings: Record<string, FieldMapping>
+	data_source: Record<string, any>,
+	customFieldMappings: Record<string, FieldMapping>,
 ): Record<string, any> {
 	const jiraFields: Record<string, any> = {};
 
@@ -31,7 +31,6 @@ export function localToJiraFields(
 			} catch (e) {
 				console.error(`Error mapping for ${key}: ${e}`);
 				new Notice(`Error mapping for ${key}: ${e}`);
-
 			}
 		}
 		// Handle custom fields
@@ -43,15 +42,14 @@ export function localToJiraFields(
 	return jiraFields;
 }
 
-export async function updateJiraToLocal(
-	plugin: JiraPlugin,
-	file: TFile,
-	issue: JiraIssue
-): Promise<void> {
+export async function updateJiraToLocal(plugin: JiraPlugin, file: TFile, issue: JiraIssue): Promise<void> {
 	// First, update the frontmatter using processFrontMatter
 	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
 		// Update frontmatter with Jira data
-		applyJiraDataToLocal(frontmatter, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
+		applyJiraDataToLocal(frontmatter, issue, {
+			...obsidianJiraFieldMappings,
+			...plugin.settings.fieldMapping.fieldMappings,
+		});
 	});
 
 	// Then, process the file content to update sync sections
@@ -60,7 +58,10 @@ export async function updateJiraToLocal(
 		const syncSections = extractAllJiraSyncValuesFromContent(fileContent);
 
 		// Update sync sections with Jira data
-		applyJiraDataToLocal(syncSections, issue, {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings});
+		applyJiraDataToLocal(syncSections, issue, {
+			...obsidianJiraFieldMappings,
+			...plugin.settings.fieldMapping.fieldMappings,
+		});
 
 		// Update content sections from Jira fields
 		let updatedContent = fileContent;
@@ -79,7 +80,7 @@ export async function updateJiraToLocal(
 export function applyJiraDataToLocal(
 	localData: Record<string, any>,
 	issue: JiraIssue,
-	fieldMappings: Record<string, FieldMapping>
+	fieldMappings: Record<string, FieldMapping>,
 ): void {
 	// Process existing fields in local data
 	for (const key of Object.keys(localData)) {
@@ -99,7 +100,7 @@ function updateFieldFromJira(
 	key: string,
 	targetObject: Record<string, any>,
 	issue: JiraIssue,
-	fieldMappings: Record<string, FieldMapping>
+	fieldMappings: Record<string, FieldMapping>,
 ): void {
 	try {
 		let value = issue.fields[key];
@@ -116,28 +117,24 @@ function updateFieldFromJira(
 		}
 	} catch (e) {
 		// Log available mappings for debugging
-		logMappingDebugInfo(key, e, fieldMappings);
+		logMappingDebugInfo(key, e as Error, fieldMappings);
 	}
 }
 
 /**
  * Log debug information for mapping errors
  */
-function logMappingDebugInfo(
-	key: string,
-	error: Error,
-	fieldMappings: Record<string, FieldMapping>
-): void {
+function logMappingDebugInfo(key: string, error: Error, fieldMappings: Record<string, FieldMapping>): void {
 	console.error(`Error mapping for ${key}: ${error}`);
 	new Notice(`Error mapping for ${key}: ${error}`);
 
 	// Create debug info about available mappings
-	const mappingInfo: Record<string, { hasToJira: string, hasFromJira: string }> = {};
+	const mappingInfo: Record<string, { hasToJira: string; hasFromJira: string }> = {};
 
 	for (const mappingKey of Object.keys(fieldMappings)) {
 		mappingInfo[mappingKey] = {
 			hasToJira: typeof fieldMappings[mappingKey].toJira,
-			hasFromJira: typeof fieldMappings[mappingKey].fromJira
+			hasFromJira: typeof fieldMappings[mappingKey].fromJira,
 		};
 	}
 

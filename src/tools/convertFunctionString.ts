@@ -1,20 +1,20 @@
-import { Notice } from "obsidian";
-import { JiraIssue } from "../interfaces";
-import { parse } from "acorn";
-import {debugLog} from "./debugLogging";
-import {FieldMapping} from "../default/obsidianJiraFieldsMapping";
-import {defaultIssue} from "../default/defaultIssue";
-import {jiraToMarkdown, markdownToJira} from "./markdownHtml";
+import { Notice } from 'obsidian';
+import { JiraIssue } from '../interfaces';
+import { parse } from 'acorn';
+import { debugLog } from './debugLogging';
+import { FieldMapping } from '../default/obsidianJiraFieldsMapping';
+import { defaultIssue } from '../default/defaultIssue';
+import { jiraToMarkdown, markdownToJira } from './markdownHtml';
 
 // Constants for validation and error messages
-const FORBIDDEN_PATTERNS = ["document", "window", "eval", "Function", "fetch", "setTimeout", "globalThis"];
-const SYNTAX_KEYWORDS = ["return", "if", "else", "for", "while", "switch", "try", "catch"];
+const FORBIDDEN_PATTERNS = ['document', 'window', 'eval', 'Function', 'fetch', 'setTimeout', 'globalThis'];
+const SYNTAX_KEYWORDS = ['return', 'if', 'else', 'for', 'while', 'switch', 'try', 'catch'];
 const SAFE_GLOBALS = {
 	jiraToMarkdown,
 	markdownToJira,
 	JSON: {
 		parse: JSON.parse,
-		stringify: JSON.stringify
+		stringify: JSON.stringify,
 	},
 	Math: Math,
 	Date: Date,
@@ -22,88 +22,111 @@ const SAFE_GLOBALS = {
 	Number: Number,
 	Boolean: Boolean,
 	Array: Array,
-	Object: Object
+	Object: Object,
 };
 
-export function validateFunctionStringBrowser(fnString: string, approved_vars: string[] = []): Promise<{ isValid: boolean; errorMessage?: string }> {
+export function validateFunctionStringBrowser(
+	fnString: string,
+	approved_vars: string[] = [],
+): Promise<{ isValid: boolean; errorMessage?: string }> {
 	return new Promise((resolve) => {
 		try {
-			parse(fnString, { ecmaVersion: "latest" });
+			parse(fnString, { ecmaVersion: 'latest' });
 		} catch (error) {
-			return resolve({ isValid: false, errorMessage: `Syntax error: ${(error as Error).message}` });
+			return resolve({
+				isValid: false,
+				errorMessage: `Syntax error: ${(error as Error).message}`,
+			});
 		}
 
-		const iframe = document.createElement("iframe");
-		iframe.style.display = "none";
+		const iframe = document.createElement('iframe');
+		iframe.style.display = 'none';
 		document.body.appendChild(iframe);
 		const iframeWindow = iframe.contentWindow as Window;
 
 		try {
 			let testFnString = fnString;
 
-			if (isSimpleExpression(fnString) || (fnString.startsWith("{") && fnString.endsWith("}") && !fnString.includes("return"))) {
-				const varDeclarations = approved_vars.map(varName => {
-					if (varName === 'issue') return `${varName} = ${JSON.stringify(defaultIssue)}`;
-					if (varName === 'value') return `${varName} = "test value"`;
-					if (varName === 'data_source') return `${varName} = {}`;
-					return `${varName} = {}`;
-				}).join(', ');
+			if (
+				isSimpleExpression(fnString) ||
+				(fnString.startsWith('{') && fnString.endsWith('}') && !fnString.includes('return'))
+			) {
+				const varDeclarations = approved_vars
+					.map((varName) => {
+						if (varName === 'issue') return `${varName} = ${JSON.stringify(defaultIssue)}`;
+						if (varName === 'value') return `${varName} = "test value"`;
+						if (varName === 'data_source') return `${varName} = {}`;
+						return `${varName} = {}`;
+					})
+					.join(', ');
 
 				testFnString = `(${varDeclarations}) => ${fnString}`;
 			}
 			debugLog(`checking function: ${testFnString.substring(0, 100)}`);
 
 			const context: Record<string, any> = {};
-			Object.keys(SAFE_GLOBALS).forEach(key => {
+			Object.keys(SAFE_GLOBALS).forEach((key) => {
 				context[key] = (SAFE_GLOBALS as any)[key];
 			});
 
-			const safeBuiltIns = ['Infinity', 'NaN', 'undefined', 'isFinite', 'isNaN',
-				'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent',
-				'encodeURI', 'encodeURIComponent'];
-			safeBuiltIns.forEach(key => {
+			const safeBuiltIns = [
+				'Infinity',
+				'NaN',
+				'undefined',
+				'isFinite',
+				'isNaN',
+				'parseFloat',
+				'parseInt',
+				'decodeURI',
+				'decodeURIComponent',
+				'encodeURI',
+				'encodeURIComponent',
+			];
+			safeBuiltIns.forEach((key) => {
 				context[key] = (iframeWindow as any)[key];
 			});
 
-			const testArgs = approved_vars.map(varName => {
+			const testArgs = approved_vars.map((varName) => {
 				if (varName === 'issue') return defaultIssue;
-				if (varName === 'value') return "test value";
+				if (varName === 'value') return 'test value';
 				if (varName === 'data_source') return {};
 				return {};
 			});
 
 			const contextKeys = Object.keys(context);
-			const contextValues = contextKeys.map(key => context[key]);
+			const contextValues = contextKeys.map((key) => context[key]);
 
-			const func = new Function(
-				...approved_vars,
-				...contextKeys,
-				`return (${fnString});`
-			);
+			const func = new Function(...approved_vars, ...contextKeys, `return (${fnString});`);
 
 			func(...testArgs, ...contextValues);
 			resolve({ isValid: true });
 		} catch (error) {
-			debugLog('Not valid')
-			resolve({ isValid: false, errorMessage: `Runtime error: ${(error as Error).message}` });
+			debugLog('Not valid');
+			resolve({
+				isValid: false,
+				errorMessage: `Runtime error: ${(error as Error).message}`,
+			});
 		} finally {
 			document.body.removeChild(iframe);
 		}
 	});
 }
 
-export async function validateFunctionString(fnString: string, approved_vars: string[] = []): Promise<{ isValid: boolean; errorMessage?: string }> {
+export async function validateFunctionString(
+	fnString: string,
+	approved_vars: string[] = [],
+): Promise<{ isValid: boolean; errorMessage?: string }> {
 	// Check for null, undefined or empty string
 	if (!fnString || fnString.trim().length === 0) {
 		return { isValid: true };
 	}
 
 	// Check for forbidden patterns (security)
-	const foundForbidden = FORBIDDEN_PATTERNS.find(pattern => fnString.includes(pattern));
+	const foundForbidden = FORBIDDEN_PATTERNS.find((pattern) => fnString.includes(pattern));
 	if (foundForbidden) {
 		return {
 			isValid: false,
-			errorMessage: `Unsafe reference detected: '${foundForbidden}' is not allowed`
+			errorMessage: `Unsafe reference detected: '${foundForbidden}' is not allowed`,
 		};
 	}
 
@@ -124,13 +147,13 @@ function isSimpleExpression(fnString: string): boolean {
 	}
 
 	// Check if it has typical function body syntax elements
-	const hasComplexSyntax = SYNTAX_KEYWORDS.some(keyword =>
+	const hasComplexSyntax = SYNTAX_KEYWORDS.some((keyword) =>
 		// Match full keywords, not substrings
-		new RegExp(`\\b${keyword}\\b`).test(trimmed)
+		new RegExp(`\\b${keyword}\\b`).test(trimmed),
 	);
 
 	// Has curly braces which might indicate a code block
-	const hasCodeBlock = trimmed.includes("{") && trimmed.includes("}") && trimmed.includes("return");
+	const hasCodeBlock = trimmed.includes('{') && trimmed.includes('}') && trimmed.includes('return');
 
 	return !hasComplexSyntax && !hasCodeBlock;
 }
@@ -145,21 +168,23 @@ function isSimpleExpression(fnString: string): boolean {
 export async function safeStringToFunction(
 	exprString: string,
 	type: 'toJira' | 'fromJira' = 'toJira',
-	extraValidate: boolean = true
-): Promise<Function | null> {
+	extraValidate: boolean = true,
+): Promise<((...args: any[]) => any) | null> {
 	try {
 		if (exprString.trim().length === 0) {
 			return () => null;
 		}
 		if (extraValidate) {
-			const validation = await validateFunctionString(exprString, type === 'fromJira' ? ['issue', 'data_source'] : ['value']);
+			const validation = await validateFunctionString(
+				exprString,
+				type === 'fromJira' ? ['issue', 'data_source'] : ['value'],
+			);
 			if (!validation.isValid) {
 				console.warn(`Invalid function: ${validation.errorMessage}`);
 				// new Notice(`Invalid function: ${validation.errorMessage}`);
 				return null;
 			}
 		}
-
 
 		const arrowFnMatch = exprString.match(/^\s*\((.*?)\)\s*=>\s*(.*)$/s);
 		let body = arrowFnMatch ? arrowFnMatch[2].trim() : exprString.trim();
@@ -168,7 +193,7 @@ export async function safeStringToFunction(
 			body = `return ${body};`;
 		}
 
-		if (body.startsWith("{") && body.endsWith("}") && !body.includes("return")) {
+		if (body.startsWith('{') && body.endsWith('}') && !body.includes('return')) {
 			body = `{ return ${body.slice(1, -1)} }`;
 		}
 
@@ -182,13 +207,15 @@ export async function safeStringToFunction(
 			Number,
 			Boolean,
 			Array,
-			Object
+			Object,
 		};
 
 		if (type === 'toJira') {
-			return function(value: any) {
-
-				const fn = new Function('value', 'context', `
+			return function (value: any) {
+				const fn = new Function(
+					'value',
+					'context',
+					`
                     with (context) {
 						try {
 						    ${body}
@@ -197,14 +224,19 @@ export async function safeStringToFunction(
 						    return null;
 						}
 					}
-                `);
+                `,
+				);
 
 				return fn.call(context, value, context);
 			};
-		} else { // fromJira
-			return function(issue: JiraIssue, data_source: Record<string, any> | null) {
-
-				const fn = new Function('issue', 'data_source', 'context', `
+		} else {
+			// fromJira
+			return function (issue: JiraIssue, data_source: Record<string, any> | null) {
+				const fn = new Function(
+					'issue',
+					'data_source',
+					'context',
+					`
                     with (context) {
 						try {
 							${body}
@@ -213,19 +245,20 @@ export async function safeStringToFunction(
 							return null;
 						}
                     }
-                `);
+                `,
+				);
 
 				return fn.call(context, issue, data_source, context);
 			};
 		}
 	} catch (error) {
-		console.error("Failed to parse function:", error);
+		console.error('Failed to parse function:', error);
 		new Notice(`Failed to create function: ${(error as Error).message}`);
 		return null;
 	}
 }
 
-export function jiraFunctionToString(fn: Function, isFromJira: boolean = false): string {
+export function jiraFunctionToString(fn: (...args: any[]) => any, isFromJira: boolean = false): string {
 	const baseStr = functionToExpressionString(fn);
 
 	if (!baseStr) return baseStr;
@@ -235,7 +268,7 @@ export function jiraFunctionToString(fn: Function, isFromJira: boolean = false):
 
 		const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
 		if (paramMatch) {
-			const params = (paramMatch[1] || paramMatch[2] || '').split(',').map(p => p.trim());
+			const params = (paramMatch[1] || paramMatch[2] || '').split(',').map((p) => p.trim());
 
 			let resultStr = baseStr;
 
@@ -267,7 +300,7 @@ export function jiraFunctionToString(fn: Function, isFromJira: boolean = false):
 	return baseStr;
 }
 
-export function functionToExpressionString(fn: Function): string {
+export function functionToExpressionString(fn: (...args: any[]) => any): string {
 	try {
 		const fnStr = fn.toString().trim();
 
@@ -290,17 +323,19 @@ export function functionToExpressionString(fn: Function): string {
 		}
 
 		// If we can't parse it properly, return empty string
-		console.error("Failed to extract expression from function:", fnStr);
-		new Notice("Failed to extract expression from function");
-		return "";
+		console.error('Failed to extract expression from function:', fnStr);
+		new Notice('Failed to extract expression from function');
+		return '';
 	} catch (error) {
-		console.error("Error converting function to expression string:", error);
-		return "";
+		console.error('Error converting function to expression string:', error);
+		return '';
 	}
 }
 
-export async function transform_string_to_functions_mappings  (
-	mappings: Record<string, { toJira: string; fromJira: string }>, extraValidate: boolean = true)  {
+export async function transform_string_to_functions_mappings(
+	mappings: Record<string, { toJira: string; fromJira: string }>,
+	extraValidate: boolean = true,
+) {
 	// Also convert to functions for runtime use
 	const transformedMappings: Record<string, FieldMapping> = {};
 	for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
@@ -309,12 +344,12 @@ export async function transform_string_to_functions_mappings  (
 
 		if (toJiraFn && fromJiraFn) {
 			transformedMappings[fieldName] = {
-				toJira: await toJiraFn as (value: any) => any,
-				fromJira: await fromJiraFn as (issue: JiraIssue, data_source: Record<string, any>) => any,
+				toJira: (await toJiraFn) as (value: any) => any,
+				fromJira: (await fromJiraFn) as (issue: JiraIssue, data_source: Record<string, any> | null) => any,
 			};
 		} else {
 			console.warn(`Invalid function in field: ${fieldName}`);
 		}
 	}
-	return transformedMappings
+	return transformedMappings;
 }

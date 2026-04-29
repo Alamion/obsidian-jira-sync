@@ -11,7 +11,7 @@ start:
 comment:
     name: Описание работы
     desc: Необязательно
-    placeholder: ''
+    placeholder: 'Введите описание работы...'
 
 months:
     - янв

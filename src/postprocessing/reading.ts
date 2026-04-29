@@ -1,9 +1,9 @@
 // For Reading mode - targets <code> elements in <p> tags
-export function hideJiraPointersReading(element: HTMLElement, _: any) {
+export function hideJiraPointersReading(element: HTMLElement) {
 	// In Reading mode, inline code becomes <code> elements
 	const codeElements = element.querySelectorAll(':not(pre) > code');
 
-	codeElements.forEach(codeEl => {
+	codeElements.forEach((codeEl) => {
 		const text = codeEl.textContent || '';
 
 		if (text.startsWith('jira-sync-')) {

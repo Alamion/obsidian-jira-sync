@@ -1,19 +1,19 @@
-import {App, Modal, Notice, Setting} from "obsidian";
-import {useTranslations} from "../localization/translator";
+import { App, Modal, Notice, Setting } from 'obsidian';
+import { useTranslations } from '../localization/translator';
 
-const t = useTranslations("modals.worklog").t;
+const t = useTranslations('modals.worklog').t;
 
 /**
  * Modal for adding work log entries
  */
 export class IssueWorkLogModal extends Modal {
 	private onSubmit: (timeSpent: string, startDate: string, workDescription: string) => void;
-	private timeSpent: string = "";
-	private startDate: string = "";
-	private workDescription: string = "";
-	private displayDate: string = "";
-	private timeSpentSetting: Setting;
-	private dateSetting: Setting;
+	private timeSpent: string = '';
+	private startDate: string = '';
+	private workDescription: string = '';
+	private displayDate: string = '';
+	private timeSpentSetting!: Setting;
+	private dateSetting!: Setting;
 
 	constructor(app: App, onSubmit: (timeSpent: string, startDate: string, workDescription: string) => void) {
 		super(app);
@@ -26,7 +26,7 @@ export class IssueWorkLogModal extends Modal {
 
 	private initializeDates(date: Date) {
 		// Set the ISO format for API
-		this.startDate = date.toISOString().split('.')[0] + ".000+0000";
+		this.startDate = date.toISOString().split('.')[0] + '.000+0000';
 
 		// Set the display format (01/Jun/21 09:00 AM)
 		const months = t('months') as any;
@@ -49,7 +49,7 @@ export class IssueWorkLogModal extends Modal {
 			const [hours, minutes] = timePart.split(':');
 
 			const months = Object.fromEntries(
-				(t('months') as any).map((month: string, index: number) => [month, index])
+				(t('months') as any).map((month: string, index: number) => [month, index]),
 			) as Record<string, number>;
 
 			// {'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
@@ -62,11 +62,17 @@ export class IssueWorkLogModal extends Modal {
 			const fullYear = parseInt(year) + 2000;
 
 			// Create date object
-			const date = new Date(fullYear, months[month as keyof typeof months], parseInt(day), hour, parseInt(minutes));
-			if (isNaN(date.getTime())) throw new Error("Invalid date");
+			const date = new Date(
+				fullYear,
+				months[month as keyof typeof months],
+				parseInt(day),
+				hour,
+				parseInt(minutes),
+			);
+			if (isNaN(date.getTime())) throw new Error('Invalid date');
 
 			return date;
-		} catch (error) {
+		} catch {
 			return null;
 		}
 	}
@@ -83,7 +89,7 @@ export class IssueWorkLogModal extends Modal {
 					.setValue(this.timeSpent)
 					.onChange((value) => {
 						this.timeSpent = value;
-					})
+					}),
 			);
 
 		this.dateSetting = new Setting(this.contentEl)
@@ -95,7 +101,7 @@ export class IssueWorkLogModal extends Modal {
 					.setValue(this.displayDate)
 					.onChange((value) => {
 						this.displayDate = value;
-					})
+					}),
 			);
 
 		// Start Date field with date picker icon
@@ -164,37 +170,34 @@ export class IssueWorkLogModal extends Modal {
 
 		// Work Description field
 		new Setting(this.contentEl)
-			.setName(t("comment.name"))
-			.setDesc(t("comment.name"))
+			.setName(t('comment.name'))
+			.setDesc(t('comment.name'))
 			.addTextArea((text) =>
-				text
-					.setPlaceholder(t("comment.placeholder"))
-					.onChange((value) => {
-						this.workDescription = value;
-					})
+				text.setPlaceholder(t('comment.placeholder')).onChange((value) => {
+					this.workDescription = value;
+				}),
 			)
-			.setClass("work-description-container");
+			.setClass('work-description-container');
 
 		// Make the textarea larger
-		const textareaComponent = this.contentEl.querySelector(".work-description-container textarea");
+		const textareaComponent = this.contentEl.querySelector('.work-description-container textarea');
 		if (textareaComponent) {
 			(textareaComponent as HTMLTextAreaElement).rows = 5;
 		}
 
 		// Submit button
-		new Setting(this.contentEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText(t("submit"))
-					.setCta()
-					.onClick(() => {
-						if (!this.validateInputs()) {
-							return;
-						}
-						this.close();
-						this.onSubmit(this.timeSpent, this.startDate, this.workDescription);
-					})
-			);
+		new Setting(this.contentEl).addButton((btn) =>
+			btn
+				.setButtonText(t('submit'))
+				.setCta()
+				.onClick(() => {
+					if (!this.validateInputs()) {
+						return;
+					}
+					this.close();
+					this.onSubmit(this.timeSpent, this.startDate, this.workDescription);
+				}),
+		);
 	}
 
 	/**
@@ -202,7 +205,7 @@ export class IssueWorkLogModal extends Modal {
 	 */
 	private validateInputs(): boolean {
 		if (!this.timeSpent.trim()) {
-			new Notice(t("warns.no_time"));
+			new Notice(t('warns.no_time'));
 			this.timeSpentSetting.setClass('invalid');
 			return false;
 		}
@@ -210,20 +213,20 @@ export class IssueWorkLogModal extends Modal {
 		// Validate time spent format
 		const timeSpentPattern = /^(\d+[wdhm]\s*)+$/;
 		if (!timeSpentPattern.test(this.timeSpent)) {
-			new Notice(t("warns.invalid_time"));
+			new Notice(t('warns.invalid_time'));
 			this.timeSpentSetting.setClass('invalid');
 			return false;
 		}
 
 		if (!this.displayDate.trim()) {
-			new Notice(t("warns.no_start"));
+			new Notice(t('warns.no_start'));
 			this.dateSetting.setClass('invalid');
 			return false;
 		}
 
 		// Validate date format by trying to parse it
 		if (!this.parseDisplayDate(this.displayDate)) {
-			new Notice(t("warns.invalid_start"));
+			new Notice(t('warns.invalid_start'));
 			this.dateSetting.setClass('invalid');
 			return false;
 		}

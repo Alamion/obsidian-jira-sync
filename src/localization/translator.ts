@@ -23,7 +23,7 @@ function replacePlaceholders(template: string, dict: Record<string, unknown>): s
 	return template.replace(/{([^{}]+)}/g, (match, key) => {
 		// Trim the key in case there's whitespace inside the braces
 		const trimmedKey = key.trim();
-		return dict.hasOwnProperty(trimmedKey) ? String(dict[trimmedKey]) : match;
+		return Object.prototype.hasOwnProperty.call(dict, trimmedKey) ? String(dict[trimmedKey]) : match;
 	});
 }
 
@@ -63,6 +63,6 @@ export const useTranslations = (prefix?: string) => {
 	return {
 		t: translate,
 		locale: currentLocale,
-		setPrefix: (newPrefix: string) => useTranslations(newPrefix)
+		setPrefix: (newPrefix: string) => useTranslations(newPrefix),
 	};
 };

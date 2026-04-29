@@ -1,10 +1,10 @@
-import {FieldMapping} from "../default/obsidianJiraFieldsMapping";
-
+import { FieldMapping } from '../default/obsidianJiraFieldsMapping';
 
 export interface ConnectionSettingsInterface {
+	name: string;
 	jiraUrl: string;
-	apiVersion: "2" | "3";
-	authMethod: "bearer" | "basic" | "session";
+	apiVersion: '2' | '3';
+	authMethod: 'bearer' | 'basic' | 'session';
 	apiToken: string;
 	username: string;
 	email: string;
@@ -29,7 +29,7 @@ export interface FetchIssueInterface {
 }
 
 export interface TimekeepSettingsInterface {
-	sendComments: "no" | "last_block" | "block_path";
+	sendComments: 'no' | 'last_block' | 'block_path';
 	statisticsTimeType: string;
 	maxItemsToShow: number;
 	customDateRange: { start: string; end: string };
@@ -47,7 +47,8 @@ export interface CollapsedSections {
 export interface JiraSettingsInterface {
 	collapsedSections: CollapsedSections;
 
-	connection: ConnectionSettingsInterface;
+	connections: ConnectionSettingsInterface[];
+	currentConnectionIndex: number;
 	global: GlobalSettingsInterface;
 	fieldMapping: FieldMappingSettingsInterface;
 	fetchIssue: FetchIssueInterface;
@@ -67,19 +68,23 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 		statistics: false,
 	},
 
-	connection: {
-		authMethod: "bearer",
-		apiToken: "",
-		username: "",
-		email: "",
-		password: "",
-		jiraUrl: "",
-		apiVersion: "2",
-	},
+	connections: [
+		{
+			name: 'Connection 1',
+			authMethod: 'bearer',
+			apiToken: '',
+			username: '',
+			email: '',
+			password: '',
+			jiraUrl: '',
+			apiVersion: '2',
+		},
+	],
+	currentConnectionIndex: 0,
 
 	global: {
-		issuesFolder: "jira-issues",
-		templatePath: "",
+		issuesFolder: 'jira-issues',
+		templatePath: '',
 	},
 
 	fieldMapping: {
@@ -89,19 +94,18 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 	},
 
 	fetchIssue: {
-		filenameTemplate: "{summary} ({key})",
-		fields: ["*all"],
+		filenameTemplate: '{summary} ({key})',
+		fields: ['*all'],
 		expand: [],
 	},
 
 	timekeep: {
-		sendComments: "no",
-		statisticsTimeType: "weeks",
+		sendComments: 'no',
+		statisticsTimeType: 'weeks',
 		maxItemsToShow: 10,
-		customDateRange: { start: "", end: "" },
+		customDateRange: { start: '', end: '' },
 	},
 
-	sessionCookieName: "JSESSIONID",
-	issueKeyToFilePathCache: {}
+	sessionCookieName: 'JSESSIONID',
+	issueKeyToFilePathCache: {},
 };
-

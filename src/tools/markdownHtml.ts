@@ -8,16 +8,16 @@ export function jiraToMarkdown(str: any): string {
 		if (str === null || str === undefined) return '';
 
 		// Initial normalization to string
-		let content: string = "";
-		if (typeof str === "string") content = str;
-		else if (typeof str === "number") content = str.toString();
-		else if (typeof str === "object") content = JSON.stringify(str);
+		let content: string = '';
+		if (typeof str === 'string') content = str;
+		else if (typeof str === 'number') content = str.toString();
+		else if (typeof str === 'object') content = JSON.stringify(str);
 		else content = String(str);
 
 		// URL Protection: Store original URLs
 		const urlMap: Map<string, string> = new Map();
 		// Regex to find URLs
-		const urlRegex = /(https?:\/\/[^\s\(\)\[\]\{\}]+)/g;
+		const urlRegex = /(https?:\/\/[^\s()[\]{}]+)/g;
 		let urlCount = 0;
 
 		content = content.replace(urlRegex, (match) => {
@@ -59,7 +59,7 @@ export function jiraToMarkdown(str: any): string {
 			// Code Blocks
 			.replace(
 				/\{code(:([a-z]+))?([:|]?(title|borderStyle|borderColor|borderWidth|bgColor|titleBGColor)=.+?)*\}([^]*?)\n?\{code\}/gm,
-				'```$2$5\n```'
+				'```$2$5\n```',
 			)
 			.replace(/{noformat}/g, '```')
 			// Images
@@ -85,11 +85,10 @@ export function jiraToMarkdown(str: any): string {
 		});
 
 		return content;
-
 	} catch (e) {
-		console.error("Error converting Jira markup to Markdown", e);
+		console.error('Error converting Jira markup to Markdown', e);
 		// Fallback to basic string conversion if everything explodes
-		return typeof str === "string" ? str : (str ? str.toString() : '');
+		return typeof str === 'string' ? str : str ? str.toString() : '';
 	}
 }
 
@@ -101,10 +100,10 @@ export function jiraToMarkdown(str: any): string {
 export function markdownToJira(str: string): string {
 	if (!str) return '';
 	const map: Record<string, string> = {
-		del: "-",
-		ins: "+",
-		sup: "^",
-		sub: "~",
+		del: '-',
+		ins: '+',
+		sup: '^',
+		sub: '~',
 	};
 
 	return (
@@ -112,106 +111,82 @@ export function markdownToJira(str: string): string {
 			// Tables
 			.replace(
 				/^(\|[^\n]+\|\r?\n)((?:\|\s*:?[-]+:?\s*)+\|)(\n(?:\|[^\n]+\|\r?\n?)*)?$/gm,
-				(
-					match: string,
-					headerLine: string,
-					separatorLine: string,
-					rowstr: string
-				) => {
+				(match: string, headerLine: string, separatorLine: string, rowstr: string) => {
 					const headers = headerLine.match(/[^|]+(?=\|)/g) || [];
-					const separators =
-						separatorLine.match(/[^|]+(?=\|)/g) || [];
+					const separators = separatorLine.match(/[^|]+(?=\|)/g) || [];
 					if (headers.length !== separators.length) return match;
 
-					const rows = rowstr.split("\n");
+					const rows = rowstr.split('\n');
 					if (rows.length === 2 && headers.length === 1)
 						// Panel
 						return `{panel:title=${headers[0].trim()}}\n${rowstr
-							.replace(/^\|(.*)[ \t]*\|/, "$1")
+							.replace(/^\|(.*)[ \t]*\|/, '$1')
 							.trim()}\n{panel}\n`;
 
-					return `||${headers.join("||")}||${rowstr}`;
-				}
+					return `||${headers.join('||')}||${rowstr}`;
+				},
 			)
 			// Bold, Italic, and Combined (bold+italic)
-			.replace(
-				/([*_]+)(\S.*?)\1/g,
-				(match: string, wrapper: string, content: string) => {
-					switch (wrapper.length) {
-						case 1:
-							return `_${content}_`;
-						case 2:
-							return `*${content}*`;
-						case 3:
-							return `_*${content}*_`;
-						default:
-							return wrapper + content + wrapper;
-					}
+			.replace(/([*_]+)(\S.*?)\1/g, (match: string, wrapper: string, content: string) => {
+				switch (wrapper.length) {
+					case 1:
+						return `_${content}_`;
+					case 2:
+						return `*${content}*`;
+					case 3:
+						return `_*${content}*_`;
+					default:
+						return wrapper + content + wrapper;
 				}
-			)
+			})
 			// All Headers (# format)
-			.replace(
-				/^([#]+)(.*?)$/gm,
-				(match: string, level: string, content: string) => {
-					return `h${level.length}.${content}`;
-				}
-			)
+			.replace(/^([#]+)(.*?)$/gm, (match: string, level: string, content: string) => {
+				return `h${level.length}.${content}`;
+			})
 			// Headers (H1 and H2 underlines)
-			.replace(
-				/^(.*?)\n([=-]+)$/gm,
-				(match: string, content: string, level: string) => {
-					return `h${level[0] === "=" ? 1 : 2}. ${content}`;
-				}
-			)
+			.replace(/^(.*?)\n([=-]+)$/gm, (match: string, content: string, level: string) => {
+				return `h${level[0] === '=' ? 1 : 2}. ${content}`;
+			})
 			// Ordered lists
-			.replace(
-				/^([ \t]*)\d+\.\s+/gm,
-				(match: string, spaces: string) => {
-					return `${Array(Math.floor(spaces.length / 3) + 1)
-						.fill("#")
-						.join("")} `;
-				}
-			)
+			.replace(/^([ \t]*)\d+\.\s+/gm, (match: string, spaces: string) => {
+				return `${Array(Math.floor(spaces.length / 3) + 1)
+					.fill('#')
+					.join('')} `;
+			})
 			// Un-Ordered Lists
-			.replace(
-				/^([ \t]*)\*\s+/gm,
-				(match: string, spaces: string) => {
-					return `${Array(Math.floor(spaces.length / 2 + 1))
-						.fill("*")
-						.join("")} `;
-				}
-			)
+			.replace(/^([ \t]*)\*\s+/gm, (match: string, spaces: string) => {
+				return `${Array(Math.floor(spaces.length / 2 + 1))
+					.fill('*')
+					.join('')} `;
+			})
 			// Headers (h1 or h2) (lines "underlined" by ---- or =====)
 			// Citations, Inserts, Subscripts, Superscripts, and Strikethroughs
 			.replace(
-				new RegExp(`<(${Object.keys(map).join("|")})>(.*?)</\\1>`, "g"),
+				new RegExp(`<(${Object.keys(map).join('|')})>(.*?)</\\1>`, 'g'),
 				(match: string, from: string, content: string) => {
 					const to = map[from];
 					return to + content + to;
-				}
+				},
 			)
 			// Other kind of strikethrough
-			.replace(/(\s+)~~(.*?)~~(\s+)/g, "$1-$2-$3")
+			.replace(/(\s+)~~(.*?)~~(\s+)/g, '$1-$2-$3')
 			// Named/Un-Named Code Block
-			.replace(
-				/```(.+\n)?((?:.|\n)*?)```/g,
-				(match: string, synt: string, content: string) => {
-					let code = "{code}";
-					if (synt) {
-						code = `{code:${synt.replace(/\n/g, "")}}\n`;
-					}
-					return `${code}${content}{code}`;
+			.replace(/```(.+\n)?((?:.|\n)*?)```/g, (match: string, synt: string, content: string) => {
+				let code = '{code}';
+				if (synt) {
+					code = `{code:${synt.replace(/\n/g, '')}}\n`;
 				}
-			)
+				return `${code}${content}{code}`;
+			})
 			// Inline-Preformatted Text
-			.replace(/`([^`]+)`/g, "{{$1}}")
+			.replace(/`([^`]+)`/g, '{{$1}}')
 			// Images
-			.replace(/!\[[^\]]*\]\(([^)]+)\)/g, "!$1!")
+			.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '!$1!')
 			// Named Link
-			.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "[$1|$2]")
+			.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[$1|$2]')
 			// Un-Named Link
-			.replace(/<([^>]+)>/g, "[$1]")
+			.replace(/<([^>]+)>/g, '[$1]')
 			// Single Paragraph Blockquote
-			.replace(/^>/gm, "bq.")
+			.replace(/^>/gm, 'bq.')
 	);
 }

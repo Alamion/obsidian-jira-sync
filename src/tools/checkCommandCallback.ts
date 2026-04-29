@@ -1,6 +1,6 @@
-import JiraPlugin from "../main";
-import {validateSettings} from "../api";
-import {Notice} from "obsidian";
+import JiraPlugin from '../main';
+import { validateSettings } from '../api';
+import { Notice } from 'obsidian';
 // import {debugLog} from "./debugLogging";
 
 export function checkCommandCallback(
@@ -8,7 +8,7 @@ export function checkCommandCallback(
 	checking: boolean,
 	functionToExecute: (...args: any[]) => Promise<void>,
 	frontmatterChecks: string[],
-	functionArgs: string[] = []
+	functionArgs: string[] = [],
 ): boolean {
 	const settings_are_valid = validateSettings(plugin);
 	const file = plugin.app.workspace.getActiveFile();
@@ -19,8 +19,10 @@ export function checkCommandCallback(
 	}
 
 	const frontmatter = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
-	const hasChecks = frontmatterChecks.every(key => frontmatter?.[key] !== undefined && frontmatter?.[key] !== null && frontmatter?.[key] !== '');
-	const functionArgsValues = functionArgs.map(arg => frontmatter?.[arg]);
+	const hasChecks = frontmatterChecks.every(
+		(key) => frontmatter?.[key] !== undefined && frontmatter?.[key] !== null && frontmatter?.[key] !== '',
+	);
+	const functionArgsValues = functionArgs.map((arg) => frontmatter?.[arg]);
 
 	// debugLog('Function checked:', settings_are_valid && hasChecks,
 	// 	'for function to execute:', functionToExecute.name,
@@ -29,12 +31,10 @@ export function checkCommandCallback(
 
 	if (settings_are_valid && hasChecks) {
 		if (!checking) {
-			functionToExecute(plugin, file, ...functionArgsValues).catch(
-				(error) => {
-					new Notice(`Error when doing ${functionToExecute.name}: ` + (error.message || "Unknown error"));
-					console.error(error);
-				}
-			);
+			functionToExecute(plugin, file, ...functionArgsValues).catch((error) => {
+				new Notice(`Error when doing ${functionToExecute.name}: ` + (error.message || 'Unknown error'));
+				console.error(error);
+			});
 		}
 		return true;
 	}

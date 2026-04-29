@@ -1,10 +1,10 @@
-import { App, Setting, normalizePath } from "obsidian";
-import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
-import { TemplateSuggest } from "./TemplateSuggest";
-import { FolderSuggest } from "./FolderSuggest";
-import {useTranslations} from "../../localization/translator";
+import { App, Setting, normalizePath } from 'obsidian';
+import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
+import { TemplateSuggest } from './TemplateSuggest';
+import { FolderSuggest } from './FolderSuggest';
+import { useTranslations } from '../../localization/translator';
 
-const t = useTranslations("settings.general").t;
+const t = useTranslations('settings.general').t;
 
 interface TemplatePluginInfo {
 	coreTemplatesEnabled: boolean;
@@ -24,17 +24,15 @@ export class GeneralSettingsComponent implements SettingsComponent {
 		const { plugin } = this.props;
 
 		// Issues folder setting with native search
-		const folderSetting = new Setting(containerEl)
-			.setName(t("folder.name"))
-			.setDesc(t("folder.desc"));
+		const folderSetting = new Setting(containerEl).setName(t('folder.name')).setDesc(t('folder.desc'));
 
 		folderSetting.addSearch((search) => {
 			const onChange = async (value: string) => {
 				plugin.settings.global.issuesFolder = value;
 				await plugin.saveSettings();
-			}
+			};
 			search
-				.setPlaceholder(t("folder.placeholder"))
+				.setPlaceholder(t('folder.placeholder'))
 				.setValue(plugin.settings.global.issuesFolder)
 				.onChange(onChange);
 			new FolderSuggest(plugin.app, search.inputEl, onChange);
@@ -43,16 +41,14 @@ export class GeneralSettingsComponent implements SettingsComponent {
 		// Template path setting with native search
 		const templateInfo = this.detectTemplatePlugins(plugin.app);
 
-		const setting = new Setting(containerEl)
-			.setName(t("template.name"))
-			.setDesc(t("template.desc"));
+		const setting = new Setting(containerEl).setName(t('template.name')).setDesc(t('template.desc'));
 
 		// Add warning if no template plugins are enabled
 		if (templateInfo.warningMessage) {
 			setting.descEl.createDiv({}, (div) => {
-				div.createEl("small", {
+				div.createEl('small', {
 					text: templateInfo.warningMessage,
-					cls: "mod-warning"
+					cls: 'mod-warning',
 				});
 			});
 		}
@@ -62,15 +58,14 @@ export class GeneralSettingsComponent implements SettingsComponent {
 			const onChange = async (value: string) => {
 				plugin.settings.global.templatePath = value ? normalizePath(value) : '';
 				await plugin.saveSettings();
-			}
+			};
 			search
-				.setPlaceholder(t("template.selector.placeholder"))
-				.setValue(plugin.settings.global.templatePath || "")
+				.setPlaceholder(t('template.selector.placeholder'))
+				.setValue(plugin.settings.global.templatePath || '')
 				.onChange(onChange);
 			new TemplateSuggest(plugin.app, search.inputEl, templateInfo.templateDirectory, onChange);
 		});
 	}
-
 
 	private detectTemplatePlugins(app: App): TemplatePluginInfo {
 		const coreTemplates = (app as any).internalPlugins?.plugins?.templates;
@@ -80,7 +75,7 @@ export class GeneralSettingsComponent implements SettingsComponent {
 		const templaterEnabled = (app as any).plugins?.enabledPlugins?.has('templater-obsidian') || false;
 
 		let templateDirectory: string | null = null;
-		let warningMessage = "";
+		let warningMessage = '';
 
 		if (coreTemplatesEnabled && coreTemplates.instance?.options?.folder) {
 			templateDirectory = coreTemplates.instance.options.folder;
@@ -89,14 +84,14 @@ export class GeneralSettingsComponent implements SettingsComponent {
 		}
 
 		if (!coreTemplatesEnabled && !templaterEnabled) {
-			warningMessage = t("template.warning");
+			warningMessage = t('template.warning');
 		}
 
 		return {
 			coreTemplatesEnabled,
 			templaterEnabled,
 			templateDirectory,
-			warningMessage
+			warningMessage,
 		};
 	}
 }

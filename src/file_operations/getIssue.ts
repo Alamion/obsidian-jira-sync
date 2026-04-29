@@ -1,36 +1,36 @@
-import JiraPlugin from "../main";
-import {JiraIssue} from "../interfaces";
-import {ensureIssuesFolder} from "../tools/filesUtils";
-import {sanitizeFileName} from "../tools/sanitizers";
-import {updateJiraToLocal} from "../tools/mapObsidianJiraFields";
-import {Notice, TFile, TFolder} from "obsidian";
-import {defaultTemplate} from "../default/defaultTemplate";
-import { debugLog } from "src/tools/debugLogging";
+import JiraPlugin from '../main';
+import { JiraIssue } from '../interfaces';
+import { ensureIssuesFolder } from '../tools/filesUtils';
+import { sanitizeFileName } from '../tools/sanitizers';
+import { updateJiraToLocal } from '../tools/mapObsidianJiraFields';
+import { Notice, TFile, TFolder } from 'obsidian';
+import { defaultTemplate } from '../default/defaultTemplate';
+import { debugLog } from '../tools/debugLogging';
 
 function generateFilenameFromTemplate(template: string, issue: JiraIssue): string {
 	let filename = template;
 
 	// Replace {summary} with sanitized summary
-	const summary = issue.fields?.summary || "";
+	const summary = issue.fields?.summary || '';
 	const sanitizedSummary = sanitizeFileName(summary);
 	filename = filename.replace(/\{summary\}/g, sanitizedSummary);
 
 	// Replace {key} with issue key
-	const key = issue.key || "";
+	const key = issue.key || '';
 	filename = filename.replace(/\{key\}/g, key);
 
 	// Sanitize the entire filename to remove any prohibited characters
 	filename = sanitizeFileName(filename);
 
 	// Fallback if the result is empty or only whitespace
-	if (!filename || filename.trim() === "") {
+	if (!filename || filename.trim() === '') {
 		// Use key if available, otherwise use a default
 		if (key) {
 			filename = key;
 		} else if (sanitizedSummary) {
 			filename = sanitizedSummary;
 		} else {
-			filename = "jira-issue";
+			filename = 'jira-issue';
 		}
 	}
 
@@ -42,7 +42,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 		await ensureIssuesFolder(plugin);
 
 		let targetFile: TFile | null = null;
-		let targetPath: string = "";
+		let targetPath: string = '';
 
 		if (filePath) {
 			targetPath = filePath;
@@ -74,7 +74,7 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 
 			// If still not found, create new file
 			if (!targetFile) {
-				const template = plugin.settings.fetchIssue.filenameTemplate || "{summary} ({key})";
+				const template = plugin.settings.fetchIssue.filenameTemplate || '{summary} ({key})';
 				const filename = generateFilenameFromTemplate(template, issue);
 				targetPath = `${plugin.settings.global.issuesFolder}/${filename}.md`;
 				debugLog(`Issue ${issue.key} not found in cache or filesystem, creating new file: ${targetPath}`);
@@ -82,35 +82,30 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 		}
 
 		if (targetFile) {
-			await updateJiraToLocal(plugin, targetFile, issue)
-			await plugin.app.workspace.openLinkText(targetFile.path, "");
+			await updateJiraToLocal(plugin, targetFile, issue);
+			await plugin.app.workspace.openLinkText(targetFile.path, '');
 		} else {
 			const newFile = await createNewIssueFile(plugin, targetPath);
-			await updateJiraToLocal(plugin, newFile, issue)
-			await plugin.app.workspace.openLinkText(newFile.path, "");
+			await updateJiraToLocal(plugin, newFile, issue);
+			await plugin.app.workspace.openLinkText(newFile.path, '');
 			// Add new file to cache
 			plugin.setFilePathForIssueKey(issue.key, newFile.path);
 		}
 		new Notice(`Issue ${issue.key} imported successfully`);
-	} catch (error) {
-		new Notice("Error creating issue note: " + (error.message || "Unknown error"));
+	} catch (error: unknown) {
+		new Notice('Error creating issue note: ' + ((error as Error).message || 'Unknown error'));
 		console.error(error);
 	}
 }
 
+async function createNewIssueFile(plugin: JiraPlugin, filePath: string): Promise<TFile> {
+	let initialContent = '';
 
-async function createNewIssueFile(
-	plugin: JiraPlugin,
-	filePath: string
-): Promise<TFile> {
-	let initialContent = "";
-
-
-	let templatePath = plugin.settings.global.templatePath
-	if (templatePath && !templatePath.endsWith(".md")) {
-		templatePath += ".md";
+	let templatePath = plugin.settings.global.templatePath;
+	if (templatePath && !templatePath.endsWith('.md')) {
+		templatePath += '.md';
 	}
-	if (templatePath && templatePath.trim() !== "") {
+	if (templatePath && templatePath.trim() !== '') {
 		const templateFile = plugin.app.vault.getFileByPath(templatePath);
 		if (templateFile) {
 			// Use the template as initial content
@@ -119,7 +114,7 @@ async function createNewIssueFile(
 			new Notice(`Template file not found: ${templatePath}, using default template`);
 		}
 	}
-	if (initialContent === "") initialContent = defaultTemplate
+	if (initialContent === '') initialContent = defaultTemplate;
 
 	// Create the file with initial content
 	await plugin.app.vault.create(filePath, initialContent);
@@ -127,9 +122,9 @@ async function createNewIssueFile(
 	// Get file reference and update frontmatter
 	const newFile = plugin.app.vault.getFileByPath(filePath);
 	if (!newFile) {
-		throw new Error("Could not create file");
+		throw new Error('Could not create file');
 	}
-	return newFile
+	return newFile;
 }
 
 async function findFileByIssueKey(plugin: JiraPlugin, issueKey: string): Promise<TFile | null> {

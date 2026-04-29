@@ -15,7 +15,7 @@ auth:
     desc: Выберите способ подключения к Jira
     options:
         bearer: Bearer Token (PAT)
-        basic: Basic Auth (Имя пользователя + PAT)
+        basic: Basic Auth (email + PAT)
         session: Session Cookie (Имя пользователя + Пароль)
 pat:
     title: Jira PAT
@@ -37,3 +37,12 @@ ping:
     title: Ping Jira
     desc: Проверить подключение к Jira
     button: Ping Jira
+
+name:
+    title: Название подключения
+    desc: Понятное имя для этого подключения
+    def: Мое подключение к Jira
+
+select_connection: Выбрать подключение
+add_connection: Добавить подключение
+no_connection: Нет подключения

@@ -2,10 +2,10 @@ import {
 	ConnectionSettingsInterface,
 	FieldMappingSettingsInterface,
 	GlobalSettingsInterface,
-	TimekeepSettingsInterface
-} from "../settings/default";
+	TimekeepSettingsInterface,
+} from '../settings/default';
 
-export function checkMigrateSettings(data: any, saveSettings: ()=>void): any {
+export function checkMigrateSettings(data: any, saveSettings: () => void): any {
 	if (!data || typeof data !== 'object') return data;
 
 	const result = { ...data };
@@ -13,7 +13,13 @@ export function checkMigrateSettings(data: any, saveSettings: ()=>void): any {
 
 	// Migrate root-level connection fields
 	const connectionFields: (keyof ConnectionSettingsInterface)[] = [
-		'jiraUrl', 'apiVersion', 'authMethod', 'apiToken', 'username', 'email', 'password'
+		'jiraUrl',
+		'apiVersion',
+		'authMethod',
+		'apiToken',
+		'username',
+		'email',
+		'password',
 	];
 	for (const field of connectionFields) {
 		if (field in result) {
@@ -37,7 +43,9 @@ export function checkMigrateSettings(data: any, saveSettings: ()=>void): any {
 
 	// Migrate root-level field mapping fields
 	const fieldMappingFields: (keyof FieldMappingSettingsInterface)[] = [
-		'fieldMappings', 'fieldMappingsStrings', 'enableFieldValidation'
+		'fieldMappings',
+		'fieldMappingsStrings',
+		'enableFieldValidation',
 	];
 	for (const field of fieldMappingFields) {
 		if (field in result) {
@@ -50,7 +58,10 @@ export function checkMigrateSettings(data: any, saveSettings: ()=>void): any {
 
 	// Migrate root-level timekeep fields
 	const timekeepFields: (keyof TimekeepSettingsInterface)[] = [
-		'sendComments', 'statisticsTimeType', 'maxItemsToShow', 'customDateRange'
+		'sendComments',
+		'statisticsTimeType',
+		'maxItemsToShow',
+		'customDateRange',
 	];
 	for (const field of timekeepFields) {
 		if (field in result) {
@@ -59,6 +70,25 @@ export function checkMigrateSettings(data: any, saveSettings: ()=>void): any {
 			delete result[field];
 			data_changed = true;
 		}
+	}
+
+	// Migrate old single connection to new connections array
+	if (result.connection && !result.connections) {
+		result.connections = [
+			{
+				name: result.connection.name || 'Connection 1',
+				jiraUrl: result.connection.jiraUrl || '',
+				apiVersion: result.connection.apiVersion || '2',
+				authMethod: result.connection.authMethod || 'bearer',
+				apiToken: result.connection.apiToken || '',
+				username: result.connection.username || '',
+				email: result.connection.email || '',
+				password: result.connection.password || '',
+			},
+		];
+		result.currentConnectionIndex = 0;
+		delete result.connection;
+		data_changed = true;
 	}
 
 	if (data_changed) {

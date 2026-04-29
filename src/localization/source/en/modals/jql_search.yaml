@@ -14,7 +14,7 @@ submit: Search Issues
 
 preview:
     total: Total {total} issues found
-    showing: " (showing first {limit} issues)"
-    error: "{error}"
+    showing: ' (showing first {limit} issues)'
+    error: '{error}'
     loading: Loading...
     empty_input: Enter a JQL query to see preview

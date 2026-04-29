@@ -1,5 +1,5 @@
 title: Статистика ведения журнала работы через Timekeep
-description: Управление и отправка журнала работы в Jira
+description: 'Управление и отправка журнала работы в Jira (поддерживает формат Timekeep и Super Simple Time Tracker)'
 settings:
     send_comments:
         name: Отправлять комментарии
@@ -38,6 +38,7 @@ display:
     no_entries: Записи рабочего лога не найдены.
     period_of: Период от {date}
     table:
+        total: Всего
         task: Задача
         block_path: Подзадача
         start_time: Время начала

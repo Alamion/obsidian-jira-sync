@@ -1,20 +1,20 @@
-import { Setting, setIcon } from "obsidian";
-import { SettingsComponent, SettingsComponentProps } from "../../interfaces/settingsTypes";
-import { FieldMappingItem } from "./FieldMappingItem";
-import { collectFieldMappingsFromUI, processMappings } from "../tools/mappingTransformers";
-import {jiraFunctionToString, transform_string_to_functions_mappings} from "../../tools/convertFunctionString";
-import { obsidianJiraFieldMappings } from "../../default/obsidianJiraFieldsMapping";
-import { debugLog } from "../../tools/debugLogging";
-import {useTranslations} from "../../localization/translator";
+import { Setting, setIcon } from 'obsidian';
+import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
+import { FieldMappingItem } from './FieldMappingItem';
+import { collectFieldMappingsFromUI, processMappings } from '../tools/mappingTransformers';
+import { jiraFunctionToString, transform_string_to_functions_mappings } from '../../tools/convertFunctionString';
+import { obsidianJiraFieldMappings } from '../../default/obsidianJiraFieldsMapping';
+import { debugLog } from '../../tools/debugLogging';
+import { useTranslations } from '../../localization/translator';
 
-const t = useTranslations("settings.fm").t;
+const t = useTranslations('settings.fm').t;
 
 /**
  * Component for field mappings section
  */
 export class FieldMappingsComponent implements SettingsComponent {
 	private props: SettingsComponentProps;
-	private fieldsList: HTMLDivElement;
+	private fieldsList!: HTMLDivElement;
 	private mappingItems: FieldMappingItem[] = [];
 
 	constructor(props: SettingsComponentProps) {
@@ -28,60 +28,69 @@ export class FieldMappingsComponent implements SettingsComponent {
 		const { plugin } = this.props;
 
 		// Create the mapping section
-		const mappingSection = containerEl.createDiv({ cls: "jira-field-mappings" });
+		const mappingSection = containerEl.createDiv({
+			cls: 'jira-field-mappings',
+		});
 
 		// Add explanation
-		mappingSection.createEl("p", {
-			text: t("desc")
+		mappingSection.createEl('p', {
+			text: t('desc'),
 		});
 
 		// Add validation toggle
 		new Setting(mappingSection)
-			.setName(t("fv.name"))
-			.setDesc(t("fv.desc"))
-			.addToggle(toggle => toggle
-				.setValue(plugin.settings.fieldMapping.enableFieldValidation)
-				.onChange(async (value) => {
+			.setName(t('fv.name'))
+			.setDesc(t('fv.desc'))
+			.addToggle((toggle) =>
+				toggle.setValue(plugin.settings.fieldMapping.enableFieldValidation).onChange(async (value) => {
 					plugin.settings.fieldMapping.enableFieldValidation = value;
 					await plugin.saveSettings();
 
 					// Update validation for all mapping items
-					this.mappingItems.forEach(item => {
+					this.mappingItems.forEach((item) => {
 						item.updateValidation(value);
 					});
-				}));
+				}),
+			);
 
 		// Create list container for field mappings
-		this.fieldsList = mappingSection.createDiv({ cls: "field-mappings-list" });
+		this.fieldsList = mappingSection.createDiv({
+			cls: 'field-mappings-list',
+		});
 
 		// Create button container
-		const buttonView = mappingSection.createDiv({ cls: "button-view" });
+		const buttonView = mappingSection.createDiv({ cls: 'button-view' });
 
 		// Add button to add new field mapping
-		const addFieldBtn = buttonView.createEl("button", {
-			text: t("add_mapping") || "Add Mapping",
-			cls: "add-field-mapping-btn",
-			attr: { 'data-tooltip': t("add_mapping_tooltip") || "Add new field mapping" }
+		const addFieldBtn = buttonView.createEl('button', {
+			text: t('add_mapping') || 'Add Mapping',
+			cls: 'add-field-mapping-btn',
+			attr: {
+				'data-tooltip': t('add_mapping_tooltip') || 'Add new field mapping',
+			},
 		});
-		setIcon(addFieldBtn, "circle-plus");
+		setIcon(addFieldBtn, 'circle-plus');
 
-		addFieldBtn.addEventListener("click", () => {
+		addFieldBtn.addEventListener('click', () => {
 			this.addFieldMapping();
 		});
 
 		// Reset button
-		const resetBtn = buttonView.createEl("button", {
-			text: t("reset") || "Reset All",
-			cls: "reset-field-mappings-btn",
-			attr: { 'data-tooltip': t("reset_tooltip") || "Clear all field mappings" }
+		const resetBtn = buttonView.createEl('button', {
+			text: t('reset') || 'Reset All',
+			cls: 'reset-field-mappings-btn',
+			attr: {
+				'data-tooltip': t('reset_tooltip') || 'Clear all field mappings',
+			},
 		});
-		setIcon(resetBtn, "refresh-cw");
+		setIcon(resetBtn, 'refresh-cw');
 
-		resetBtn.addEventListener("click", async () => {
+		resetBtn.addEventListener('click', async () => {
 			// Add confirmation dialog
 			const confirmed = await this.showConfirmDialog(
-				t("reset_confirm_title") || "Reset Field Mappings",
-				t("reset_confirm_text") || "Are you sure you want to clear all field mappings? This action cannot be undone."
+				t('reset_confirm_title') || 'Reset Field Mappings',
+				t('reset_confirm_text') ||
+					'Are you sure you want to clear all field mappings? This action cannot be undone.',
 			);
 
 			if (confirmed) {
@@ -93,17 +102,19 @@ export class FieldMappingsComponent implements SettingsComponent {
 		});
 
 		// Reload default mappings button
-		const reloadBtn = buttonView.createEl("button", {
-			text: t("reload_defaults") || "Load Defaults",
-			cls: "reload-field-mappings-btn",
-			attr: { 'data-tooltip': t("reload_defaults_tooltip") || "Restore default field mappings" }
+		const reloadBtn = buttonView.createEl('button', {
+			text: t('reload_defaults') || 'Load Defaults',
+			cls: 'reload-field-mappings-btn',
+			attr: {
+				'data-tooltip': t('reload_defaults_tooltip') || 'Restore default field mappings',
+			},
 		});
-		setIcon(reloadBtn, "list-restart");
+		setIcon(reloadBtn, 'list-restart');
 
-		reloadBtn.addEventListener("click", async () => {
+		reloadBtn.addEventListener('click', async () => {
 			const confirmed = await this.showConfirmDialog(
-				t("reload_confirm_title") || "Load Default Mappings",
-				t("reload_confirm_text") || "This will replace all current mappings with defaults. Continue?"
+				t('reload_confirm_title') || 'Load Default Mappings',
+				t('reload_confirm_text') || 'This will replace all current mappings with defaults. Continue?',
 			);
 
 			if (confirmed) {
@@ -114,7 +125,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 				for (const [fieldName, mapping] of Object.entries(obsidianJiraFieldMappings)) {
 					defaultMappingsStrings[fieldName] = {
 						toJira: jiraFunctionToString(mapping.toJira, false),
-						fromJira: jiraFunctionToString(mapping.fromJira, true)
+						fromJira: jiraFunctionToString(mapping.fromJira, true),
 					};
 				}
 				plugin.settings.fieldMapping.fieldMappingsStrings = defaultMappingsStrings;
@@ -131,10 +142,12 @@ export class FieldMappingsComponent implements SettingsComponent {
 		this.renderExamples(mappingSection);
 
 		// Add security notice
-		const securityNote = containerEl.createEl("div", { cls: "setting-item-description" });
-		securityNote.createEl("strong", { text: t("secNote.name") });
+		const securityNote = containerEl.createEl('div', {
+			cls: 'setting-item-description',
+		});
+		securityNote.createEl('strong', { text: t('secNote.name') });
 		securityNote.createSpan({
-			text: t("secNote.desc")
+			text: t('secNote.desc'),
 		});
 	}
 
@@ -173,7 +186,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 	/**
 	 * Add a new field mapping item
 	 */
-	addFieldMapping(fieldName = "", toJira = "", fromJira = ""): FieldMappingItem {
+	addFieldMapping(fieldName = '', toJira = '', fromJira = ''): FieldMappingItem {
 		const item = new FieldMappingItem({
 			container: this.fieldsList,
 			fieldName,
@@ -186,7 +199,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 				if (index !== -1) {
 					this.mappingItems.splice(index, 1);
 				}
-			}
+			},
 		});
 
 		this.mappingItems.push(item);
@@ -206,28 +219,28 @@ export class FieldMappingsComponent implements SettingsComponent {
 		debugLog(`Loading mapping settings`);
 
 		// If we have string representations stored, use those
-		if (plugin.settings.fieldMapping.fieldMappingsStrings &&
-			Object.keys(plugin.settings.fieldMapping.fieldMappingsStrings).length > 0) {
+		if (
+			plugin.settings.fieldMapping.fieldMappingsStrings &&
+			Object.keys(plugin.settings.fieldMapping.fieldMappingsStrings).length > 0
+		) {
 			debugLog('Current mapping (string) is: ', plugin.settings.fieldMapping.fieldMappingsStrings);
 
 			const savedMappings = plugin.settings.fieldMapping.fieldMappingsStrings;
 			for (const [fieldName, mapping] of Object.entries(savedMappings)) {
 				if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
-					this.addFieldMapping(
-						fieldName,
-						mapping.toJira,
-						mapping.fromJira
-					);
+					this.addFieldMapping(fieldName, mapping.toJira, mapping.fromJira);
 				}
 			}
 			plugin.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
 				plugin.settings.fieldMapping.fieldMappingsStrings,
-				plugin.settings.fieldMapping.enableFieldValidation
+				plugin.settings.fieldMapping.enableFieldValidation,
 			);
 		}
 		// Otherwise, try to use the function mappings and convert them to strings
-		else if (plugin.settings.fieldMapping.fieldMappings &&
-			Object.keys(plugin.settings.fieldMapping.fieldMappings).length > 0) {
+		else if (
+			plugin.settings.fieldMapping.fieldMappings &&
+			Object.keys(plugin.settings.fieldMapping.fieldMappings).length > 0
+		) {
 			debugLog('Current mapping is: ', plugin.settings.fieldMapping.fieldMappings);
 
 			const existingMappings = plugin.settings.fieldMapping.fieldMappings;
@@ -236,7 +249,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 					this.addFieldMapping(
 						fieldName,
 						jiraFunctionToString(mapping.toJira, false),
-						jiraFunctionToString(mapping.fromJira, true)
+						jiraFunctionToString(mapping.fromJira, true),
 					);
 				}
 			}
@@ -252,7 +265,9 @@ export class FieldMappingsComponent implements SettingsComponent {
 	async saveFieldMappings(): Promise<void> {
 		const { plugin } = this.props;
 
-		debugLog(`From strings ${JSON.stringify(plugin.settings.fieldMapping.fieldMappingsStrings)}\nand funcs ${JSON.stringify(plugin.settings.fieldMapping.fieldMappings)}`);
+		debugLog(
+			`From strings ${JSON.stringify(plugin.settings.fieldMapping.fieldMappingsStrings)}\nand funcs ${JSON.stringify(plugin.settings.fieldMapping.fieldMappings)}`,
+		);
 
 		// Collect mappings from UI
 		const stringMappings = await collectFieldMappingsFromUI(this.fieldsList);
@@ -260,7 +275,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 		// Process mappings
 		const { stringMappings: newStringMappings, functionMappings } = await processMappings(
 			stringMappings,
-			plugin.settings.fieldMapping.enableFieldValidation
+			plugin.settings.fieldMapping.enableFieldValidation,
 		);
 
 		// Update settings
@@ -276,45 +291,47 @@ export class FieldMappingsComponent implements SettingsComponent {
 	 * Render example mappings
 	 */
 	private renderExamples(containerEl: HTMLElement): void {
-		const examplesSection = containerEl.createDiv({ cls: "mapping-examples" });
-		examplesSection.createEl("h4", { text: t("example.name") });
+		const examplesSection = containerEl.createDiv({
+			cls: 'mapping-examples',
+		});
+		examplesSection.createEl('h4', { text: t('example.name') });
 
-		const examplesList = examplesSection.createEl("ul");
+		const examplesList = examplesSection.createEl('ul');
 
 		const examples = [
 			{
-				name: "summary",
-				toJira: "value",
-				fromJira: "issue.fields.summary"
+				name: 'summary',
+				toJira: 'value',
+				fromJira: 'issue.fields.summary',
 			},
 			{
-				name: "reporter",
-				toJira: "null",
-				fromJira: "issue.fields.reporter.name"
+				name: 'reporter',
+				toJira: 'null',
+				fromJira: 'issue.fields.reporter.name',
 			},
 			{
-				name: "project",
-				toJira: "({ key: value })",
-				fromJira: "issue.fields.project ? issue.fields.project.key : \"\""
-			}
+				name: 'project',
+				toJira: '({ key: value })',
+				fromJira: 'issue.fields.project ? issue.fields.project.key : ""',
+			},
 		];
 
-		examples.forEach(example => {
-			const item = examplesList.createEl("li");
-			item.createEl("strong", { text: example.name });
+		examples.forEach((example) => {
+			const item = examplesList.createEl('li');
+			item.createEl('strong', { text: example.name });
 
 			// Add button to use this example
-			const useBtn = item.createEl("button", {
-				text: t("example.use"),
-				cls: "use-example-btn"
+			const useBtn = item.createEl('button', {
+				text: t('example.use'),
+				cls: 'use-example-btn',
 			});
 
-			item.createEl("br");
+			item.createEl('br');
 			item.createSpan({ text: `toJira: ${example.toJira}` });
-			item.createEl("br");
+			item.createEl('br');
 			item.createSpan({ text: `fromJira: ${example.fromJira}` });
 
-			useBtn.addEventListener("click", () => {
+			useBtn.addEventListener('click', () => {
 				this.addFieldMapping(example.name, example.toJira, example.fromJira);
 			});
 		});

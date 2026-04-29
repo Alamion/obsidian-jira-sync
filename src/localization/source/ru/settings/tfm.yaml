@@ -7,5 +7,7 @@ invalid_exp: Некорректное выражение
 from_jira: Из Jira
 value: Значение
 
+add_mapping: Добавить сопоставление
 add_mapping_tooltip: Добавить тестовое сопоставление полей
+reset: Сбросить
 reset_tooltip: Сбросить

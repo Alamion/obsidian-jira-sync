@@ -1,5 +1,5 @@
-import JiraPlugin from "../main";
-import { TFile, TFolder } from "obsidian";
+import JiraPlugin from '../main';
+import { TFile, TFolder } from 'obsidian';
 
 /**
  * Utility functions for managing the issue key to file path cache
@@ -11,7 +11,7 @@ import { TFile, TFolder } from "obsidian";
  */
 export async function buildCacheFromFilesystem(plugin: JiraPlugin): Promise<void> {
 	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.global.issuesFolder);
-	
+
 	if (!issuesFolder || !(issuesFolder instanceof TFolder)) {
 		return;
 	}
@@ -42,16 +42,16 @@ async function scanFolderForIssueKeys(plugin: JiraPlugin, folder: TFolder): Prom
  */
 export async function validateCache(plugin: JiraPlugin): Promise<void> {
 	const entriesToRemove: string[] = [];
-	
+
 	for (const [issueKey, filePath] of plugin.getAllIssueKeysMap().entries()) {
 		const file = plugin.app.vault.getFileByPath(filePath);
 		if (!file) {
 			entriesToRemove.push(issueKey);
 		}
 	}
-	
+
 	// Remove invalid entries
-	entriesToRemove.forEach(issueKey => {
+	entriesToRemove.forEach((issueKey) => {
 		plugin.removeIssueKeyFromCache(issueKey);
 	});
 }

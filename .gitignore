@@ -7,11 +7,15 @@
 
 # npm
 node_modules
+yarn.lock
 
 # Don't include the compiled main.js file in the repo.
 # They should be uploaded to GitHub releases instead.
 *.js
+*.cjs
+!eslint.config.js
 !/src/localization/**/*.js
+/src/localization/translator.js
 !check-version.js
 
 # Exclude sourcemaps
