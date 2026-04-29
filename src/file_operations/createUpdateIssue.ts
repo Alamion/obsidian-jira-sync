@@ -1,6 +1,6 @@
 import JiraPlugin from '../main';
 import { TFile } from 'obsidian';
-import { createJiraIssue, updateJiraIssue, updateJiraStatus } from '../api';
+import { createJiraIssue, fetchIssue, updateJiraIssue, updateJiraStatus } from '../api';
 import { prepareJiraFieldsFromFile } from './commonPrepareData';
 import { localToJiraFields, updateJiraToLocal } from '../tools/mapObsidianJiraFields';
 import { JiraIssue, JiraTransitionType } from '../interfaces';
@@ -42,6 +42,10 @@ export async function createIssueFromFile(
 	await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
 		frontmatter['key'] = issueKey;
 	});
+
+	// Pull the created issue back from Jira to populate all remaining synced fields
+	const createdIssue = await fetchIssue(plugin, issueKey);
+	await updateJiraToLocal(plugin, file, createdIssue);
 
 	return issueKey;
 }
