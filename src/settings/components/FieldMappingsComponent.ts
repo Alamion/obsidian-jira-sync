@@ -35,6 +35,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 		// Add explanation
 		mappingSection.createEl('p', {
 			text: t('desc'),
+			cls: 'break-line',
 		});
 
 		// Add validation toggle

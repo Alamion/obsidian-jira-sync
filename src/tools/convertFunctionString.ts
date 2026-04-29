@@ -5,6 +5,7 @@ import { debugLog } from './debugLogging';
 import { FieldMapping } from '../default/obsidianJiraFieldsMapping';
 import { defaultIssue } from '../default/defaultIssue';
 import { jiraToMarkdown, markdownToJira } from './markdownHtml';
+import { markdownToAdf, adfToMarkdown } from './markdownToAdf';
 
 // Constants for validation and error messages
 const FORBIDDEN_PATTERNS = ['document', 'window', 'eval', 'Function', 'fetch', 'setTimeout', 'globalThis'];
@@ -12,6 +13,8 @@ const SYNTAX_KEYWORDS = ['return', 'if', 'else', 'for', 'while', 'switch', 'try'
 const SAFE_GLOBALS = {
 	jiraToMarkdown,
 	markdownToJira,
+	markdownToAdf,
+	adfToMarkdown,
 	JSON: {
 		parse: JSON.parse,
 		stringify: JSON.stringify,
@@ -200,6 +203,8 @@ export async function safeStringToFunction(
 		const context = {
 			jiraToMarkdown,
 			markdownToJira,
+			markdownToAdf,
+			adfToMarkdown,
 			JSON,
 			Math,
 			Date,
@@ -263,38 +268,33 @@ export function jiraFunctionToString(fn: (...args: any[]) => any, isFromJira: bo
 
 	if (!baseStr) return baseStr;
 
+	const fnStr = fn.toString().trim();
+
+	const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
+	if (paramMatch) {
 	if (isFromJira) {
-		const fnStr = fn.toString().trim();
+		const params = (paramMatch[1] || paramMatch[2] || '').split(',').map((p) => p.trim());
 
-		const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
-		if (paramMatch) {
-			const params = (paramMatch[1] || paramMatch[2] || '').split(',').map((p) => p.trim());
+		let resultStr = baseStr;
 
-			let resultStr = baseStr;
-
-			if (params.length >= 1 && params[0]) {
-				const regex1 = new RegExp(`\\b${params[0]}\\b`, 'g');
-				resultStr = resultStr.replace(regex1, 'issue');
-			}
-			if (params.length >= 2 && params[1]) {
-				const regex2 = new RegExp(`\\b${params[1]}\\b`, 'g');
-				resultStr = resultStr.replace(regex2, 'data_source');
-			}
-
-			return resultStr;
+		if (params.length >= 1 && params[0]) {
+			const regex1 = new RegExp(`\\b${params[0]}\\b`, 'g');
+			resultStr = resultStr.replace(regex1, 'issue');
 		}
+		if (params.length >= 2 && params[1]) {
+			const regex2 = new RegExp(`\\b${params[1]}\\b`, 'g');
+			resultStr = resultStr.replace(regex2, 'data_source');
+		}
+
+		return resultStr;
 	} else {
-		const fnStr = fn.toString().trim();
+		const param = (paramMatch[1] || paramMatch[2] || '').trim();
 
-		const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
-		if (paramMatch) {
-			const param = (paramMatch[1] || paramMatch[2] || '').trim();
-
-			if (param) {
-				const regex = new RegExp(`\\b${param}\\b`, 'g');
-				return baseStr.replace(regex, 'value');
-			}
+		if (param) {
+			const regex = new RegExp(`\\b${param}\\b`, 'g');
+			return baseStr.replace(regex, 'value');
 		}
+	}
 	}
 
 	return baseStr;
@@ -303,6 +303,10 @@ export function jiraFunctionToString(fn: (...args: any[]) => any, isFromJira: bo
 export function functionToExpressionString(fn: (...args: any[]) => any): string {
 	try {
 		const fnStr = fn.toString().trim();
+		if (fnStr.contains("\n")) { // return everything for multiline funcs
+			return fnStr.split('\n').map((s: string) => s.trim()).join('\n');
+		}
+
 
 		// Handle arrow functions
 		const arrowMatch = fnStr.match(/^\s*\(?([^)]*)\)?\s*=>\s*(.+)$/s);
