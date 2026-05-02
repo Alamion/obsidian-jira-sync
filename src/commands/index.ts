@@ -1,3 +1,4 @@
+export * from './addComment';
 export * from './addWorkLogBatch';
 export * from './addWorkLogManually';
 export * from './batchFetchIssues';

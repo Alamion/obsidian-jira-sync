@@ -91,7 +91,7 @@ Status indicator: `jira-sync-inline-start-status_indicator``jira-sync-end`
 
 ### Whitespace Heavy Section `jira-sync-section-whitespace_test`
 
-    This section has leading and trailing whitespace    
+    This section has leading and trailing whitespace
 
 Should be trimmed properly before sending to Jira.
 

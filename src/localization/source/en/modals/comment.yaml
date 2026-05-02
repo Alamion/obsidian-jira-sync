@@ -1,0 +1,11 @@
+name: Add Jira comment
+
+body:
+    name: Comment
+    desc: 'Write your comment here, or select text in the editor before running this command to pre-fill it'
+    placeholder: 'Write your comment here. Tip: select text in the editor before running this command to pre-fill.'
+
+submit: Submit
+
+warns:
+    empty: Comment cannot be empty

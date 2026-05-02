@@ -1,3 +1,4 @@
+export * from './IssueCommentModal';
 export * from './IssueSearchModal';
 export * from './IssueStatusModal';
 export * from './IssueTypeModal';
