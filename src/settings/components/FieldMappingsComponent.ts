@@ -315,6 +315,12 @@ export class FieldMappingsComponent implements SettingsComponent {
 				toJira: '({ key: value })',
 				fromJira: 'issue.fields.project ? issue.fields.project.key : ""',
 			},
+			{
+				name: 'description',
+				toJira: 'api_version === "3" ? markdownToAdf(value) : markdownToJira(value)',
+				fromJira:
+					'api_version === "3" ? adfToMarkdown(issue.fields.description) : jiraToMarkdown(issue.fields.description)',
+			},
 		];
 
 		examples.forEach((example) => {

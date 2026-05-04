@@ -74,7 +74,7 @@ interface AdfDoc {
 
 function parseInline(text: string): AdfInlineContent[] {
 	const nodes: AdfInlineContent[] = [];
-	const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\[\[[^\]]+\]\])/g;
+	const regex = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\[\[[^\]]+\]\])/g;
 	let lastIndex = 0;
 	let match: RegExpExecArray | null;
 
@@ -83,15 +83,18 @@ function parseInline(text: string): AdfInlineContent[] {
 			nodes.push({ type: 'text', text: text.slice(lastIndex, match.index) });
 		}
 		if (match[2] !== undefined) {
+			// ***bold+italic***
+			nodes.push({ type: 'text', text: match[2], marks: [{ type: 'strong' }, { type: 'em' }] });
+		} else if (match[3] !== undefined) {
 			// **bold**
 			nodes.push({ type: 'text', text: match[2], marks: [{ type: 'strong' }] });
-		} else if (match[3] !== undefined) {
+		} else if (match[4] !== undefined) {
 			// *italic*
 			nodes.push({ type: 'text', text: match[3], marks: [{ type: 'em' }] });
-		} else if (match[4] !== undefined) {
+		} else if (match[5] !== undefined) {
 			// `code`
 			nodes.push({ type: 'text', text: match[4], marks: [{ type: 'code' }] });
-		} else if (match[5] !== undefined) {
+		} else if (match[6] !== undefined) {
 			// [text](url) — convert to ADF link mark
 			nodes.push({ type: 'text', text: match[5], marks: [{ type: 'link', attrs: { href: match[6] } }] });
 		} else {

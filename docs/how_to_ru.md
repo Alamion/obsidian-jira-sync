@@ -95,6 +95,7 @@ Bob
 - `Update work log in Jira manually` - позволяет вести учёт потраченного на задачу времени вручную. В данный момент он никак не отображается в файле, это будет в ближайших обновлениях.
 - `Update work log in Jira by batch` - позволяет вести учёт потраченного на задачу времени батчем. Если в файле в formatter есть `jira_worklog_batch`, то вместо ручного заполнения будет послан батч данных из `jira_worklog_batch` с обновлением каждой из представленных сущностей.
 - `Update issue status in Jira` - позволяет обновить статус задачи, выбрав один из возможных вариантов.
+- `Add comment to Jira` - позволяет добавить комментарий в выбранную задачу.
 
 ### Продвинутое использование
 
@@ -109,12 +110,14 @@ Bob
 
 Кроме того, вы можете использовать некоторые встроенные функции:
 
-- `jiraToMarkdown` - преобразует разметку Jira в Markdown.
-- `markdownToJira` - преобразует Markdown в разметку Jira.
+- `jiraToMarkdown` - преобразует разметку Jira в Markdown. (Jira API v2)
+- `markdownToJira` - преобразует Markdown в разметку Jira. (Jira API v2)
+- `markdownToAdf` - преобразует Markdown в ADF. (Jira API v3)
+- `adfToMarkdown` - преобразует ADF в Markdown. (Jira API v3)
 - `JSON.parse` - преобразует строку JSON в объект.
 - `JSON.stringify` - преобразует объект в строку JSON.
 
-и модули: (исходный синтаксис Javascript)
+и модули: (исходный синтаксис JavaScript)
 
 - `Math` - предоставляет доступ к математическим функциям, таким как `Math.round()`.
 - `Date` - предоставляет доступ к функциям даты, таким как `Date.now()`.

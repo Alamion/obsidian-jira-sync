@@ -4,9 +4,11 @@ desc: |
 
     To Jira:
     - value - the value of field in your .md file - can be a text string from file contents or a field value from frontmatter
+    - api_version - Jira API version used in current connection (could be either '2' or '3')
 
     From Jira:
     - issue - raw data from Jira (can be seen in lower `Fetch issue settings` section)
+    - api_version - the same as `To Jira`   
     - data_source - either parsed sections or frontmatter data in dictionary format, where keys are field names and values are field values
 fv:
     name: Enable field validation

@@ -1,11 +1,13 @@
 import { JiraIssue } from '../interfaces';
-import { jiraToMarkdown } from '../tools/markdownHtml';
-import { adfToMarkdown } from '../tools/markdownToAdf';
+import { jiraToMarkdown, markdownToJira } from '../tools/markdownHtml';
+import { adfToMarkdown, markdownToAdf } from '../tools/markdownToAdf';
 
 export interface FieldMapping {
-	toJira: (value: any) => any;
-	fromJira: (issue: JiraIssue, data_source: Record<string, any> | null) => any;
+	toJira: (value: any, api_version?: '2' | '3') => any;
+	fromJira: (issue: JiraIssue, api_version?: '2' | '3', data_source?: Record<string, any>) => any;
 }
+export const TO_JIRA_PARAMS = ['value', 'api_version'];
+export const FROM_JIRA_PARAMS = ['issue', 'api_version', 'data_source'];
 
 export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 	summary: {
@@ -13,8 +15,9 @@ export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 		fromJira: (issue) => issue.fields.summary,
 	},
 	description: {
-		toJira: () => null,
-		fromJira: (issue) => jiraToMarkdown(issue.fields.description),
+		toJira: (value, api_version) => (api_version === '3' ? markdownToAdf(value) : markdownToJira(value)),
+		fromJira: (issue, api_version) =>
+			api_version === '3' ? adfToMarkdown(issue.fields.description) : jiraToMarkdown(issue.fields.description),
 	},
 	key: {
 		toJira: () => null,
@@ -78,14 +81,14 @@ export const obsidianJiraFieldMappings: Record<string, FieldMapping> = {
 	},
 	comments: {
 		toJira: () => null,
-		fromJira: (issue) => {
+		fromJira: (issue, api_version) => {
 			const comments = issue.fields.comment?.comments;
 			if (!comments?.length) return '';
 			return comments
 				.map((c: any) => {
 					const author = c.author?.displayName ?? 'Unknown';
 					const date = c.created ? c.created.replace('T', ' ').substring(0, 19) : '';
-					const body = adfToMarkdown(c.body) ?? '';
+					const body = api_version === '3' ? adfToMarkdown(c.body) : c.body;
 					const calloutBody = body
 						.split('\n')
 						.map((l: string) => (l === '' ? '>' : `> ${l}`))

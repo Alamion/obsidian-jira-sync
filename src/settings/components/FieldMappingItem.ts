@@ -1,5 +1,6 @@
 import { validateField } from '../tools/fieldValidation';
 import { useTranslations } from '../../localization/translator';
+import { FROM_JIRA_PARAMS, TO_JIRA_PARAMS } from '../../default/obsidianJiraFieldsMapping';
 
 const t = useTranslations('settings.fm').t;
 /**
@@ -82,7 +83,8 @@ export class FieldMappingItem {
 		this.toJiraInput = toJiraContainer.createEl('textarea', {
 			cls: 'to-jira-input',
 		});
-		this.toJiraInput.placeholder = '(value) => {\n  // Transform Obsidian value to Jira\n  return value;\n}';
+		this.toJiraInput.placeholder =
+			'(value, api_version) => {\n  // Transform Obsidian value to Jira\n  return value;\n}';
 		this.toJiraInput.value = toJira;
 
 		// Create fromJira function input
@@ -98,7 +100,7 @@ export class FieldMappingItem {
 		});
 		this.fromJiraInput.value = fromJira;
 		this.fromJiraInput.placeholder =
-			'(issue, data_source) => {\n  // Extract value from Jira issue\n  return issue.fields.fieldName;\n}';
+			'(issue, api_version, data_source) => {\n  // Extract value from Jira issue\n  return issue.fields.fieldName;\n}';
 
 		// Add remove button
 		const removeBtn = this.fieldContainer.createEl('button', {
@@ -139,8 +141,8 @@ export class FieldMappingItem {
 	 */
 	async setupValidation(enableValidation: boolean) {
 		await validateField(this.fieldNameInput, enableValidation, 'string');
-		await validateField(this.toJiraInput, enableValidation, 'function', ['value']);
-		await validateField(this.fromJiraInput, enableValidation, 'function', ['issue', 'data_source']);
+		await validateField(this.toJiraInput, enableValidation, 'function', TO_JIRA_PARAMS);
+		await validateField(this.fromJiraInput, enableValidation, 'function', FROM_JIRA_PARAMS);
 	}
 
 	/**

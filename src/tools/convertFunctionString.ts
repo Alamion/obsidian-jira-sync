@@ -2,7 +2,7 @@ import { Notice } from 'obsidian';
 import { JiraIssue } from '../interfaces';
 import { parse } from 'acorn';
 import { debugLog } from './debugLogging';
-import { FieldMapping } from '../default/obsidianJiraFieldsMapping';
+import { FieldMapping, FROM_JIRA_PARAMS, TO_JIRA_PARAMS } from '../default/obsidianJiraFieldsMapping';
 import { defaultIssue } from '../default/defaultIssue';
 import { jiraToMarkdown, markdownToJira } from './markdownHtml';
 import { markdownToAdf, adfToMarkdown } from './markdownToAdf';
@@ -57,6 +57,7 @@ export function validateFunctionStringBrowser(
 				const varDeclarations = approved_vars
 					.map((varName) => {
 						if (varName === 'issue') return `${varName} = ${JSON.stringify(defaultIssue)}`;
+						if (varName === 'api_version') return `${varName} = "2"`;
 						if (varName === 'value') return `${varName} = "test value"`;
 						if (varName === 'data_source') return `${varName} = {}`;
 						return `${varName} = {}`;
@@ -91,6 +92,7 @@ export function validateFunctionStringBrowser(
 
 			const testArgs = approved_vars.map((varName) => {
 				if (varName === 'issue') return defaultIssue;
+				if (varName === 'api_version') return '2';
 				if (varName === 'value') return 'test value';
 				if (varName === 'data_source') return {};
 				return {};
@@ -180,7 +182,7 @@ export async function safeStringToFunction(
 		if (extraValidate) {
 			const validation = await validateFunctionString(
 				exprString,
-				type === 'fromJira' ? ['issue', 'data_source'] : ['value'],
+				type === 'fromJira' ? FROM_JIRA_PARAMS : TO_JIRA_PARAMS,
 			);
 			if (!validation.isValid) {
 				console.warn(`Invalid function: ${validation.errorMessage}`);
@@ -216,9 +218,9 @@ export async function safeStringToFunction(
 		};
 
 		if (type === 'toJira') {
-			return function (value: any) {
+			return function (value: any, api_version?: '2' | '3') {
 				const fn = new Function(
-					'value',
+					...TO_JIRA_PARAMS,
 					'context',
 					`
                     with (context) {
@@ -232,14 +234,13 @@ export async function safeStringToFunction(
                 `,
 				);
 
-				return fn.call(context, value, context);
+				return fn.call(context, value, api_version, context);
 			};
 		} else {
 			// fromJira
-			return function (issue: JiraIssue, data_source: Record<string, any> | null) {
+			return function (issue: JiraIssue, api_version?: '2' | '3', data_source?: Record<string, any>) {
 				const fn = new Function(
-					'issue',
-					'data_source',
+					...FROM_JIRA_PARAMS,
 					'context',
 					`
                     with (context) {
@@ -253,7 +254,7 @@ export async function safeStringToFunction(
                 `,
 				);
 
-				return fn.call(context, issue, data_source, context);
+				return fn.call(context, issue, api_version, data_source, context);
 			};
 		}
 	} catch (error) {
@@ -272,29 +273,22 @@ export function jiraFunctionToString(fn: (...args: any[]) => any, isFromJira: bo
 
 	const paramMatch = fnStr.match(/^\s*(?:\(?([^)]*)\)?\s*=>|\s*function\s*\(([^)]*)\))/);
 	if (paramMatch) {
-		if (isFromJira) {
-			const params = (paramMatch[1] || paramMatch[2] || '').split(',').map((p) => p.trim());
+		const params = (paramMatch[1] || paramMatch[2] || '').split(',').map((p) => p.trim());
+		let resultStr = baseStr;
 
-			let resultStr = baseStr;
-
-			if (params.length >= 1 && params[0]) {
-				const regex1 = new RegExp(`\\b${params[0]}\\b`, 'g');
-				resultStr = resultStr.replace(regex1, 'issue');
-			}
-			if (params.length >= 2 && params[1]) {
-				const regex2 = new RegExp(`\\b${params[1]}\\b`, 'g');
-				resultStr = resultStr.replace(regex2, 'data_source');
-			}
-
-			return resultStr;
-		} else {
-			const param = (paramMatch[1] || paramMatch[2] || '').trim();
-
-			if (param) {
-				const regex = new RegExp(`\\b${param}\\b`, 'g');
-				return baseStr.replace(regex, 'value');
-			}
+		if (params.length >= 1 && params[0]) {
+			const regex1 = new RegExp(`\\b${params[0]}\\b`, 'g');
+			resultStr = isFromJira ? resultStr.replace(regex1, 'issue') : resultStr.replace(regex1, 'value');
 		}
+		if (params.length >= 2 && params[1]) {
+			const regex2 = new RegExp(`\\b${params[1]}\\b`, 'g');
+			resultStr = resultStr.replace(regex2, 'api_version');
+		}
+		if (params.length >= 3 && params[2]) {
+			const regex3 = new RegExp(`\\b${params[2]}\\b`, 'g');
+			resultStr = resultStr.replace(regex3, 'data_source');
+		}
+		return resultStr;
 	}
 
 	return baseStr;
@@ -351,8 +345,12 @@ export async function transform_string_to_functions_mappings(
 
 		if (toJiraFn && fromJiraFn) {
 			transformedMappings[fieldName] = {
-				toJira: (await toJiraFn) as (value: any) => any,
-				fromJira: (await fromJiraFn) as (issue: JiraIssue, data_source: Record<string, any> | null) => any,
+				toJira: (await toJiraFn) as (value: any, api_version?: '2' | '3') => any,
+				fromJira: (await fromJiraFn) as (
+					issue: JiraIssue,
+					api_version?: '2' | '3',
+					data_source?: Record<string, any>,
+				) => any,
 			};
 		} else {
 			console.warn(`Invalid function in field: ${fieldName}`);

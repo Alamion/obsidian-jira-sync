@@ -9,15 +9,20 @@ import { obsidianJiraFieldMappings } from '../default/obsidianJiraFieldsMapping'
 export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Promise<string> {
 	let fields = await prepareJiraFieldsFromFile(plugin, file);
 	const issueKey = fields.key;
+	const apiVersion = plugin.getCurrentConnection()?.apiVersion;
 
 	if (!issueKey) {
 		throw new Error('No issue key found in frontmatter');
 	}
 
-	fields = localToJiraFields(fields, {
-		...obsidianJiraFieldMappings,
-		...plugin.settings.fieldMapping.fieldMappings,
-	});
+	fields = localToJiraFields(
+		fields,
+		{
+			...obsidianJiraFieldMappings,
+			...plugin.settings.fieldMapping.fieldMappings,
+		},
+		apiVersion,
+	);
 	await updateJiraIssue(plugin, issueKey, fields);
 	return issueKey;
 }
@@ -27,13 +32,18 @@ export async function createIssueFromFile(
 	file: TFile,
 	fields?: Record<string, any>,
 ): Promise<string> {
+	const apiVersion = plugin.getCurrentConnection()?.apiVersion;
 	if (!fields) {
 		fields = await prepareJiraFieldsFromFile(plugin, file);
 	}
-	fields = localToJiraFields(fields, {
-		...obsidianJiraFieldMappings,
-		...plugin.settings.fieldMapping.fieldMappings,
-	});
+	fields = localToJiraFields(
+		fields,
+		{
+			...obsidianJiraFieldMappings,
+			...plugin.settings.fieldMapping.fieldMappings,
+		},
+		apiVersion,
+	);
 	// Create the issue
 	const issueData = await createJiraIssue(plugin, fields);
 	const issueKey = issueData.key;

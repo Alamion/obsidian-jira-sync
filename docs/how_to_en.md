@@ -96,6 +96,7 @@ Currently, the plugin provides the following commands:
 - `Update work log in Jira manually` - enables manual time tracking for a task. Currently, this is not reflected in the file, but it will be available in future updates.
 - `Update work log in Jira by batch` - enables batch time tracking. If the formatter contains `jira_worklog_batch`, a batch of data from `jira_worklog_batch` will be sent, updating each listed entity.
 - `Update issue status in Jira` - allows updating a task's status by selecting one of the available options.
+- `Add comment to Jira` - allows adding a comment to the current task in Jira.
 
 ### Advanced Usage
 
@@ -110,12 +111,14 @@ Similarly, you can configure the `progressPercentage` shown in the example. This
 
 Additionally, you can use some of the built-in functions:
 
-- `jiraToMarkdown` - converts Jira markup to Markdown.
-- `markdownToJira` - converts Markdown to Jira markup.
+- `jiraToMarkdown` - converts Jira markup to Markdown. (for Jira API v2)
+- `markdownToJira` - converts Markdown to Jira markup. (for Jira API v2)
+- `markdownToAdf` - converts Markdown to Atlassian Document Format (ADF). (for Jira API v3)
+- `adfToMarkdown` - converts ADF to Markdown. (for Jira API v3)
 - `JSON.parse` - converts a JSON string to an object.
 - `JSON.stringify` - converts an object to a JSON string.
 
-and modules: (original Javascript syntax)
+and modules: (original JavaScript syntax)
 
 - `Math` - provides access to mathematical functions, such as `Math.round()`.
 - `Date` - provides access to date functions, such as `Date.now()`.
