@@ -3,9 +3,10 @@
  * @param str The Jira markup string
  * @returns The Markdown string
  */
-export function jiraToMarkdown(str: any): string {
+export function jiraToMarkdown(str: any): string | null {
 	try {
-		if (str === null || str === undefined) return '';
+		if (str === undefined) return null;
+		if (str === null) return '';
 
 		// Initial normalization to string
 		let content: string = '';
