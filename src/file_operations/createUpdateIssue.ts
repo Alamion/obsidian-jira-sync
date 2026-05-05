@@ -5,6 +5,7 @@ import { prepareJiraFieldsFromFile } from './commonPrepareData';
 import { localToJiraFields, updateJiraToLocal } from '../tools/mapObsidianJiraFields';
 import { JiraIssue, JiraTransitionType } from '../interfaces';
 import { obsidianJiraFieldMappings } from '../default/obsidianJiraFieldsMapping';
+import { updateJiraSyncContent } from '../tools/sectionTools';
 
 export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Promise<string> {
 	let fields = await prepareJiraFieldsFromFile(plugin, file);
@@ -72,8 +73,24 @@ export async function updateStatusFromFile(
 	}
 
 	await updateJiraStatus(plugin, fields.key, transition.id);
-	await updateJiraToLocal(plugin, file, {
-		fields: { status: { name: transition.status } },
-	} as JiraIssue);
+
+	// Only update the status field. Calling updateJiraToLocal with a partial issue
+	// causes all fromJira mappings to run with undefined inputs, producing empty strings
+	// that overwrite description and comments.
+	const allMappings = {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings};
+	const statusMapping = allMappings['status'];
+	const minimalIssue = {fields: {status: {name: transition.status}}} as any as JiraIssue;
+	const localStatusValue = statusMapping
+		? statusMapping.fromJira(minimalIssue, plugin.getCurrentConnection()?.apiVersion)
+		: transition.status;
+
+	if (localStatusValue !== null && localStatusValue !== undefined) {
+		await plugin.app.fileManager.processFrontMatter(file, (frontmatter: any) => {
+			frontmatter['status'] = localStatusValue;
+		});
+		await plugin.app.vault.process(file, (fileContent) => {
+			return updateJiraSyncContent(fileContent, {status: String(localStatusValue)});
+		});
+	}
 	return fields.key;
 }
