@@ -47,9 +47,15 @@ interface AdfOrderedListNode {
 	content: AdfListItemNode[];
 }
 
+interface AdfTaskItemNode {
+	type: 'taskItem';
+	attrs: { localId: string; state: 'TODO' | 'DONE' };
+	content: AdfInlineContent[];
+}
+
 interface AdfTaskListNode {
 	type: 'taskList';
-	content: AdfListItemNode[];
+	content: AdfTaskItemNode[];
 	attrs?: { localId: string };
 }
 

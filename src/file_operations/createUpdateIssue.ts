@@ -79,13 +79,13 @@ export async function updateStatusFromFile(
 	// that overwrite description and comments.
 	const allMappings = {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings};
 	const statusMapping = allMappings['status'];
-	const minimalIssue = {fields: {status: {name: transition.status}}} as JiraIssue;
+	const minimalIssue = {fields: {status: {name: transition.status}}} as any as JiraIssue;
 	const localStatusValue = statusMapping
-		? statusMapping.fromJira(minimalIssue, {})
+		? statusMapping.fromJira(minimalIssue, plugin.getCurrentConnection()?.apiVersion)
 		: transition.status;
 
 	if (localStatusValue !== null && localStatusValue !== undefined) {
-		await plugin.app.fileManager.processFrontmatter(file, (frontmatter) => {
+		await plugin.app.fileManager.processFrontMatter(file, (frontmatter: any) => {
 			frontmatter['status'] = localStatusValue;
 		});
 		await plugin.app.vault.process(file, (fileContent) => {
