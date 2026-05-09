@@ -5,6 +5,10 @@ folder:
     desc: Folder where Jira issues will be stored and searched for
     placeholder: Jira Issues
 
+highlight:
+    name: Highlight sync sections
+    desc: Highlight jira-sync-(line | inline | block) sections in file content. Reopen notes after toggling to see changes.
+
 template:
     name: Template path
     desc: Select a template file for creating Jira tasks

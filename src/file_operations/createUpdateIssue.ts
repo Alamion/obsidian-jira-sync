@@ -77,9 +77,9 @@ export async function updateStatusFromFile(
 	// Only update the status field. Calling updateJiraToLocal with a partial issue
 	// causes all fromJira mappings to run with undefined inputs, producing empty strings
 	// that overwrite description and comments.
-	const allMappings = {...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings};
+	const allMappings = { ...obsidianJiraFieldMappings, ...plugin.settings.fieldMapping.fieldMappings };
 	const statusMapping = allMappings['status'];
-	const minimalIssue = {fields: {status: {name: transition.status}}} as any as JiraIssue;
+	const minimalIssue = { fields: { status: { name: transition.status } } } as JiraIssue;
 	const localStatusValue = statusMapping
 		? statusMapping.fromJira(minimalIssue, plugin.getCurrentConnection()?.apiVersion)
 		: transition.status;
@@ -89,7 +89,7 @@ export async function updateStatusFromFile(
 			frontmatter['status'] = localStatusValue;
 		});
 		await plugin.app.vault.process(file, (fileContent) => {
-			return updateJiraSyncContent(fileContent, {status: String(localStatusValue)});
+			return updateJiraSyncContent(fileContent, { status: String(localStatusValue) });
 		});
 	}
 	return fields.key;

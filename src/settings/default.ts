@@ -14,6 +14,7 @@ export interface ConnectionSettingsInterface {
 export interface GlobalSettingsInterface {
 	issuesFolder: string;
 	templatePath: string;
+	highlightSyncSections: boolean;
 }
 
 export interface FieldMappingSettingsInterface {
@@ -85,6 +86,7 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 	global: {
 		issuesFolder: 'jira-issues',
 		templatePath: '',
+		highlightSyncSections: false,
 	},
 
 	fieldMapping: {

@@ -47,7 +47,7 @@ export default class JiraPlugin extends Plugin {
 		this.addSettingTab(new JiraSettingTab(this.app, this));
 
 		// Handle Reading mode (post-processor for rendered markdown)
-		this.registerMarkdownPostProcessor(hideJiraPointersReading.bind(this));
+		this.registerMarkdownPostProcessor(hideJiraPointersReading(this));
 
 		// Handle Live Preview/Edit mode (CodeMirror extension)
 		this.registerEditorExtension(createJiraSyncExtension(this));
