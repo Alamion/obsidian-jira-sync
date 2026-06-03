@@ -340,13 +340,13 @@ export async function transform_string_to_functions_mappings(
 	// Also convert to functions for runtime use
 	const transformedMappings: Record<string, FieldMapping> = {};
 	for (const [fieldName, { toJira, fromJira }] of Object.entries(mappings)) {
-		const toJiraFn = safeStringToFunction(toJira, 'toJira', extraValidate);
-		const fromJiraFn = safeStringToFunction(fromJira, 'fromJira', extraValidate);
+		const toJiraFn = await safeStringToFunction(toJira, 'toJira', extraValidate);
+		const fromJiraFn = await safeStringToFunction(fromJira, 'fromJira', extraValidate);
 
 		if (toJiraFn && fromJiraFn) {
 			transformedMappings[fieldName] = {
-				toJira: (await toJiraFn) as (value: any, api_version?: '2' | '3') => any,
-				fromJira: (await fromJiraFn) as (
+				toJira: toJiraFn as (value: any, api_version?: '2' | '3') => any,
+				fromJira: fromJiraFn as (
 					issue: JiraIssue,
 					api_version?: '2' | '3',
 					data_source?: Record<string, any>,

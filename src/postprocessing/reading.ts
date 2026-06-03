@@ -1,13 +1,12 @@
-// For Reading mode - targets <code> elements in <p> tags
-export function hideJiraPointersReading(element: HTMLElement) {
-	// In Reading mode, inline code becomes <code> elements
-	const codeElements = element.querySelectorAll(':not(pre) > code');
+export function hideJiraPointersReading() {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	return function (element: HTMLElement, _: any) {
+		const codeElements = Array.from(element.querySelectorAll(':not(pre) > code')).filter((el) =>
+			el.textContent?.startsWith('jira-sync-'),
+		) as HTMLElement[];
 
-	codeElements.forEach((codeEl) => {
-		const text = codeEl.textContent || '';
-
-		if (text.startsWith('jira-sync-')) {
+		for (const codeEl of codeElements) {
 			codeEl.addClass('jira-sync-hidden');
 		}
-	});
+	};
 }

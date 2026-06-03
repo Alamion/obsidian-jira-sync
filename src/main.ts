@@ -47,7 +47,7 @@ export default class JiraPlugin extends Plugin {
 		this.addSettingTab(new JiraSettingTab(this.app, this));
 
 		// Handle Reading mode (post-processor for rendered markdown)
-		this.registerMarkdownPostProcessor(hideJiraPointersReading.bind(this));
+		this.registerMarkdownPostProcessor(hideJiraPointersReading());
 
 		// Handle Live Preview/Edit mode (CodeMirror extension)
 		this.registerEditorExtension(createJiraSyncExtension(this));
@@ -61,7 +61,14 @@ export default class JiraPlugin extends Plugin {
 		// TODO: Cancel and delete migration check in future (approximately 2026-2027)
 		const new_data = checkMigrateSettings(old_data, this.saveSettings);
 
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, new_data);
+		this.settings = {
+			...DEFAULT_SETTINGS,
+			...new_data,
+			fieldMapping: {
+				...DEFAULT_SETTINGS.fieldMapping,
+				...(new_data?.fieldMapping || {}),
+			},
+		};
 		this.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
 			this.settings.fieldMapping.fieldMappingsStrings,
 		);

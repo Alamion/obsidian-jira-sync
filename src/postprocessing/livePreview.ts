@@ -31,32 +31,36 @@ export function createJiraSyncExtension(plugin: JiraPlugin): Extension {
 
 			buildDecorations(view: EditorView) {
 				const builder = new RangeSetBuilder<Decoration>();
+				const sel = view.state.selection;
+
+				const allDecs: Array<{ from: number; to: number; dec: Decoration }> = [];
 
 				for (let { from, to } of view.visibleRanges) {
 					const text = view.state.doc.sliceString(from, to);
 					const codeBlocks = this.findCodeBlocks(text, from);
 
+					// Collect all jira-sync marker positions
+					const markers: Array<{ start: number; end: number; name: string }> = [];
+
 					for (const match of text.matchAll(/`(jira-sync-[^`]+)`/g)) {
 						const start = from + match.index!;
 						const end = start + match[0].length;
-						const contentStart = start; // without first `
-						const contentEnd = end; // without last `
-
-						// Find code blocks to ignore
-						if (this.isInsideCodeBlock(contentStart, contentEnd, codeBlocks)) {
-							continue;
-						}
-
-						let className = 'jira-sync-hidden';
-
-						// Check if cursor is inside
-						const sel = view.state.selection;
-						if (sel.ranges.some((r) => r.from <= contentEnd && r.to >= contentStart)) {
-							className += ' jira-sync-active';
-						}
-
-						builder.add(start, end, Decoration.mark({ class: className }));
+						if (this.isInsideCodeBlock(start, end, codeBlocks)) continue;
+						markers.push({ start, end, name: match[1] });
 					}
+
+					// Always hide the markers themselves, show when cursor is inside
+					for (const { start, end } of markers) {
+						const isActive = sel.ranges.some((r) => r.from <= end && r.to >= start);
+						const cls = isActive ? 'jira-sync-hidden jira-sync-active' : 'jira-sync-hidden';
+						allDecs.push({ from: start, to: end, dec: Decoration.mark({ class: cls }) });
+					}
+				}
+
+				// RangeSetBuilder requires ranges in ascending order of `from`, then `to`
+				allDecs.sort((a, b) => a.from - b.from || a.to - b.to);
+				for (const { from, to, dec } of allDecs) {
+					builder.add(from, to, dec);
 				}
 
 				return builder.finish() as DecorationSet;

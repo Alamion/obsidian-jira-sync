@@ -47,9 +47,15 @@ interface AdfOrderedListNode {
 	content: AdfListItemNode[];
 }
 
+interface AdfTaskItemNode {
+	type: 'taskItem';
+	attrs: { localId: string; state: 'TODO' | 'DONE' };
+	content: AdfInlineContent[];
+}
+
 interface AdfTaskListNode {
 	type: 'taskList';
-	content: AdfListItemNode[];
+	content: AdfTaskItemNode[];
 	attrs?: { localId: string };
 }
 
@@ -426,7 +432,8 @@ function adfBlockToMarkdown(node: any): string {
 	}
 }
 
-export function adfToMarkdown(adf: any): string {
+export function adfToMarkdown(adf: any): string | null {
+	if (adf === undefined) return null;
 	if (!adf || typeof adf !== 'object') return '';
 	const blocks: string[] = (adf.content || []).map((node: any) => adfBlockToMarkdown(node));
 	return blocks.filter((b) => b !== '').join('\n\n');
