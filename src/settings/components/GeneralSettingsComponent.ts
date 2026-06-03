@@ -38,17 +38,6 @@ export class GeneralSettingsComponent implements SettingsComponent {
 			new FolderSuggest(plugin.app, search.inputEl, onChange);
 		});
 
-		// Highlight sync sections toggle
-		new Setting(containerEl)
-			.setName(t('highlight.name'))
-			.setDesc(t('highlight.desc'))
-			.addToggle((toggle) =>
-				toggle.setValue(plugin.settings.global.highlightSyncSections).onChange(async (value) => {
-					plugin.settings.global.highlightSyncSections = value;
-					await plugin.saveSettings();
-				}),
-			);
-
 		// Template path setting with native search
 		const templateInfo = this.detectTemplatePlugins(plugin.app);
 

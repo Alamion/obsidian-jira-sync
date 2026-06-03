@@ -68,9 +68,9 @@
 Пример:
 
 ```md
-Ответственным за эту задачу является `jira-sync-block-assignee`
+Ответственным за эту задачу является `jira-sync-block-start-assignee`
 Bob
-`jira-sync-end`, а описание — `jira-sync-block-description`
+`jira-sync-end`, а описание — `jira-sync-block-start-description`
 Некоторое описание
 `jira-sync-end`.
 ```

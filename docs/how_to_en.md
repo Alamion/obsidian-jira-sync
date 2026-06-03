@@ -69,9 +69,9 @@ The responsible person for this task is `jira-sync-inline-start-assignee`Bob`jir
 Example:
 
 ```md
-The responsible person for this task is `jira-sync-block-assignee`
+The responsible person for this task is `jira-sync-block-start-assignee`
 Bob
-`jira-sync-end`, and the description is `jira-sync-block-description`
+`jira-sync-end`, and the description is `jira-sync-block-start-description`
 Some description
 `jira-sync-end`.
 ```
