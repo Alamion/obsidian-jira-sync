@@ -26,3 +26,10 @@ filenameTemplate:
     desc: |
         Template for created issue filenames. Use {summary} for issue summary and {key} for issue key
     placeholder: '{summary} ({key})'
+
+rename_files: Rename existing files
+no_files_to_rename: No files in cache to rename
+rename_confirm: 'This will rename {count} cached file(s). Continue?'
+rename_success: Successfully renamed {count} file(s)
+rename_errors: 'Failed to rename {count} file(s)'
+rename_no_changes: No files needed renaming

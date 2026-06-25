@@ -5,8 +5,8 @@ import {
 	TimekeepSettingsInterface,
 } from '../settings/default';
 
-export function checkMigrateSettings(data: any, saveSettings: () => void): any {
-	if (!data || typeof data !== 'object') return data;
+export function checkMigrateSettings(data: any): { result: any; changed: boolean } {
+	if (!data || typeof data !== 'object') return { result: data, changed: false };
 
 	const result = { ...data };
 	let data_changed = false;
@@ -84,6 +84,8 @@ export function checkMigrateSettings(data: any, saveSettings: () => void): any {
 				username: result.connection.username || '',
 				email: result.connection.email || '',
 				password: result.connection.password || '',
+				jqlPresets: [],
+				lastJqlQuery: '',
 			},
 		];
 		result.currentConnectionIndex = 0;
@@ -91,9 +93,23 @@ export function checkMigrateSettings(data: any, saveSettings: () => void): any {
 		data_changed = true;
 	}
 
-	if (data_changed) {
-		saveSettings();
+	// Ensure all connections have jqlPresets and lastJqlQuery
+	if (result.connections && Array.isArray(result.connections)) {
+		for (const conn of result.connections) {
+			if (!('jqlPresets' in conn)) {
+				conn.jqlPresets = [];
+				data_changed = true;
+			}
+			if (!('lastJqlQuery' in conn)) {
+				conn.lastJqlQuery = '';
+				data_changed = true;
+			}
+		}
 	}
 
-	return result;
+	if (data_changed) {
+		return { result, changed: true };
+	}
+
+	return { result, changed: false };
 }

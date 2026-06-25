@@ -1,5 +1,10 @@
 import { FieldMapping } from '../default/obsidianJiraFieldsMapping';
 
+export interface JQLPreset {
+	name: string;
+	query: string;
+}
+
 export interface ConnectionSettingsInterface {
 	name: string;
 	jiraUrl: string;
@@ -9,6 +14,8 @@ export interface ConnectionSettingsInterface {
 	username: string;
 	email: string;
 	password: string;
+	jqlPresets: JQLPreset[];
+	lastJqlQuery: string;
 }
 
 export interface GlobalSettingsInterface {
@@ -78,6 +85,8 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 			password: '',
 			jiraUrl: '',
 			apiVersion: '2',
+			jqlPresets: [],
+			lastJqlQuery: '',
 		},
 	],
 	currentConnectionIndex: 0,

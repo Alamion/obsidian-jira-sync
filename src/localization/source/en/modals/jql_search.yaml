@@ -12,6 +12,16 @@ maxResults:
 
 submit: Search Issues
 
+presets:
+    load: JQL Preset
+    load_desc: Load a saved JQL query preset
+    select: Select preset
+    save: Save as preset
+    save_desc: Save current JQL query as a named preset
+    save_hint: Preset name
+    save_btn: Save
+    delete: Delete preset
+
 preview:
     total: Total {total} issues found
     showing: ' (showing first {limit} issues)'

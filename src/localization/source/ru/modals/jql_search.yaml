@@ -12,8 +12,18 @@ maxResults:
 
 submit: Найти задачи
 
+presets:
+    load: JQL пресет
+    load_desc: Загрузить сохраненный JQL запрос
+    select: Выберите пресет
+    save: Сохранить как пресет
+    save_desc: Сохранить текущий JQL запрос как именованный пресет
+    save_hint: Имя пресета
+    save_btn: Сохранить
+    delete: Удалить пресет
+
 preview:
-    total: '{total} задач найдено'
+    total: '{total} задач найдено'
     showing: ' (показаны первые {limit} задач)'
     error: '{error}'
     loading: Загрузка...

@@ -11,11 +11,12 @@ import {
 	registerUpdateIssueStatusCommand,
 	registerBatchFetchIssuesCommand,
 	registerAddCommentCommand,
+	registerRebuildCacheCommand,
 } from './commands';
 import { transform_string_to_functions_mappings } from './tools/convertFunctionString';
 import { createJiraSyncExtension } from './postprocessing/livePreview';
 import { hideJiraPointersReading } from './postprocessing/reading';
-import { buildCacheFromFilesystem, validateCache } from './tools/cacheUtils';
+import { buildCacheFromFilesystem } from './tools/cacheUtils';
 import { checkMigrateSettings } from './tools/migrateSettings';
 
 export default class JiraPlugin extends Plugin {
@@ -27,9 +28,8 @@ export default class JiraPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// validate cache from settings
+		// initialize cache from settings
 		this.initializeCache();
-		await validateCache(this);
 
 		// Register all commands
 		registerUpdateIssueCommand(this);
@@ -42,6 +42,7 @@ export default class JiraPlugin extends Plugin {
 		registerUpdateWorkLogManuallyCommand(this);
 		registerUpdateWorkLogBatchCommand(this);
 		registerAddCommentCommand(this);
+		registerRebuildCacheCommand(this);
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));
@@ -58,20 +59,26 @@ export default class JiraPlugin extends Plugin {
 
 	async loadSettings() {
 		const old_data = await this.loadData();
+
 		// TODO: Cancel and delete migration check in future (approximately 2026-2027)
-		const new_data = checkMigrateSettings(old_data, this.saveSettings);
+		const { result: migratedData, changed: migrationChanged } = checkMigrateSettings(old_data);
 
 		this.settings = {
 			...DEFAULT_SETTINGS,
-			...new_data,
+			...migratedData,
 			fieldMapping: {
 				...DEFAULT_SETTINGS.fieldMapping,
-				...(new_data?.fieldMapping || {}),
+				...(migratedData?.fieldMapping || {}),
 			},
 		};
+
 		this.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
 			this.settings.fieldMapping.fieldMappingsStrings,
 		);
+
+		if (migrationChanged) {
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {
@@ -100,36 +107,36 @@ export default class JiraPlugin extends Plugin {
 		return this.settings.connections[this.settings.currentConnectionIndex];
 	}
 
-	setFilePathForIssueKey(issueKey: string, filePath: string) {
+	async setFilePathForIssueKey(issueKey: string, filePath: string) {
 		this.issueKeyToFilePathCache.set(issueKey, filePath);
 		this.settings.issueKeyToFilePathCache[issueKey] = filePath;
-		this.saveSettings();
+		await this.saveSettings();
 	}
 
-	removeIssueKeyFromCache(issueKey: string) {
+	async removeIssueKeyFromCache(issueKey: string) {
 		this.issueKeyToFilePathCache.delete(issueKey);
 		delete this.settings.issueKeyToFilePathCache[issueKey];
-		this.saveSettings();
+		await this.saveSettings();
 	}
 
-	clearCache() {
+	async clearCache() {
 		this.issueKeyToFilePathCache.clear();
 		this.settings.issueKeyToFilePathCache = {};
-		this.saveSettings();
+		await this.saveSettings();
 	}
 
 	async rebuildCache() {
-		this.clearCache();
+		await this.clearCache();
 		await buildCacheFromFilesystem(this);
 	}
 
 	private registerVaultEventListeners() {
 		// Handle file renames
 		this.registerEvent(
-			this.app.vault.on('rename', (file, oldPath) => {
+			this.app.vault.on('rename', async (file, oldPath) => {
 				for (const [issueKey, cachedPath] of this.issueKeyToFilePathCache.entries()) {
 					if (cachedPath === oldPath) {
-						this.setFilePathForIssueKey(issueKey, file.path);
+						await this.setFilePathForIssueKey(issueKey, file.path);
 						break;
 					}
 				}
@@ -138,10 +145,10 @@ export default class JiraPlugin extends Plugin {
 
 		// Handle file deletions
 		this.registerEvent(
-			this.app.vault.on('delete', (file) => {
+			this.app.vault.on('delete', async (file) => {
 				for (const [issueKey, cachedPath] of this.issueKeyToFilePathCache.entries()) {
 					if (cachedPath === file.path) {
-						this.removeIssueKeyFromCache(issueKey);
+						await this.removeIssueKeyFromCache(issueKey);
 						break;
 					}
 				}

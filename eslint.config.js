@@ -6,7 +6,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 
 export default defineConfig([
 	{
-		ignores: ['main.js', 'node_modules/**', 'src/**/*.js'],
+		ignores: ['main.js', 'node_modules/**', 'src/**/*.js', 'tests/**'],
 	},
 	{
 		files: ['**/*.ts'],

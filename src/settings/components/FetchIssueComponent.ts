@@ -1,6 +1,8 @@
 import { Notice, Setting } from 'obsidian';
 import { SettingsComponent, SettingsComponentProps } from '../../interfaces/settingsTypes';
-import { fetchIssue } from '../../api';
+import { fetchIssue, validateSettings } from '../../api';
+import { renameExistingIssueFiles } from '../../file_operations/getIssue';
+import { ConfirmModal } from '../../modals/ConfirmModal';
 import debounce from 'lodash/debounce';
 import hljs from 'highlight.js';
 import { useTranslations } from '../../localization/translator';
@@ -23,7 +25,6 @@ export class FetchIssueComponent implements SettingsComponent {
 	render(containerEl: HTMLElement): void {
 		const { plugin } = this.props;
 
-		// Filename template setting
 		const filenameTemplateSetting = new Setting(containerEl)
 			.setName(t('filenameTemplate.name'))
 			.setDesc(t('filenameTemplate.desc'));
@@ -36,6 +37,40 @@ export class FetchIssueComponent implements SettingsComponent {
 					await plugin.saveSettings();
 				});
 		});
+
+		filenameTemplateSetting.addButton((btn) =>
+			btn.setButtonText(t('rename_files')).onClick(async () => {
+				if (!validateSettings(plugin)) return;
+
+				const cacheSize = plugin.getAllIssueKeysMap().size;
+				if (cacheSize === 0) {
+					new Notice(t('no_files_to_rename'));
+					return;
+				}
+
+				new ConfirmModal(
+					plugin.app,
+					t('rename_confirm', { count: cacheSize.toString() }),
+					async () => {
+						const result = await renameExistingIssueFiles(plugin);
+						if (result.renamed > 0) {
+							new Notice(t('rename_success', { count: result.renamed.toString() }));
+						}
+						if (result.errors.length > 0) {
+							new Notice(
+								t('rename_errors', { count: result.errors.length.toString() }) +
+									': ' +
+									result.errors.slice(0, 3).join(', '),
+							);
+						}
+						if (result.renamed === 0 && result.errors.length === 0) {
+							new Notice(t('rename_no_changes'));
+						}
+					},
+					() => {},
+				).open();
+			}),
+		);
 
 		const link =
 			plugin.getCurrentConnection()?.apiVersion === '3'
@@ -87,7 +122,6 @@ export class FetchIssueComponent implements SettingsComponent {
 				});
 			});
 
-		// Add input field for issue key
 		new Setting(containerEl)
 			.setName(t('key.name'))
 			.setDesc(t('key.desc'))
@@ -98,7 +132,6 @@ export class FetchIssueComponent implements SettingsComponent {
 				}),
 			);
 
-		// Create container for issue data
 		this.issueDataContainer = containerEl.createDiv({
 			cls: 'jira-raw-issue-container',
 		});

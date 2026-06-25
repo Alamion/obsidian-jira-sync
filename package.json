@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-jira-sync",
-	"version": "1.6.1",
+	"version": "1.7.0",
 	"packageManager": "yarn@1.22.22",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
@@ -15,6 +15,9 @@
 		"prepare": "husky",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
+		"test": "vitest run --config tests/vitest.config.ts",
+		"test:watch": "vitest --config tests/vitest.config.ts",
+		"test:int": "vitest run --config tests/vitest.config.ts tests/__tests__/api/",
 		"format": "prettier --write ."
 	},
 	"keywords": [],
@@ -36,11 +39,13 @@
 		"eslint": "^10.2.1",
 		"globals": "^17.5.0",
 		"husky": "^9.1.7",
+		"jsdom": "^29.1.1",
 		"lodash": "^4.17.23",
 		"obsidian": "latest",
 		"prettier": "^3.8.3",
 		"tslib": "2.4.0",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.9"
 	},
 	"dependencies": {
 		"acorn": "^8.14.1",

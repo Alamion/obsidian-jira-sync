@@ -66,6 +66,8 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 							password: '',
 							jiraUrl: '',
 							apiVersion: '2' as const,
+							jqlPresets: [],
+							lastJqlQuery: '',
 						};
 						plugin.settings.connections.push(newConnection);
 						plugin.settings.currentConnectionIndex = plugin.settings.connections.length - 1;

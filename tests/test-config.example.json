@@ -1,0 +1,19 @@
+{
+	"connections": [
+		{
+			"name": "Test Jira v2",
+			"jiraUrl": "http://jira-test.local:8080",
+			"apiVersion": "2",
+			"authMethod": "bearer",
+			"apiToken": ""
+		},
+		{
+			"name": "Test Jira v3",
+			"jiraUrl": "https://your-domain.atlassian.net",
+			"apiVersion": "3",
+			"authMethod": "basic",
+			"apiToken": "",
+			"email": ""
+		}
+	]
+}

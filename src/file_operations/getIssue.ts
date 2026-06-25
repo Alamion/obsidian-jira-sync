@@ -7,24 +7,18 @@ import { Notice, TFile, TFolder } from 'obsidian';
 import { defaultTemplate } from '../default/defaultTemplate';
 import { debugLog } from '../tools/debugLogging';
 
-function generateFilenameFromTemplate(template: string, issue: JiraIssue): string {
+export function generateFilenameFromTemplate(
+	template: string,
+	issue: { key: string; fields?: { summary?: string } },
+): string {
 	let filename = template;
-
-	// Replace {summary} with sanitized summary
 	const summary = issue.fields?.summary || '';
 	const sanitizedSummary = sanitizeFileName(summary);
 	filename = filename.replace(/\{summary\}/g, sanitizedSummary);
-
-	// Replace {key} with issue key
 	const key = issue.key || '';
 	filename = filename.replace(/\{key\}/g, key);
-
-	// Sanitize the entire filename to remove any prohibited characters
 	filename = sanitizeFileName(filename);
-
-	// Fallback if the result is empty or only whitespace
 	if (!filename || filename.trim() === '') {
-		// Use key if available, otherwise use a default
 		if (key) {
 			filename = key;
 		} else if (sanitizedSummary) {
@@ -33,8 +27,51 @@ function generateFilenameFromTemplate(template: string, issue: JiraIssue): strin
 			filename = 'jira-issue';
 		}
 	}
-
 	return filename.trim();
+}
+
+export async function renameExistingIssueFiles(plugin: JiraPlugin): Promise<{ renamed: number; errors: string[] }> {
+	const cacheMap = plugin.getAllIssueKeysMap();
+	const template = plugin.settings.fetchIssue.filenameTemplate || '{summary} ({key})';
+	const issuesFolder = plugin.settings.global.issuesFolder;
+	let renamed = 0;
+	const errors: string[] = [];
+
+	for (const [issueKey, currentPath] of cacheMap.entries()) {
+		try {
+			const file = plugin.app.vault.getFileByPath(currentPath);
+			if (!file) {
+				errors.push(`${issueKey}: file not found at ${currentPath}`);
+				continue;
+			}
+
+			let summary = '';
+			const metadata = plugin.app.metadataCache.getFileCache(file);
+			const cachedSummary = metadata?.frontmatter?.summary;
+			if (cachedSummary && typeof cachedSummary === 'string') {
+				summary = cachedSummary;
+			}
+
+			const newFilename = generateFilenameFromTemplate(template, { key: issueKey, fields: { summary } });
+			const newPath = `${issuesFolder}/${newFilename}.md`;
+
+			if (newPath === currentPath) continue;
+
+			const existingFile = plugin.app.vault.getFileByPath(newPath);
+			if (existingFile) {
+				errors.push(`${issueKey}: target path already exists: ${newPath}`);
+				continue;
+			}
+
+			await plugin.app.vault.rename(file, newPath);
+			await plugin.setFilePathForIssueKey(issueKey, newPath);
+			renamed++;
+		} catch (error) {
+			errors.push(`${issueKey}: ${(error as Error).message}`);
+		}
+	}
+
+	return { renamed, errors };
 }
 
 export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIssue, filePath?: string): Promise<void> {
@@ -48,7 +85,6 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 			targetPath = filePath;
 			targetFile = plugin.app.vault.getFileByPath(filePath);
 		} else {
-			// First, try to find the file using cache
 			const cachedPath = plugin.getFilePathForIssueKey(issue.key);
 			if (cachedPath) {
 				targetFile = plugin.app.vault.getFileByPath(cachedPath);
@@ -60,19 +96,16 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 				}
 			}
 
-			// If not found in cache or file doesn't exist, fallback to search
 			if (!targetFile) {
 				debugLog(`Issue ${issue.key} not in cache, searching filesystem...`);
 				targetFile = await findFileByIssueKey(plugin, issue.key);
 				if (targetFile) {
 					targetPath = targetFile.path;
-					// Add to cache for future use
-					plugin.setFilePathForIssueKey(issue.key, targetPath);
+					await plugin.setFilePathForIssueKey(issue.key, targetPath);
 					debugLog(`Found issue ${issue.key} via search, added to cache: ${targetPath}`);
 				}
 			}
 
-			// If still not found, create new file
 			if (!targetFile) {
 				const template = plugin.settings.fetchIssue.filenameTemplate || '{summary} ({key})';
 				const filename = generateFilenameFromTemplate(template, issue);
@@ -84,12 +117,12 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 		if (targetFile) {
 			await updateJiraToLocal(plugin, targetFile, issue);
 			await plugin.app.workspace.openLinkText(targetFile.path, '');
+			await plugin.setFilePathForIssueKey(issue.key, targetFile.path);
 		} else {
 			const newFile = await createNewIssueFile(plugin, targetPath);
 			await updateJiraToLocal(plugin, newFile, issue);
 			await plugin.app.workspace.openLinkText(newFile.path, '');
-			// Add new file to cache
-			plugin.setFilePathForIssueKey(issue.key, newFile.path);
+			await plugin.setFilePathForIssueKey(issue.key, newFile.path);
 		}
 		new Notice(`Issue ${issue.key} imported successfully`);
 	} catch (error: unknown) {
@@ -108,7 +141,6 @@ async function createNewIssueFile(plugin: JiraPlugin, filePath: string): Promise
 	if (templatePath && templatePath.trim() !== '') {
 		const templateFile = plugin.app.vault.getFileByPath(templatePath);
 		if (templateFile) {
-			// Use the template as initial content
 			initialContent = await plugin.app.vault.read(templateFile);
 		} else {
 			new Notice(`Template file not found: ${templatePath}, using default template`);
@@ -116,10 +148,8 @@ async function createNewIssueFile(plugin: JiraPlugin, filePath: string): Promise
 	}
 	if (initialContent === '') initialContent = defaultTemplate;
 
-	// Create the file with initial content
 	await plugin.app.vault.create(filePath, initialContent);
 
-	// Get file reference and update frontmatter
 	const newFile = plugin.app.vault.getFileByPath(filePath);
 	if (!newFile) {
 		throw new Error('Could not create file');
@@ -129,11 +159,9 @@ async function createNewIssueFile(plugin: JiraPlugin, filePath: string): Promise
 
 async function findFileByIssueKey(plugin: JiraPlugin, issueKey: string): Promise<TFile | null> {
 	const issuesFolder = plugin.app.vault.getAbstractFileByPath(plugin.settings.global.issuesFolder);
-
 	if (!issuesFolder || !(issuesFolder instanceof TFolder)) {
 		return null;
 	}
-
 	return await searchFolderForIssueKey(plugin, issuesFolder, issueKey);
 }
 

@@ -5,3 +5,4 @@ export * from './IssueTypeModal';
 export * from './IssueWorkLogModal';
 export * from './ProjectModal';
 export * from './JQLSearchModal';
+export * from './ConfirmModal';

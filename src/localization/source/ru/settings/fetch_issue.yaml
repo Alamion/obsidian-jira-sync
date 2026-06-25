@@ -21,3 +21,10 @@ filenameTemplate:
     desc: |
         Шаблон для названий файлов созданных задач. Используйте {summary} для названия задачи и {key} для ключа задачи
     placeholder: '{summary} ({key})'
+
+rename_files: Переименовать существующие файлы
+no_files_to_rename: Нет файлов в кэше для переименования
+rename_confirm: 'Будет переименовано {count} файл(ов). Продолжить?'
+rename_success: 'Успешно переименовано {count} файл(ов)'
+rename_errors: 'Не удалось переименовать {count} файл(ов)'
+rename_no_changes: Файлы не нуждаются в переименовании

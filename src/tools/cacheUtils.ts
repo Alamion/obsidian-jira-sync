@@ -28,7 +28,7 @@ async function scanFolderForIssueKeys(plugin: JiraPlugin, folder: TFolder): Prom
 			const metadata = plugin.app.metadataCache.getFileCache(child);
 			const issueKey = metadata?.frontmatter?.key;
 			if (issueKey && typeof issueKey === 'string') {
-				plugin.setFilePathForIssueKey(issueKey, child.path);
+				await plugin.setFilePathForIssueKey(issueKey, child.path);
 			}
 		} else if (child instanceof TFolder) {
 			await scanFolderForIssueKeys(plugin, child);
@@ -51,7 +51,7 @@ export async function validateCache(plugin: JiraPlugin): Promise<void> {
 	}
 
 	// Remove invalid entries
-	entriesToRemove.forEach((issueKey) => {
-		plugin.removeIssueKeyFromCache(issueKey);
-	});
+	for (const issueKey of entriesToRemove) {
+		await plugin.removeIssueKeyFromCache(issueKey);
+	}
 }

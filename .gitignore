@@ -31,3 +31,6 @@ tmp/
 
 # localization compiled
 src/localization/compiled
+
+# test configuration with credentials
+tests/test-config.local.json

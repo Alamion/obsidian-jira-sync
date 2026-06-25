@@ -1,5 +1,6 @@
 node check-version.js
 yarn run format
 yarn run lint:fix
+yarn run test
 yarn run build
 yarn run validate_locale_once
