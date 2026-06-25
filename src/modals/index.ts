@@ -6,3 +6,4 @@ export * from './IssueWorkLogModal';
 export * from './ProjectModal';
 export * from './JQLSearchModal';
 export * from './ConfirmModal';
+export * from './ConfirmModal';

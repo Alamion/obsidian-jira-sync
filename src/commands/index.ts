@@ -7,3 +7,4 @@ export * from './getIssue';
 export * from './updateIssue';
 export * from './updateStatus';
 export * from './rebuildCache';
+export * from './rebuildCache';

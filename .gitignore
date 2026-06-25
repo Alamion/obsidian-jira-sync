@@ -34,3 +34,6 @@ src/localization/compiled
 
 # test configuration with credentials
 tests/test-config.local.json
+
+# test configuration with credentials
+tests/test-config.local.json
