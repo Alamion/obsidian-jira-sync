@@ -130,7 +130,7 @@ and modules: (original JavaScript syntax)
 
 Field mapping can like this:
 
-![](images/fieldMappingExample.png)
+![](images/field_mapping_demo.png)
 
 #### Time Tracking Statistics
 
@@ -139,4 +139,4 @@ The statistics feature supports timekeep and simple-time-tracker time tracking f
 
 The table looks like this:
 
-![](images/statisticsExample.png)
+![](images/statistics_example.png)

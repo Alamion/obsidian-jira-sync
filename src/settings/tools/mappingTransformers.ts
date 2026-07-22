@@ -40,6 +40,7 @@ export async function collectFieldMappingsFromUI(
 		const fieldNameInput = item.querySelector('.field-name-input');
 		const toJiraInput = item.querySelector('.to-jira-input');
 		const fromJiraInput = item.querySelector('.from-jira-input');
+		const jiraFieldNameInput = item.querySelector('.jira-field-name-input');
 
 		if (!fieldNameInput || !toJiraInput || !fromJiraInput) {
 			return;
@@ -48,12 +49,14 @@ export async function collectFieldMappingsFromUI(
 		const fieldName = (fieldNameInput as HTMLInputElement).value.trim();
 		const toJira = (toJiraInput as HTMLTextAreaElement).value.trim();
 		const fromJira = (fromJiraInput as HTMLTextAreaElement).value.trim();
+		const jiraFieldName = jiraFieldNameInput ? (jiraFieldNameInput as HTMLInputElement).value.trim() : '';
 
 		// Only save valid mappings with field name filled
 		if (fieldName) {
 			mappings[fieldName] = {
 				toJira: toJira,
 				fromJira: fromJira,
+				...(jiraFieldName ? { jiraFieldName } : {}),
 			};
 		}
 	});

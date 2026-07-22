@@ -23,7 +23,8 @@ example:
 from_jira: Из Jira
 to_jira: В Jira
 field_name: Название поля
-field_name_placeholder: Введите название поля
+field_name_placeholder: Название поля в Obsidian
+jira_field_name_placeholder: Тег поля в Jira
 
 add_mapping: Добавить сопоставление
 add_mapping_tooltip: Добавить новое сопоставление полей

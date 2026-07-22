@@ -26,7 +26,7 @@ export interface GlobalSettingsInterface {
 
 export interface FieldMappingSettingsInterface {
 	fieldMappings: Record<string, FieldMapping>;
-	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string }>;
+	fieldMappingsStrings: Record<string, { toJira: string; fromJira: string; jiraFieldName?: string }>;
 	enableFieldValidation: boolean;
 }
 

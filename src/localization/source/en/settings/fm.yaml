@@ -23,7 +23,8 @@ example:
 from_jira: From Jira
 to_jira: To Jira
 field_name: Field name
-field_name_placeholder: Enter field name
+field_name_placeholder: Field name in Obsidian
+jira_field_name_placeholder: Jira field tag
 
 add_mapping: Add mapping
 add_mapping_tooltip: Add new field mapping

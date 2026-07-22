@@ -84,7 +84,7 @@ export function extractAllJiraSyncValuesFromContent(fileContent: string): Record
 	return result;
 }
 
-export function updateJiraSyncContent(fileContent: string, updates: Record<string, string>): string {
+export function updateJiraSyncContent(fileContent: string, updates: Record<string, string | number | object>): string {
 	const blocks = parseFileContent(fileContent);
 
 	// Sort blocks in reverse order to replace from end to start
@@ -106,7 +106,7 @@ export function updateJiraSyncContent(fileContent: string, updates: Record<strin
 				newBlock = `\`jira-sync-section-${block.name}\`\n${newContent}\n`;
 				break;
 			case 'line':
-				newBlock = `\`jira-sync-line-${block.name}\`${newContent.split('\n')[0]}`;
+				newBlock = `\`jira-sync-line-${block.name}\`${typeof newContent === 'string' ? newContent.split('\n')[0] : newContent}`;
 				break;
 			case 'inline':
 				newBlock = `\`jira-sync-inline-start-${block.name}\`${newContent}\`jira-sync-end\``;

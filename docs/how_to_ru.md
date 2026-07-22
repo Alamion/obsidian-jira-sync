@@ -129,7 +129,7 @@ Bob
 
 Секция маппинга может выглядеть так:
 
-![](images/fieldMappingExample.png)
+![](images/field_mapping_demo.png)
 
 #### Статистика ведения журнала работы
 
@@ -139,4 +139,4 @@ Bob
 
 Выглядит табличка так:
 
-![](images/statisticsExample.png)
+![](images/statistics_example.png)

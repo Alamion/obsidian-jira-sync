@@ -8,6 +8,7 @@ export default defineConfig({
 		setupFiles: ['tests/__tests__/setup.ts'],
 	},
 	resolve: {
+		extensions: ['.ts', '.mjs', '.js', '.mts', '.jsx', '.tsx', '.json'],
 		alias: {
 			obsidian: path.resolve(__dirname, '__mocks__/obsidian.ts'),
 		},

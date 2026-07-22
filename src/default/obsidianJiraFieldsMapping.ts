@@ -5,6 +5,7 @@ import { adfToMarkdown, markdownToAdf } from '../tools/markdownToAdf';
 export interface FieldMapping {
 	toJira: (value: any, api_version?: '2' | '3') => any;
 	fromJira: (issue: JiraIssue, api_version?: '2' | '3', data_source?: Record<string, any>) => any;
+	jiraFieldName?: string;
 }
 export const TO_JIRA_PARAMS = ['value', 'api_version'];
 export const FROM_JIRA_PARAMS = ['issue', 'api_version', 'data_source'];

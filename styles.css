@@ -1,3 +1,9 @@
+.jira-row {
+	display: flex;
+	flex-direction: row;
+	gap: 10px;
+}
+
 .jira-collapsible-section {
 	padding: 8px;
 	border-left: 2px solid var(--background-modifier-border);
@@ -175,7 +181,8 @@
 	margin-bottom: 8px;
 }
 
-.field-name-input {
+.field-name-input,
+.jira-field-name-input {
 	width: 100%;
 	padding: 10px 12px;
 	border: 2px solid var(--background-modifier-border);
@@ -186,7 +193,8 @@
 	transition: border-color 0.2s ease;
 }
 
-.field-name-input:focus {
+.field-name-input:focus,
+.jira-field-name-input:focus {
 	border-color: var(--interactive-accent);
 	outline: none;
 	box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);

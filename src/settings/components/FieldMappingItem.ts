@@ -11,6 +11,7 @@ export interface FieldMappingItemProps {
 	fieldName?: string;
 	toJira?: string;
 	fromJira?: string;
+	jiraFieldName?: string;
 	enableValidation: boolean;
 	onRemove: () => void;
 }
@@ -22,6 +23,7 @@ export class FieldMappingItem {
 	private props: FieldMappingItemProps;
 	private fieldContainer!: HTMLDivElement;
 	private fieldNameInput!: HTMLInputElement;
+	private jiraFieldNameInput!: HTMLInputElement;
 	private toJiraInput!: HTMLTextAreaElement;
 	private fromJiraInput!: HTMLTextAreaElement;
 
@@ -36,6 +38,7 @@ export class FieldMappingItem {
 	getValues() {
 		return {
 			fieldName: this.fieldNameInput.value.trim(),
+			jiraFieldName: this.jiraFieldNameInput.value.trim() || undefined,
 			toJira: this.toJiraInput.value.trim(),
 			fromJira: this.fromJiraInput.value.trim(),
 		};
@@ -45,7 +48,14 @@ export class FieldMappingItem {
 	 * Render the field mapping item
 	 */
 	private render() {
-		const { container, fieldName = '', toJira = '', fromJira = '', enableValidation } = this.props;
+		const {
+			container,
+			fieldName = '',
+			toJira = '',
+			fromJira = '',
+			jiraFieldName = '',
+			enableValidation,
+		} = this.props;
 
 		// Create the field container
 		this.fieldContainer = container.createDiv({
@@ -56,36 +66,34 @@ export class FieldMappingItem {
 		const fieldNameContainer = this.fieldContainer.createDiv({
 			cls: 'field-name-container',
 		});
+
 		fieldNameContainer.createEl('span', {
 			text: t('field_name'),
 			cls: 'field-mapping-label',
 		});
-		this.fieldNameInput = fieldNameContainer.createEl('input', {
+
+		const horizontalContainer = fieldNameContainer.createDiv({
+			cls: 'jira-row',
+		});
+
+		this.fieldNameInput = horizontalContainer.createEl('input', {
 			type: 'text',
 			value: fieldName,
 			cls: 'field-name-input',
-			placeholder: t('field_name_placeholder') || 'e.g., summary, assignee, priority',
+			placeholder: t('field_name_placeholder'),
+		});
+
+		this.jiraFieldNameInput = horizontalContainer.createEl('input', {
+			type: 'text',
+			value: jiraFieldName || '',
+			cls: 'jira-field-name-input',
+			placeholder: t('jira_field_name_placeholder'),
 		});
 
 		// Create functions container (grid layout)
 		const functionsContainer = this.fieldContainer.createDiv({
 			cls: 'functions-container',
 		});
-
-		// Create toJira function input
-		const toJiraContainer = functionsContainer.createDiv({
-			cls: 'to-jira-container',
-		});
-		toJiraContainer.createEl('span', {
-			text: t('to_jira'),
-			cls: 'field-mapping-label',
-		});
-		this.toJiraInput = toJiraContainer.createEl('textarea', {
-			cls: 'to-jira-input',
-		});
-		this.toJiraInput.placeholder =
-			'(value, api_version) => {\n  // Transform Obsidian value to Jira\n  return value;\n}';
-		this.toJiraInput.value = toJira;
 
 		// Create fromJira function input
 		const fromJiraContainer = functionsContainer.createDiv({
@@ -101,6 +109,21 @@ export class FieldMappingItem {
 		this.fromJiraInput.value = fromJira;
 		this.fromJiraInput.placeholder =
 			'(issue, api_version, data_source) => {\n  // Extract value from Jira issue\n  return issue.fields.fieldName;\n}';
+
+		// Create toJira function input
+		const toJiraContainer = functionsContainer.createDiv({
+			cls: 'to-jira-container',
+		});
+		toJiraContainer.createEl('span', {
+			text: t('to_jira'),
+			cls: 'field-mapping-label',
+		});
+		this.toJiraInput = toJiraContainer.createEl('textarea', {
+			cls: 'to-jira-input',
+		});
+		this.toJiraInput.placeholder =
+			'(value, api_version) => {\n  // Transform Obsidian value to Jira\n  return value;\n}';
+		this.toJiraInput.value = toJira;
 
 		// Add remove button
 		const removeBtn = this.fieldContainer.createEl('button', {

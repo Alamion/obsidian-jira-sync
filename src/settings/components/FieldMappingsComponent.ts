@@ -122,11 +122,15 @@ export class FieldMappingsComponent implements SettingsComponent {
 				plugin.settings.fieldMapping.fieldMappings = obsidianJiraFieldMappings;
 
 				// Also reset the string representations with default values
-				const defaultMappingsStrings: Record<string, { toJira: string; fromJira: string }> = {};
+				const defaultMappingsStrings: Record<
+					string,
+					{ toJira: string; fromJira: string; jiraFieldName?: string }
+				> = {};
 				for (const [fieldName, mapping] of Object.entries(obsidianJiraFieldMappings)) {
 					defaultMappingsStrings[fieldName] = {
 						toJira: jiraFunctionToString(mapping.toJira, false),
 						fromJira: jiraFunctionToString(mapping.fromJira, true),
+						jiraFieldName: mapping.jiraFieldName || undefined,
 					};
 				}
 				plugin.settings.fieldMapping.fieldMappingsStrings = defaultMappingsStrings;
@@ -201,12 +205,13 @@ export class FieldMappingsComponent implements SettingsComponent {
 	/**
 	 * Add a new field mapping item
 	 */
-	addFieldMapping(fieldName = '', toJira = '', fromJira = ''): FieldMappingItem {
+	addFieldMapping(fieldName = '', toJira = '', fromJira = '', jiraFieldName?: string): FieldMappingItem {
 		const item = new FieldMappingItem({
 			container: this.fieldsList,
 			fieldName,
 			toJira,
 			fromJira,
+			jiraFieldName,
 			enableValidation: this.props.plugin.settings.fieldMapping.enableFieldValidation,
 			onRemove: () => {
 				// Remove from array when item is removed
@@ -243,7 +248,12 @@ export class FieldMappingsComponent implements SettingsComponent {
 			const savedMappings = plugin.settings.fieldMapping.fieldMappingsStrings;
 			for (const [fieldName, mapping] of Object.entries(savedMappings)) {
 				if (mapping && typeof mapping === 'object' && 'toJira' in mapping && 'fromJira' in mapping) {
-					this.addFieldMapping(fieldName, mapping.toJira, mapping.fromJira);
+					this.addFieldMapping(
+						fieldName,
+						mapping.toJira,
+						mapping.fromJira,
+						mapping.jiraFieldName || undefined,
+					);
 				}
 			}
 			plugin.settings.fieldMapping.fieldMappings = await transform_string_to_functions_mappings(
@@ -265,6 +275,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 						fieldName,
 						jiraFunctionToString(mapping.toJira, false),
 						jiraFunctionToString(mapping.fromJira, true),
+						mapping.jiraFieldName || undefined,
 					);
 				}
 			}
@@ -313,7 +324,7 @@ export class FieldMappingsComponent implements SettingsComponent {
 
 		const examplesList = examplesSection.createEl('ul');
 
-		const examples = [
+		const examples: { name: string; toJira: string; fromJira: string; jiraFieldName?: string }[] = [
 			{
 				name: 'summary',
 				toJira: 'value',
@@ -353,7 +364,12 @@ export class FieldMappingsComponent implements SettingsComponent {
 			item.createSpan({ text: `fromJira: ${example.fromJira}` });
 
 			useBtn.addEventListener('click', () => {
-				this.addFieldMapping(example.name, example.toJira, example.fromJira);
+				this.addFieldMapping(
+					example.name,
+					example.toJira,
+					example.fromJira,
+					example.jiraFieldName || undefined,
+				);
 			});
 		});
 	}

@@ -29,7 +29,8 @@ export function localToJiraFields(
 				// Skip fields that shouldn't be sent to Jira
 				if (result === null) continue;
 
-				jiraFields[key] = result;
+				const targetKey = mapping.jiraFieldName ?? key;
+				jiraFields[targetKey] = result;
 			} catch (e) {
 				console.error(`Error mapping for ${key}: ${e}`);
 				new Notice(`Error mapping for ${key}: ${e}`);
@@ -124,7 +125,6 @@ function updateFieldFromJira(
 		if (key in fieldMappings) {
 			value = fieldMappings[key].fromJira(issue, apiVersion, targetObject);
 		}
-		// debugLog(`Updating field: ${key}: ${issue.fields[key]}`);
 
 		// Only update if value exists
 		if (value !== null && value !== undefined) {
