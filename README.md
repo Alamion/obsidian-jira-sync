@@ -16,7 +16,7 @@ A two-way Jira synchronization plugin for Obsidian. Templates, custom field mapp
 - **JQL search and batch fetch** — find and pull in issues by query
 - **Inline comments** — add comments to Jira issues with text selection support
 
-![demo_image.png](docs/images/demo_image.png)
+![demo_image.png](https://github.com/user-attachments/assets/55cb2c99-34a9-47fc-85f1-f79dba5a27b1)
 
 ![field_mapping_demo.png](docs/images/field_mapping_demo.png)
 
