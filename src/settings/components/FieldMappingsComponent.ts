@@ -156,28 +156,42 @@ export class FieldMappingsComponent implements SettingsComponent {
 		return new Promise((resolve) => {
 			const modal = document.createElement('div');
 			modal.className = 'modal-container';
-			modal.innerHTML = `
-				<div class="modal">
-					<div class="modal-title">${title}</div>
-					<div class="modal-content">${message}</div>
-					<div class="modal-button-container">
-						<button class="mod-cta" id="confirm-btn">Confirm</button>
-						<button id="cancel-btn">Cancel</button>
-					</div>
-				</div>
-			`;
+
+			const modalContent = document.createElement('div');
+			modalContent.className = 'modal';
+			modal.appendChild(modalContent);
+
+			const titleEl = document.createElement('div');
+			titleEl.className = 'modal-title';
+			titleEl.textContent = title;
+			modalContent.appendChild(titleEl);
+
+			const contentEl = document.createElement('div');
+			contentEl.className = 'modal-content';
+			contentEl.textContent = message;
+			modalContent.appendChild(contentEl);
+
+			const buttonContainer = document.createElement('div');
+			buttonContainer.className = 'modal-button-container';
+			modalContent.appendChild(buttonContainer);
+
+			const confirmBtn = document.createElement('button');
+			confirmBtn.className = 'mod-cta';
+			confirmBtn.textContent = 'Confirm';
+			buttonContainer.appendChild(confirmBtn);
+
+			const cancelBtn = document.createElement('button');
+			cancelBtn.textContent = 'Cancel';
+			buttonContainer.appendChild(cancelBtn);
 
 			document.body.appendChild(modal);
 
-			const confirmBtn = modal.querySelector('#confirm-btn') as HTMLButtonElement;
-			const cancelBtn = modal.querySelector('#cancel-btn') as HTMLButtonElement;
-
-			confirmBtn?.addEventListener('click', () => {
+			confirmBtn.addEventListener('click', () => {
 				document.body.removeChild(modal);
 				resolve(true);
 			});
 
-			cancelBtn?.addEventListener('click', () => {
+			cancelBtn.addEventListener('click', () => {
 				document.body.removeChild(modal);
 				resolve(false);
 			});

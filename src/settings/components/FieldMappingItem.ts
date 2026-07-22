@@ -133,7 +133,7 @@ export class FieldMappingItem {
 		textarea.addEventListener('focus', resize);
 
 		// Initial resize
-		setTimeout(resize, 0);
+		window.setTimeout(resize, 0);
 	}
 
 	/**

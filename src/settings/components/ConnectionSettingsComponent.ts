@@ -68,6 +68,7 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 							apiVersion: '2' as const,
 							jqlPresets: [],
 							lastJqlQuery: '',
+							sessionCookie: '',
 						};
 						plugin.settings.connections.push(newConnection);
 						plugin.settings.currentConnectionIndex = plugin.settings.connections.length - 1;
@@ -85,7 +86,7 @@ export class ConnectionSettingsComponent implements SettingsComponent {
 
 	private populateConnectionDropdown(cb: any): void {
 		const { plugin } = this.props;
-		cb.selectEl.innerHTML = '';
+		cb.selectEl.empty();
 		plugin.settings.connections.forEach((conn, index) => {
 			cb.addOption(index.toString(), conn.name || `Connection ${index + 1}`);
 		});

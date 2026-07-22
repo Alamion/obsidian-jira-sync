@@ -128,7 +128,7 @@ export class JQLSearchModal extends Modal {
 	}
 
 	private populateDropdown(dropdown: DropdownComponent) {
-		dropdown.selectEl.innerHTML = '';
+		dropdown.selectEl.empty();
 		dropdown.addOption('', '— ' + t('presets.select') + ' —');
 		for (const preset of this.getPresets()) {
 			dropdown.addOption(preset.name, preset.name);

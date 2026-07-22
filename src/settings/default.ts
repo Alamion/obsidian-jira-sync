@@ -16,6 +16,7 @@ export interface ConnectionSettingsInterface {
 	password: string;
 	jqlPresets: JQLPreset[];
 	lastJqlQuery: string;
+	sessionCookie: string;
 }
 
 export interface GlobalSettingsInterface {
@@ -87,6 +88,7 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 			apiVersion: '2',
 			jqlPresets: [],
 			lastJqlQuery: '',
+			sessionCookie: '',
 		},
 	],
 	currentConnectionIndex: 0,

@@ -1,10 +1,6 @@
 import { Notice, requestUrl } from 'obsidian';
 import JiraPlugin from '../main';
 
-export function getSessionCookieKey(plugin: JiraPlugin): string {
-	return 'jira-issue-managing-session-cookie-' + (plugin.app as any).appId;
-}
-
 // Session cookie only
 export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 	try {
@@ -29,7 +25,8 @@ export async function authenticate(plugin: JiraPlugin): Promise<boolean> {
 			},
 		});
 
-		localStorage.setItem(getSessionCookieKey(plugin), response.json.session.value);
+		conn.sessionCookie = response.json.session.value;
+		await plugin.saveSettings();
 		return true;
 	} catch (error: unknown) {
 		new Notice('Authentication failed: ' + ((error as Error).message || 'Unknown error'));
@@ -87,10 +84,10 @@ export async function getAuthHeaders(plugin: JiraPlugin): Promise<Record<string,
 		};
 	} else if (conn.authMethod === 'session') {
 		// Option 3: Session cookie
-		let cookie = localStorage.getItem(getSessionCookieKey(plugin));
+		let cookie = conn.sessionCookie;
 		if (!cookie) {
 			await authenticate(plugin);
-			cookie = localStorage.getItem(getSessionCookieKey(plugin));
+			cookie = conn.sessionCookie;
 		}
 
 		if (cookie) {
