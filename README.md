@@ -2,7 +2,7 @@
 
 A two-way Jira synchronization plugin for Obsidian. Templates, custom field mapping, time tracking, and batch operations — all without leaving your notes.
 
-https://github.com/user-attachments/assets/55cb2c99-34a9-47fc-85f1-f79dba5a27b1
+![demo.gif](docs/images/demo.gif)
 
 ## Features
 
